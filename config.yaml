@@ -1,0 +1,13 @@
+hawkular_server:
+  url: http://127.0.0.1:8080
+  tenant: hawkular
+  username: jdoe
+  password: password
+collector:
+  minimum_collection_interval_secs: 10
+kubernetes:
+  master_url: https://10.2.2.2:8443
+  #ca_cert_file: /path/to/ca.crt
+  #token: ...bearer token here...
+  #pod_name: hawkular-metrics-ns2ij
+  #pod_namespace: openshift-infra

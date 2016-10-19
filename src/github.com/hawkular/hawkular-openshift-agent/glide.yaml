@@ -1,0 +1,25 @@
+package: github.com/hawkular/hawkular-openshift-agent
+import:
+- package: github.com/golang/glog
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/hawkular/hawkular-client-go
+  subpackages:
+  - metrics
+- package: github.com/prometheus/client_model
+  subpackages:
+  - go
+- package: github.com/prometheus/common
+  subpackages:
+  - expfmt
+- package: gopkg.in/yaml.v2
+- package: k8s.io/client-go
+  subpackages:
+  - 1.4/kubernetes
+  - 1.4/kubernetes/typed/core/v1
+  - 1.4/pkg/api
+  - 1.4/pkg/api/v1
+  - 1.4/pkg/fields
+  - 1.4/pkg/watch
+  - 1.4/rest

@@ -1,0 +1,177 @@
+= Hawkular OpenShift Agent
+
+Hawkular OpenShift Agent is a Hawkular feed implemented in the Go Programming Language. Its main purpose is to be deployed on a node within an Open Shift environment so it can collect metrics from endpoints deployed in one or more pods within the node. However, it can also be used to collect metrics from endpoints outside of Open Shift.
+
+Note it does not collect or store inventory at this time - this is strictly a metric collection and storage agent that integrates with Hawkular Metrics.
+
+== Building
+
+[NOTE]
+These build instructions assume you have the following installed on your system: (1) Go Programming Language, (2) git, and (3) make. To run Hawkular OpenShift Agent after you build it, it is assumed you have Open Shift installed on your system as well. You can find a set of link:http://management-platform.blogspot.com/2016/10/installing-open-shift-origin-and-go-for.html[instructions on how to install Go and Open Shift here].
+
+To build Hawkular OpenShift Agent:
+
+* Clone this repository inside a GOPATH. These instructions will use the example GOPATH of "/source/go/hawkular-openshift-agent"
+
+[source,shell]
+----
+mkdir -p /source/go
+cd /source/go
+git clone git@github.com:hawkular/hawkular-openshift-agent.git
+export GOPATH=`pwd`/hawkular-openshift-agent
+export PATH=${PATH}:${GOPATH}/bin
+----
+
+* Install Glide - a Go dependency management tool that Hawkular OpenShift Agent uses to build itself
+
+[source,shell]
+----
+cd $GOPATH
+make install_glide
+----
+
+* Tell Glide to install the Hawkular OpenShift Agent dependencies
+
+[source,shell]
+----
+cd $GOPATH
+make install_deps
+----
+
+* Build Hawkular OpenShift Agent
+
+[source,shell]
+----
+cd $GOPATH
+make build
+----
+
+* At this point you can run the Hawkular OpenShift Agent tests
+
+[source,shell]
+----
+cd $GOPATH
+make test
+----
+
+To run Hawkular OpenShift Agent:
+
+[NOTE]
+To customize Hawkular OpenShift Agent's configuration so it can point to your Open Shift environment you need to make the appropriate edits to config.yaml. The Open Shift CA cert file can be found in your Open Shift installation at `/var/lib/origin/openshift.local.config/master/ca.crt`. If you installed Open Shift in a VM via vagrant, you can use `vagrant ssh` to get there.
+
+[source,shell]
+----
+cd $GOPATH
+make run
+----
+
+To install the Hawkular OpenShift Agent executable so you can run it outside of the Makefile, run the default target (which is "build") and use the "hawkular-openshift-agent" executable that is placed in the GOPATH /bin directory.
+
+[source,shell]
+----
+cd $GOPATH
+make
+${GOPATH}/bin/hawkular-openshift-agent -config <your-config-file>
+----
+
+If you don't want to store your token in the YAML file, you can pass it via an environment variable:
+
+[source,shell]
+----
+K8S_TOKEN=`oc whoami -t` ${GOPATH}/bin/hawkular-openshift-agent -config config.yaml
+----
+
+== Configuring Open Shift
+
+When Hawkular OpenShift Agent is monitoring resources running on an Open Shift node, it looks at custom annotations and config maps found in Open Shift to know what to monitor. In effect, the pods tell Hawkular OpenShift Agent what to monitor, and Hawkular OpenShift Agent does it. (Note that where "Open Shift" is mentioned, it is normally synonymous with "Kubernetes" because Hawkular OpenShift Agent is really interfacing with the underlying Kubernetes software that is running in Open Shift)
+
+One caveat must be mentioned up front. Hawkular OpenShift Agent will only monitor a single Open Shift node. If you want to monitor multiple Open Shift nodes, you must run one Hawkular OpenShift Agent process per node.
+
+There are two features in Open Shift that Hawkular OpenShift Agent takes advantage of when it comes to configuring what Hawkular OpenShift Agent should be monitoring - one is pod annotations and the second is project config maps.
+
+=== Pod Annotations
+
+Each pod running on the node has a set of annotations. An annotation is simply a name/value pair. Hawkular OpenShift Agent expects to see an annotation named "hawkular-openshift-agent" on a pod that is to be monitored. If this annotation is missing, it is assumed you do not want Hawkular OpenShift Agent to monitor that pod. The value of this annotation named "hawkular-openshift-agent" is the name of a config map within the pod's project. If the config map is not found in the pod's project, again Hawkular OpenShift Agent will not monitor the pod.
+
+=== Project Config Map
+
+Pods are grouped in what are called "projects" in Open Shift (Kubernetes calls these "namespaces" - if you see "namespace" in the Hawkular OpenShift Agent configuration settings and log messages, realize it is talking about an Open Shift project). Each project has what is called a "config map". Similiar to annotations, config maps contain name/value pairs. The values can be as simple as short strings or as complex as complete YAML or JSON blobs. Because config maps are on projects, they are associated with multiple pods (the pods within the project).
+
+Hawkular OpenShift Agent takes advantage of a project's config maps by using them as places to put YAML configuration for each monitored pod that belongs to the project. Each pod configuration is found in one config map. The config map that Hawkular OpenShift Agent will look for must be named the same as the value found in a pod's "hawkular-openshift-agent" annotation.
+
+=== Config Map Entry Schema
+
+Each Hawkular OpenShift Agent config map must have one and only one entry which must be named "hawkular-openshift-agent". A config map entry is a YAML configuration. The Go representation of the YAML schema is found link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/src/github.com/hawkular/hawkular-openshift-agent/k8s/configmap_entry.go[here].
+
+So, in short, each Open Shift project (aka Kubernetes namespace) will have multiple config maps each with an entry named "hawkular-openshift-agent" where those entries contain YAML configuration containing information about what should be monitored on a pod. A named config map is referenced by a pod's annotation also called "hawkular-openshift-agent".
+
+Hawkular OpenShift Agent examines each pod on the node and by cross-referencing the pod annotations with the project config maps, Hawkular OpenShift Agent knows what it should manage.
+
+=== Example
+
+Suppose you have a node running a project called "my-project" that consists of 3 pods (named "web-pod", "app-pod", and "db-pod"). Suppose you do not want Hawkular OpenShift Agent to monitor the "db-pod" but you do want it to monitor the other two pods in your project.
+
+First create two config maps on your "my-project" that each contain a config map entry that indicate what you want to monitor on your two pods. One way you can do this is create a YAML file that represents your config maps and via the "oc" Open Shift command line tool create the config maps. A sample YAML configuration for the web-pod config map could look like this (the schema of this YAML will change in the future, this is just an example).
+
+[source,yaml]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: my-web-pod-config
+  namespace: my-project
+data:
+  hawkular-openshift-agent: |
+    collection_interval_secs: 60
+    endpoints:
+    - type: prometheus
+      protocol: "http"
+      port: 8080
+      path: /metrics
+----
+
+Notice the name given to this config map - "my-web-pod-config". This is the name of the config map, and it is this name that should appear as a value to the "hawkular-openshift-agent" annotation found on the "web-pod" pod. It identifies this config map to Hawkular OpenShift Agent as the one that should be used by that pod. Notice also that the name of the config map entry is fixed and must always be "hawkular-openshift-agent". Next, notice the config map entry here. This defines what are to be monitored. Here you see there is a single endpoint for this pod that will expose Prometheus metrics over http and port 8080 at /metrics. The IP address used will be that of the pod itself and thus need not be specified.
+
+To create this config map, save that YAML to a file and use "oc":
+
+[source,shell]
+----
+oc create -f my-web-pod-config-map.yaml
+----
+
+If you have already created a "my-web-pod-config" config map on your project, you can update it via the "oc replace" command:
+
+[source,shell]
+----
+oc replace -f my-web-pod-config-map.yaml
+----
+
+Now that the config map has been created on your project, you can now add the annotation to the pods that you want to be monitored with the information in that config map. Let's tell Hawkular OpenShift Agent to monitor pod "web-pod" using the configuration named "my-web-pod-config" found in the config map we just created above. We could do something similar for the app-pod (that is, create a config map named, say, "my-app-pod-config" and annotate the app-pod to point to that config map). This can be done with the "oc" command as well.
+
+[source,shell]
+----
+oc annotate --overwrite pods web-pod hawkular-openshift-agent=my-web-pod-config
+oc annotate --overwrite pods app-pod hawkular-openshift-agent=my-app-pod-config
+----
+
+Because we do not want to monitor the db-pod, we do not create that annotation on it. This tells Hawkular OpenShift Agent to ignore that pod.
+
+If you want Hawkular OpenShift Agent to stop monitoring a pod, it is as simple as removing the pod's "hawkular-openshift-agent" annotation:
+
+[source,shell]
+----
+oc annotate pods app-pod hawkular-openshift-agent-
+----
+
+== Configuring External Endpoints To Monitor
+
+Hawkular OpenShift Agent is being developed primarily for running within an Open Shift environment. However, strictly speaking, it does not need to run in or monitor Open Shift. You can run Hawkular OpenShift Agent within your own VM, container, or bare metal and configure it to collect metrics from external endpoints you define in the main config.yaml configuration file.
+
+As an example, suppose you want Hawkular OpenShift Agent to scrape metrics from your Prometheus endpoint running at "http://yourcorp.com:9090/metrics" and store those metrics in Hawkular Metrics. You can add an `endpoints` section to your Hawkular OpenShift Agent's configuration file pointing to that endpoint which enables Hawkular OpenShift Agent to begin monitoring that endpoint as soon as Hawkular OpenShift Agent starts. The `endpoints` section of your YAML configuration file could look like this:
+
+[source,yaml]
+----
+- type: "prometheus"
+  url: "http://yourcorp.com:9090/metrics"
+  collection_interval_secs: 300
+----
