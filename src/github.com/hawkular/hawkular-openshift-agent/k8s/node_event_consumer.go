@@ -143,11 +143,13 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			continue
 		}
 
-		// we need to convert the k8s endpoint to the generic endpoint struct
+		// We need to convert the k8s endpoint to the generic endpoint struct.
+		// Note that the tenant for all metrics collected from this endpoint
+		// must be the same as the namespace of the pod where the endpoint is located
 		newEndpoint := &collector.Endpoint{
 			Url:    url.String(),
 			Type:   cmeEndpoint.Type,
-			Tenant: cmeEndpoint.Tenant,
+			Tenant: ne.Namespace,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
 			Metrics:                  make([]collector.MonitoredMetric, len(cmeEndpoint.Metrics)),
 		}
