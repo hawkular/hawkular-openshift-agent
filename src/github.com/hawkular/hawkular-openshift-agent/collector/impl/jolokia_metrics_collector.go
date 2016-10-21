@@ -2,12 +2,14 @@ package impl
 
 import (
 	"fmt"
+	"time"
 
-	//"github.com/golang/glog"
+	"github.com/golang/glog"
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/http"
+	"github.com/hawkular/hawkular-openshift-agent/jolokia"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
@@ -38,18 +40,60 @@ func (jc *JolokiaMetricsCollector) GetEndpoint() *collector.Endpoint {
 // collects all metrics it find there, and returns those metrics.
 // CollectMetrics implements a method from MetricsCollector interface
 func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHeader, err error) {
-	log.Debugf("Told to collect Jolokia metrics from [%v]", jc.Endpoint.Url)
 
-	_, err = http.GetHttpClient("", "")
+	url := jc.Endpoint.Url
+	now := time.Now()
+
+	log.Debugf("Told to collect [%v] Jolokia metrics from [%v]", len(jc.Endpoint.Metrics), url)
+
+	httpClient, err := http.GetHttpClient("", "")
 	if err != nil {
-		err = fmt.Errorf("Failed to connect to Jolokia endpoint [%v]. err=%v", jc.Endpoint.Url, err)
+		err = fmt.Errorf("Failed to create http client for Jolokia endpoint [%v]. err=%v", url, err)
 		return
 	}
 
-	url := jc.Endpoint.Url
+	// build up the bulk request with all the metrics we need to collect
+	requests := jolokia.NewJolokiaRequests()
+	for _, m := range jc.Endpoint.Metrics {
+		req := &jolokia.JolokiaRequest{
+			Type: jolokia.RequestTypeRead,
+		}
+		jolokia.ParseMetricName(m.Name, req)
+		requests.AddRequest(*req)
+	}
+	log.Tracef("Making bulk Jolokia request from [%v]:\n%v", url, requests)
 
-	// TODO
-	err = fmt.Errorf("Jolokia Endpoints are not yet supported: %v", url)
+	// send the request to the Jolokia endpoint
+	responses, err := requests.SendRequests(url, httpClient)
+	if err != nil {
+		err = fmt.Errorf("Failed to collect metrics from Jolokia endpoint [%v]. err=%v", url, err)
+		return
+	}
+
+	// convert the metric data we got from Jolokia into our Hawkular-Metrics data format
+	metrics = make([]hmetrics.MetricHeader, 0)
+
+	for i, resp := range responses.Responses {
+		if resp.IsSuccess() {
+			data := make([]hmetrics.Datapoint, 1)
+			data[0] = hmetrics.Datapoint{
+				Timestamp: now,
+				Value:     resp.GetValueAsFloat(),
+			}
+
+			metric := hmetrics.MetricHeader{
+				Type:   jc.Endpoint.Metrics[i].Type,
+				ID:     jc.Endpoint.Metrics[i].Name, // TODO what should we call it?
+				Tenant: jc.Endpoint.Tenant,
+				Data:   data,
+			}
+
+			metrics = append(metrics, metric)
+		} else {
+			glog.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
+				jc.Endpoint.Metrics[i].Name, url, err)
+		}
+	}
 
 	return
 }

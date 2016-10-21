@@ -54,7 +54,7 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 
 	client, err := http.GetHttpClient("", "")
 	if err != nil {
-		err = fmt.Errorf("Failed to connect to Prometheus endpoint [%v]. err=%v", pc.Endpoint.Url, err)
+		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.Url, err)
 		return
 	}
 
