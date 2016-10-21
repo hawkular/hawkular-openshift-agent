@@ -44,6 +44,12 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 	url := jc.Endpoint.Url
 	now := time.Now()
 
+	if len(jc.Endpoint.Metrics) == 0 {
+		log.Debugf("There are no metrics defined for Jolokia endpoint [%v]", url)
+		metrics = make([]hmetrics.MetricHeader, 0)
+		return
+	}
+
 	log.Debugf("Told to collect [%v] Jolokia metrics from [%v]", len(jc.Endpoint.Metrics), url)
 
 	httpClient, err := http.GetHttpClient("", "")
