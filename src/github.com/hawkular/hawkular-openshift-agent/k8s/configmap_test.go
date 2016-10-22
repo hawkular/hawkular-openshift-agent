@@ -16,12 +16,14 @@ func TestYamlText(t *testing.T) {
 		Protocol: K8S_ENDPOINT_PROTOCOL_HTTP,
 		Port:     1111,
 		Path:     "/1111",
-		Metrics: []K8SMetric{
-			K8SMetric{
+		Metrics: []collector.MonitoredMetric{
+			collector.MonitoredMetric{
+				Id:   "metric1id",
 				Type: hmetrics.Gauge,
 				Name: "metric1",
 			},
-			K8SMetric{
+			collector.MonitoredMetric{
+				Id:   "metric2id",
 				Type: hmetrics.Counter,
 				Name: "metric2",
 			},
@@ -52,15 +54,21 @@ func TestYamlText(t *testing.T) {
 	t.Logf("ConfigMapEntry YAML:\n%v\n", yaml)
 }
 
-func aTestConfigMapEntryYaml(t *testing.T) {
+func TestConfigMapEntryYaml(t *testing.T) {
 	yaml1 := `
-collection_interval_secs: 12345
 endpoints:
-  -type: prometheus
-   protocol: https
-   port: 8888
-   path: /the/path
-   metrics: []
+- type: prometheus
+  protocol: https
+  port: 8888
+  path: /the/path
+  collection_interval_secs: 12345
+  metrics:
+  - id: metric1id
+    name: metric1
+    type: gauge
+  - id: metric2id
+    name: metric2
+    type: counter
 `
 	cme, err := UnmarshalConfigMapEntry(yaml1)
 	if err != nil {
@@ -85,6 +93,15 @@ endpoints:
 	if len(cme.Endpoints[0].Metrics) != 2 {
 		t.Fatalf("Endpoint.Metrics length is wrong")
 	}
+	if cme.Endpoints[0].Metrics[0].Id != "metric1id" {
+		t.Fatalf("Endpoint.Metrics[0] id is wrong")
+	}
+	if cme.Endpoints[0].Metrics[0].Name != "metric1" {
+		t.Fatalf("Endpoint.Metrics[0] name is wrong")
+	}
+	if cme.Endpoints[0].Metrics[0].Type != hmetrics.Gauge {
+		t.Fatalf("Endpoint.Metrics[0] type is wrong")
+	}
 
 	yaml2, err := MarshalConfigMapEntry(cme)
 	if err != nil {
@@ -100,15 +117,15 @@ endpoints:
 	}
 }
 
-func aTestConfigMap(t *testing.T) {
+func TestConfigMap(t *testing.T) {
 	yaml1 := `
-collection_interval_secs: 12345
 endpoints:
-  -type: prometheus
-   protocol: https
-   port: 8888
-   path: /the/path
-   metrics: []
+- type: jolokia
+  protocol: https
+  port: 8888
+  collection_interval_secs: 12345
+  path: /the/path
+  metrics: []
 `
 	cme1, err := UnmarshalConfigMapEntry(yaml1)
 	if err != nil {

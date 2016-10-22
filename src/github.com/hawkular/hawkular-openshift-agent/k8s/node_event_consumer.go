@@ -170,11 +170,11 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		switch cmeEndpoint.Type {
 		case collector.ENDPOINT_TYPE_PROMETHEUS:
 			{
-				theCollector = impl.NewPrometheusMetricsCollector(id, newEndpoint)
+				theCollector = impl.NewPrometheusMetricsCollector(id, *newEndpoint)
 			}
 		case collector.ENDPOINT_TYPE_JOLOKIA:
 			{
-				theCollector = impl.NewJolokiaMetricsCollector(id, newEndpoint)
+				theCollector = impl.NewJolokiaMetricsCollector(id, *newEndpoint)
 			}
 		default:
 			{

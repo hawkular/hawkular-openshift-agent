@@ -12,9 +12,15 @@ const (
 )
 
 // MonitoredMetric provides information about a specific metric that is to be collected.
+// The "Id" is the metric ID as it will be stored in Hawkular Metrics - it may or may not
+// be identical to the actual metric name. The "Name" is the name of the metric as it is
+// found in the endpoint. This is the true name of the metric as it is exposed from the system
+// from where it came from.
+// USED FOR YAML
 type MonitoredMetric struct {
-	Type metrics.MetricType
+	Id   string
 	Name string
+	Type metrics.MetricType
 }
 
 // Endpoint provides information about how to connect to a particular endpoint in order

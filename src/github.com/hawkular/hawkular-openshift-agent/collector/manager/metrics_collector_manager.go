@@ -41,11 +41,11 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 			switch e.Type {
 			case collector.ENDPOINT_TYPE_PROMETHEUS:
 				{
-					theCollector = impl.NewPrometheusMetricsCollector(id, &e)
+					theCollector = impl.NewPrometheusMetricsCollector(id, e)
 				}
 			case collector.ENDPOINT_TYPE_JOLOKIA:
 				{
-					theCollector = impl.NewJolokiaMetricsCollector(id, &e)
+					theCollector = impl.NewJolokiaMetricsCollector(id, e)
 				}
 			default:
 				{

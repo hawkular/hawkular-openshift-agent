@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/golang/glog"
-	"github.com/hawkular/hawkular-client-go/metrics"
 	"gopkg.in/yaml.v2"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
@@ -33,14 +32,7 @@ type K8SEndpoint struct {
 	Path                     string
 	Tenant                   string
 	Collection_Interval_Secs int
-	Metrics                  []K8SMetric
-}
-
-// Metric describes a metric that is to be collected.
-// USED FOR YAML
-type K8SMetric struct {
-	Type metrics.MetricType
-	Name string
+	Metrics                  []collector.MonitoredMetric
 }
 
 // ConfigMapEntry describes one of the YAML configurations provided in a Pod's configmap.
