@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"regexp"
+
 	"github.com/golang/glog"
 	core "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.4/pkg/api"
@@ -131,9 +133,38 @@ func (d *Discovery) watchPods() {
 
 	d.PodWatcher = watcher
 
+	// Precompile the authorized pod regular expressions (agent startup confirmed all are valid regexs)
+	podRegexps := make([]*regexp.Regexp, len(d.AgentConfig.Kubernetes.Authorized_Pods))
+	for i, r := range d.AgentConfig.Kubernetes.Authorized_Pods {
+		podRegexps[i], _ = regexp.Compile(r)
+	}
+	if len(podRegexps) == 0 {
+		glog.Info("No authorized pods list is defined - all pods will be authorized")
+	}
+
 	go func() {
 		for event := range watcher.ResultChan() {
 			podFromEvent := event.Object.(*v1.Pod)
+
+			// If an authorized pods list is given, we must check to see if the pod "namespace/name"
+			// is on the list. If it is not, we ignore this pod.
+			if len(podRegexps) > 0 {
+				toMatch := podFromEvent.GetNamespace() + "/" + podFromEvent.GetName()
+				authorized := false
+				for _, r := range podRegexps {
+					if r.MatchString(toMatch) {
+						authorized = true
+						log.Tracef("Pod [%v] is authorized for metric collection. (regex=%v)", toMatch, r.String())
+						break
+					}
+				}
+
+				if !authorized {
+					log.Tracef("Pod [%v] is not authorized for metric collection - ignoring", toMatch)
+					continue
+				}
+			}
+
 			pod := &Pod{
 				NodeName:    d.Inventory.NodeName,
 				Namespace:   podFromEvent.GetNamespace(),
