@@ -16,21 +16,26 @@ import (
 )
 
 type PrometheusMetricsCollector struct {
-	Id             string
-	Endpoint       *collector.Endpoint
-	metricNamesMap map[string]bool
+	Id              string
+	Endpoint        *collector.Endpoint
+	metricNameIdMap map[string]string
 }
 
-func NewPrometheusMetricsCollector(id string, endpoint *collector.Endpoint) (mc *PrometheusMetricsCollector) {
+func NewPrometheusMetricsCollector(id string, endpoint collector.Endpoint) (mc *PrometheusMetricsCollector) {
 	mc = &PrometheusMetricsCollector{
 		Id:       id,
-		Endpoint: endpoint,
+		Endpoint: &endpoint,
 	}
 
-	// put all metric names in a set so we can quickly look them up to know which metrics should be stored and which are to be ignored
-	mc.metricNamesMap = make(map[string]bool, len(endpoint.Metrics))
+	// Put all metric names in a map so we can quickly look them up to know which metrics should be stored and which are to be ignored.
+	// Notice the value of the map is the metric ID - this will be the Hawkular Metrics ID when the metric is stored
+	mc.metricNameIdMap = make(map[string]string, len(endpoint.Metrics))
 	for _, m := range endpoint.Metrics {
-		mc.metricNamesMap[m.Name] = true
+		id := m.Id
+		if id == "" {
+			id = m.Name
+		}
+		mc.metricNameIdMap[m.Name] = id
 	}
 
 	return
@@ -71,9 +76,15 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 
 	for _, metricFamily := range metricFamilies {
 
-		// if the endpoint was given a list of metrics to collect but the current metric isn't in the list, skip it
-		if len(pc.metricNamesMap) > 0 {
-			if _, ok := pc.metricNamesMap[metricFamily.GetName()]; ok == false {
+		// by default the metric Id is the metric name
+		metricId := metricFamily.GetName()
+
+		// If the endpoint was given a list of metrics to collect but the current metric isn't in the list, skip it.
+		// If the metric was in the list, use its ID when storing to H-Metrics.
+		if len(pc.metricNameIdMap) > 0 {
+			var ok bool
+			metricId, ok = pc.metricNameIdMap[metricFamily.GetName()]
+			if !ok {
 				continue
 			}
 		}
@@ -82,11 +93,11 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 		switch metricFamily.GetType() {
 		case prom.MetricType_GAUGE:
 			{
-				metrics = append(metrics, pc.convertGauge(metricFamily, now))
+				metrics = append(metrics, pc.convertGauge(metricFamily, metricId, now))
 			}
 		case prom.MetricType_COUNTER:
 			{
-				metrics = append(metrics, pc.convertCounter(metricFamily, now))
+				metrics = append(metrics, pc.convertCounter(metricFamily, metricId, now))
 			}
 		case prom.MetricType_SUMMARY,
 			prom.MetricType_HISTOGRAM,
@@ -103,22 +114,22 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 	if log.IsTrace() {
 		var buffer bytes.Buffer
 		n := 0
-		buffer.WriteString(fmt.Sprintf("Metrics collected from endpoint [%v]:\n", url))
+		buffer.WriteString(fmt.Sprintf("Prometheus metrics collected from endpoint [%v]:\n", url))
 		for _, m := range metrics {
 			buffer.WriteString(fmt.Sprintf("%v\n", m))
 			n += len(m.Data)
 		}
-		buffer.WriteString(fmt.Sprintf("==TOTAL METRICS COLLECTED=%v\n", n))
+		buffer.WriteString(fmt.Sprintf("==TOTAL PROMETHEUS METRICS COLLECTED=%v\n", n))
 		log.Trace(buffer.String())
 	}
 
 	return
 }
 
-func (pc *PrometheusMetricsCollector) convertGauge(promMetricFamily *prom.MetricFamily, now time.Time) (metric hmetrics.MetricHeader) {
+func (pc *PrometheusMetricsCollector) convertGauge(promMetricFamily *prom.MetricFamily, id string, now time.Time) (metric hmetrics.MetricHeader) {
 	metric = hmetrics.MetricHeader{
 		Type:   hmetrics.Gauge,
-		ID:     promMetricFamily.GetName(),
+		ID:     id,
 		Tenant: pc.Endpoint.Tenant,
 		Data:   make([]hmetrics.Datapoint, len(promMetricFamily.GetMetric())),
 	}
@@ -135,10 +146,10 @@ func (pc *PrometheusMetricsCollector) convertGauge(promMetricFamily *prom.Metric
 	return
 }
 
-func (pc *PrometheusMetricsCollector) convertCounter(promMetricFamily *prom.MetricFamily, now time.Time) (metric hmetrics.MetricHeader) {
+func (pc *PrometheusMetricsCollector) convertCounter(promMetricFamily *prom.MetricFamily, id string, now time.Time) (metric hmetrics.MetricHeader) {
 	metric = hmetrics.MetricHeader{
 		Type:   hmetrics.Counter,
-		ID:     promMetricFamily.GetName(),
+		ID:     id,
 		Tenant: pc.Endpoint.Tenant,
 		Data:   make([]hmetrics.Datapoint, len(promMetricFamily.GetMetric())),
 	}

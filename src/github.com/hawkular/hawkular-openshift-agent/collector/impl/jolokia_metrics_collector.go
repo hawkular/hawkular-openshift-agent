@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -18,10 +19,10 @@ type JolokiaMetricsCollector struct {
 	Endpoint *collector.Endpoint
 }
 
-func NewJolokiaMetricsCollector(id string, endpoint *collector.Endpoint) (mc *JolokiaMetricsCollector) {
+func NewJolokiaMetricsCollector(id string, endpoint collector.Endpoint) (mc *JolokiaMetricsCollector) {
 	mc = &JolokiaMetricsCollector{
 		Id:       id,
-		Endpoint: endpoint,
+		Endpoint: &endpoint,
 	}
 	return
 }
@@ -87,18 +88,36 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 				Value:     resp.GetValueAsFloat(),
 			}
 
+			id := jc.Endpoint.Metrics[i].Id
+			if id == "" {
+				id = jc.Endpoint.Metrics[i].Name
+			}
+
 			metric := hmetrics.MetricHeader{
 				Type:   jc.Endpoint.Metrics[i].Type,
-				ID:     jc.Endpoint.Metrics[i].Name, // TODO what should we call it?
+				ID:     id,
 				Tenant: jc.Endpoint.Tenant,
 				Data:   data,
 			}
 
 			metrics = append(metrics, metric)
+
 		} else {
 			glog.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
 				jc.Endpoint.Metrics[i].Name, url, err)
 		}
+	}
+
+	if log.IsTrace() {
+		var buffer bytes.Buffer
+		n := 0
+		buffer.WriteString(fmt.Sprintf("Prometheus metrics collected from endpoint [%v]:\n", url))
+		for _, m := range metrics {
+			buffer.WriteString(fmt.Sprintf("%v\n", m))
+			n += len(m.Data)
+		}
+		buffer.WriteString(fmt.Sprintf("==TOTAL JOLOKIA METRICS COLLECTED=%v\n", n))
+		log.Trace(buffer.String())
 	}
 
 	return
