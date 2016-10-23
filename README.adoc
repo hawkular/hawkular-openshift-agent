@@ -1,4 +1,4 @@
-= Hawkular OpenShift Agent
+= Hawkular OpenShift Agent image:https://travis-ci.org/hawkular/hawkular-openshift-agent.svg["Build Status", link="https://travis-ci.org/hawkular/hawkular-openshift-agent"]
 
 Hawkular OpenShift Agent is a Hawkular feed implemented in the Go Programming Language. Its main purpose is to be deployed on a node within an Open Shift environment so it can collect metrics from endpoints deployed in one or more pods within the node. However, it can also be used to collect metrics from endpoints outside of Open Shift.
 
