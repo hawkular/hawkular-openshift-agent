@@ -12,10 +12,12 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_HS_TOKEN, os.Getenv(ENV_HS_TOKEN))
 	defer os.Setenv(ENV_K8S_POD_NAMESPACE, os.Getenv(ENV_K8S_POD_NAMESPACE))
 	defer os.Setenv(ENV_K8S_POD_NAME, os.Getenv(ENV_K8S_POD_NAME))
+	defer os.Setenv(ENV_K8S_AUTHORIZED_PODS, os.Getenv(ENV_K8S_AUTHORIZED_PODS))
 	os.Setenv(ENV_HS_URL, "http://TestEnvVar:9090")
 	os.Setenv(ENV_HS_TOKEN, "abc123")
 	os.Setenv(ENV_K8S_POD_NAMESPACE, "TestEnvVar pod namespace")
 	os.Setenv(ENV_K8S_POD_NAME, "TestEnvVar pod name")
+	os.Setenv(ENV_K8S_AUTHORIZED_PODS, "project/pod-1,.*/pod-2")
 
 	conf := NewConfig()
 
@@ -30,6 +32,12 @@ func TestEnvVar(t *testing.T) {
 	}
 	if conf.Kubernetes.Pod_Name != "TestEnvVar pod name" {
 		t.Error("Pod name is wrong")
+	}
+	if conf.Kubernetes.Authorized_Pods[0] != "project/pod-1" {
+		t.Errorf("Authorized pods is wrong: %v", conf.Kubernetes.Authorized_Pods[0])
+	}
+	if conf.Kubernetes.Authorized_Pods[1] != ".*/pod-2" {
+		t.Errorf("Authorized pods is wrong: %v", conf.Kubernetes.Authorized_Pods[1])
 	}
 }
 
@@ -59,6 +67,9 @@ func TestDefaults(t *testing.T) {
 	}
 	if conf.Kubernetes.Pod_Name != "" {
 		t.Error("Pod name is wrong")
+	}
+	if len(conf.Kubernetes.Authorized_Pods) != 0 {
+		t.Errorf("Authorized pods is wrong")
 	}
 	if len(conf.Endpoints) != 0 {
 		t.Error("There should be no endpoints by default")

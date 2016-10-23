@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -22,11 +23,12 @@ const (
 	ENV_IDENTITY_CERT_FILE        = "HAWKULAR_OPENSHIFT_AGENT_CERT_FILE"
 	ENV_IDENTITY_PRIVATE_KEY_FILE = "HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE"
 
-	ENV_K8S_MASTER_URL    = "K8S_MASTER_URL"
-	ENV_K8S_POD_NAMESPACE = "K8S_POD_NAMESPACE"
-	ENV_K8S_POD_NAME      = "K8S_POD_NAME"
-	ENV_K8S_TOKEN         = "K8S_TOKEN"
-	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
+	ENV_K8S_MASTER_URL      = "K8S_MASTER_URL"
+	ENV_K8S_POD_NAMESPACE   = "K8S_POD_NAMESPACE"
+	ENV_K8S_POD_NAME        = "K8S_POD_NAME"
+	ENV_K8S_TOKEN           = "K8S_TOKEN"
+	ENV_K8S_CA_CERT_FILE    = "K8S_CA_CERT_FILE"
+	ENV_K8S_AUTHORIZED_PODS = "K8S_AUTHORIZED_PODS"
 )
 
 // Identity provides information about the identity of this agent.
@@ -58,11 +60,12 @@ type Collector struct {
 // Kubernetes provides all the details necessary to communicate with the Kubernetes system.
 // USED FOR YAML
 type Kubernetes struct {
-	Master_Url    string ",omitempty"
-	Token         string ",omitempty"
-	CA_Cert_File  string ",omitempty"
-	Pod_Namespace string ",omitempty"
-	Pod_Name      string ",omitempty"
+	Master_Url      string   ",omitempty"
+	Token           string   ",omitempty"
+	CA_Cert_File    string   ",omitempty"
+	Pod_Namespace   string   ",omitempty"
+	Pod_Name        string   ",omitempty"
+	Authorized_Pods []string ",omitempty"
 }
 
 // Config defines the agent's full YAML configuration.
@@ -94,6 +97,7 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.Pod_Name = getDefaultString(ENV_K8S_POD_NAME, "")
 	c.Kubernetes.Token = getDefaultString(ENV_K8S_TOKEN, "")
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
+	c.Kubernetes.Authorized_Pods = convertCsvToArray(getDefaultString(ENV_K8S_AUTHORIZED_PODS, ""))
 
 	return
 }
@@ -104,6 +108,13 @@ func getDefaultString(envvar string, defaultValue string) (retVal string) {
 		retVal = defaultValue
 	}
 	return
+}
+
+func convertCsvToArray(csv string) []string {
+	if csv == "" {
+		return []string{}
+	}
+	return strings.Split(csv, ",")
 }
 
 // String marshals the given Config into a YAML string

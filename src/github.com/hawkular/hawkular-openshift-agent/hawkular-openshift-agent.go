@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 
 	"github.com/golang/glog"
@@ -122,6 +123,16 @@ func validateConfig() (err error) {
 
 	if Configuration.Hawkular_Server.Username != "" && Configuration.Hawkular_Server.Token != "" {
 		glog.Fatalf("You cannot specify credentials and a token for the Hawkular Server. You can only specify Username/Password or Token but not both.")
+	}
+
+	// Make sure all regexps are correct. Note that all regexps are modified to ensure
+	// the full string matches and not just a substring (hence ^ and $).
+	for i, podRegex := range Configuration.Kubernetes.Authorized_Pods {
+		podRegex = "^" + podRegex + "$"
+		if _, err := regexp.Compile(podRegex); err != nil {
+			glog.Fatalf("Invalid authorized pod regex [%v]. err=%v", podRegex, err)
+		}
+		Configuration.Kubernetes.Authorized_Pods[i] = podRegex
 	}
 
 	return
