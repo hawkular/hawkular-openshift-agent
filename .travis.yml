@@ -1,0 +1,23 @@
+language: go
+
+go:
+  - 1.7
+
+notifications:
+  irc:
+    channels:
+    - chat.freenode.net#hawkular
+
+# Our source code layout is the full GOPATH location.
+# This is different than how Travis expects so let's tell Travis
+# to change its environment to point to the proper GOPATH.
+# Once GOPATH and PATH are set properly, we install glide and use it to install deps.
+
+install:
+  - export GOPATH=${TRAVIS_BUILD_DIR}
+  - export PATH=${GOPATH}/bin:${PATH}
+  - go env
+  - make install_glide
+  - make install_deps
+
+script: make test
