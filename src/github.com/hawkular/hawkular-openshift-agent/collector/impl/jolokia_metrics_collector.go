@@ -111,7 +111,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 	if log.IsTrace() {
 		var buffer bytes.Buffer
 		n := 0
-		buffer.WriteString(fmt.Sprintf("Prometheus metrics collected from endpoint [%v]:\n", url))
+		buffer.WriteString(fmt.Sprintf("Jolokia metrics collected from endpoint [%v]:\n", url))
 		for _, m := range metrics {
 			buffer.WriteString(fmt.Sprintf("%v\n", m))
 			n += len(m.Data)
