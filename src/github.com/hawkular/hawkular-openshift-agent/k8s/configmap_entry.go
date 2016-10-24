@@ -22,15 +22,12 @@ const (
 // Type indicates the kind of metric endpoint (e.g. Prometheus or Jolokia).
 // Protocol defines the communications protocol (e.g. http or https).
 // Notice that Host is not defined - it will be determined at runtime via the pod configuration.
-// If tenant is not supplied, the global tenant ID defined
-// in the global agent configuration file should be used.
 // USED FOR YAML
 type K8SEndpoint struct {
 	Type                     collector.EndpointType
 	Protocol                 K8SEndpointProtocol
 	Port                     int
 	Path                     string
-	Tenant                   string
 	Collection_Interval_Secs int
 	Metrics                  []collector.MonitoredMetric
 }
