@@ -9,6 +9,7 @@ import (
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/http"
 	"github.com/hawkular/hawkular-openshift-agent/jolokia"
 	"github.com/hawkular/hawkular-openshift-agent/log"
@@ -16,12 +17,14 @@ import (
 
 type JolokiaMetricsCollector struct {
 	Id       string
+	Identity *security.Identity
 	Endpoint *collector.Endpoint
 }
 
-func NewJolokiaMetricsCollector(id string, endpoint collector.Endpoint) (mc *JolokiaMetricsCollector) {
+func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint) (mc *JolokiaMetricsCollector) {
 	mc = &JolokiaMetricsCollector{
 		Id:       id,
+		Identity: &identity,
 		Endpoint: &endpoint,
 	}
 	return
@@ -53,7 +56,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 	log.Debugf("Told to collect [%v] Jolokia metrics from [%v]", len(jc.Endpoint.Metrics), url)
 
-	httpClient, err := http.GetHttpClient("", "")
+	httpClient, err := http.GetHttpClient(jc.Identity)
 	if err != nil {
 		err = fmt.Errorf("Failed to create http client for Jolokia endpoint [%v]. err=%v", url, err)
 		return
@@ -71,7 +74,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 	log.Tracef("Making bulk Jolokia request from [%v]:\n%v", url, requests)
 
 	// send the request to the Jolokia endpoint
-	responses, err := requests.SendRequests(url, httpClient)
+	responses, err := requests.SendRequests(url, &jc.Endpoint.Credentials, httpClient)
 	if err != nil {
 		err = fmt.Errorf("Failed to collect metrics from Jolokia endpoint [%v]. err=%v", url, err)
 		return

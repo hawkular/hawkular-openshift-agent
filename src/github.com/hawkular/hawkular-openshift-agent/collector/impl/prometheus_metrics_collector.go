@@ -10,6 +10,7 @@ import (
 	prom "github.com/prometheus/client_model/go"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/http"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/prometheus"
@@ -17,13 +18,15 @@ import (
 
 type PrometheusMetricsCollector struct {
 	Id              string
+	Identity        *security.Identity
 	Endpoint        *collector.Endpoint
 	metricNameIdMap map[string]string
 }
 
-func NewPrometheusMetricsCollector(id string, endpoint collector.Endpoint) (mc *PrometheusMetricsCollector) {
+func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint) (mc *PrometheusMetricsCollector) {
 	mc = &PrometheusMetricsCollector{
 		Id:       id,
+		Identity: &identity,
 		Endpoint: &endpoint,
 	}
 
@@ -57,7 +60,7 @@ func (pc *PrometheusMetricsCollector) GetEndpoint() *collector.Endpoint {
 func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHeader, err error) {
 	log.Debugf("Told to collect Prometheus metrics from [%v]", pc.Endpoint.Url)
 
-	client, err := http.GetHttpClient("", "")
+	client, err := http.GetHttpClient(pc.Identity)
 	if err != nil {
 		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.Url, err)
 		return
@@ -66,7 +69,7 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 	url := pc.Endpoint.Url
 	now := time.Now()
 
-	metricFamilies, err := prometheus.Scrape(url, client)
+	metricFamilies, err := prometheus.Scrape(url, &pc.Endpoint.Credentials, client)
 	if err != nil {
 		err = fmt.Errorf("Failed to collect Prometheus metrics from [%v]. err=%v", pc.Endpoint.Url, err)
 		return

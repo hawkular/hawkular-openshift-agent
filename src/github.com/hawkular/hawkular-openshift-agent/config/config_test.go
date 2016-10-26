@@ -22,7 +22,7 @@ func TestEnvVar(t *testing.T) {
 	if conf.Hawkular_Server.Url != "http://TestEnvVar:9090" {
 		t.Error("Hawkular Server URL is wrong")
 	}
-	if conf.Hawkular_Server.Token != "abc123" {
+	if conf.Hawkular_Server.Credentials.Token != "abc123" {
 		t.Error("Hawkular Server Token is wrong")
 	}
 	if conf.Kubernetes.Pod_Namespace != "TestEnvVar pod namespace" {
@@ -45,13 +45,13 @@ func TestDefaults(t *testing.T) {
 	if conf.Hawkular_Server.Tenant != "hawkular" {
 		t.Error("Hawkular Server Tenant is wrong")
 	}
-	if conf.Hawkular_Server.Username != "" {
+	if conf.Hawkular_Server.Credentials.Username != "" {
 		t.Error("Hawkular Server Username should be empty by default")
 	}
-	if conf.Hawkular_Server.Password != "" {
+	if conf.Hawkular_Server.Credentials.Password != "" {
 		t.Error("Hawkular Server Password should be empty by default")
 	}
-	if conf.Hawkular_Server.Token != "" {
+	if conf.Hawkular_Server.Credentials.Token != "" {
 		t.Error("Hawkular Server Token should be empty by default")
 	}
 	if conf.Kubernetes.Pod_Namespace != "" {

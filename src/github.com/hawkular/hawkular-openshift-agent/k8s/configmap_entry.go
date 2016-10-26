@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
@@ -28,6 +29,7 @@ type K8SEndpoint struct {
 	Protocol                 K8SEndpointProtocol
 	Port                     int
 	Path                     string
+	Credentials              security.Credentials
 	Collection_Interval_Secs int
 	Metrics                  []collector.MonitoredMetric
 }

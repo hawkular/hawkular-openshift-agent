@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -107,24 +108,17 @@ func waitForTermination() {
 	<-doneChan
 }
 
-func validateConfig() (err error) {
+func validateConfig() error {
 	if Configuration.Collector.Minimum_Collection_Interval_Secs < 5 {
-		glog.Fatalf("Configured minimum collection interval is too low: %v", Configuration.Collector.Minimum_Collection_Interval_Secs)
+		return fmt.Errorf("Configured minimum collection interval is too low: %v", Configuration.Collector.Minimum_Collection_Interval_Secs)
 	}
 
-	if Configuration.Hawkular_Server.Username != "" && Configuration.Hawkular_Server.Password == "" {
-		glog.Fatalf("You must provide a Password for the specified Hawkular Server Username")
+	err := Configuration.Hawkular_Server.Credentials.ValidateCredentials()
+	if err != nil {
+		return fmt.Errorf("Hawkular Server configuration is invalid: %v", err)
 	}
 
-	if Configuration.Hawkular_Server.Username == "" && Configuration.Hawkular_Server.Password != "" {
-		glog.Fatalf("You must provide a Username for the specified Hawkular Server Password")
-	}
-
-	if Configuration.Hawkular_Server.Username != "" && Configuration.Hawkular_Server.Token != "" {
-		glog.Fatalf("You cannot specify credentials and a token for the Hawkular Server. You can only specify Username/Password or Token but not both.")
-	}
-
-	return
+	return nil
 }
 
 func validateFlags() {

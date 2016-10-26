@@ -73,9 +73,9 @@ func getHawkularMetricsClient(conf *config.Config) (*hmetrics.Client, error) {
 	params := hmetrics.Parameters{
 		Tenant:   conf.Hawkular_Server.Tenant,
 		Url:      conf.Hawkular_Server.Url,
-		Username: conf.Hawkular_Server.Username,
-		Password: conf.Hawkular_Server.Password,
-		Token:    conf.Hawkular_Server.Token,
+		Username: conf.Hawkular_Server.Credentials.Username,
+		Password: conf.Hawkular_Server.Credentials.Password,
+		Token:    conf.Hawkular_Server.Credentials.Token,
 	}
 
 	return hmetrics.NewHawkularClient(params)

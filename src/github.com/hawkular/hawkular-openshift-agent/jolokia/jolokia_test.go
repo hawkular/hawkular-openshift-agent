@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	hawkhttp "github.com/hawkular/hawkular-openshift-agent/http"
 )
 
@@ -102,7 +103,7 @@ func TestJolokia(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpClient, err := hawkhttp.GetHttpClient("", "")
+	httpClient, err := hawkhttp.GetHttpClient(nil)
 
 	reqs := NewJolokiaRequests()
 	reqs.AddRequest(JolokiaRequest{
@@ -117,7 +118,7 @@ func TestJolokia(t *testing.T) {
 		Attribute: "D",
 	})
 
-	resp, err := reqs.SendRequests(ts.URL, httpClient)
+	resp, err := reqs.SendRequests(ts.URL, &security.Credentials{}, httpClient)
 	if err != nil {
 		t.Fatalf("Failed to send Jolokia requests to mock server: err=%v", err)
 	}
