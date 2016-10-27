@@ -12,18 +12,31 @@ import (
 	"github.com/golang/protobuf/proto"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 )
 
-func Scrape(url string, client *http.Client) (mf map[string]*dto.MetricFamily, err error) {
+const userAgent string = "Hawkular/Hawkular-OpenShift-Agent"
+const acceptContentType string = "application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3"
+
+func Scrape(url string, credentials *security.Credentials, client *http.Client) (mf map[string]*dto.MetricFamily, err error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot create HTTP GET request for Prometheus URL [%v]: err= %v", url, err)
 	}
 
-	const acceptHeader = "application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3"
-	req.Header.Add("Accept", acceptHeader)
-	req.Header.Add("User-Agent", "Hawkular/Hawkular-OpenShift-Agent")
+	req.Header.Add("Accept", acceptContentType)
+	req.Header.Add("User-Agent", userAgent)
+
+	// Add the auth header if we need one
+	headerName, headerValue, err := credentials.GetHttpAuthHeader()
+	if err != nil {
+		return nil, fmt.Errorf("Cannot create HTTP GET request auth header for Prometheus URL [%v]: err= %v", url, err)
+	}
+	if headerName != "" {
+		req.Header.Add(headerName, headerValue)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

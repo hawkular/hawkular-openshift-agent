@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
@@ -29,24 +30,15 @@ const (
 	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
 )
 
-// Identity provides information about the identity of this agent.
-// USED FOR YAML
-type Identity struct {
-	Cert_File        string
-	Private_Key_File string
-}
-
 // Hawkular_Server defines where the Hawkular Server is. This is where metrics are stored.
 // The agent can identify with the Hawkular Server in one of two ways: either through
 // basic authentication (with Username and Password) or with a bearer Token. Only
 // one may be configured.
 // USED FOR YAML
 type Hawkular_Server struct {
-	Url      string
-	Tenant   string
-	Username string ",omitempty"
-	Password string ",omitempty"
-	Token    string ",omitempty"
+	Url         string
+	Tenant      string
+	Credentials security.Credentials ",omitempty"
 }
 
 // Collector provides information about collecting metrics from monitored endpoints.
@@ -56,6 +48,11 @@ type Collector struct {
 }
 
 // Kubernetes provides all the details necessary to communicate with the Kubernetes system.
+// Master_Url should be an empty string if the agent is deployed in OpenShift.
+// Pod_Namespace and Pod_Name should identify the pod where the agent is running (if it is
+// running in OpenShift) or should identify any pod in the node to be monitored by the agent
+// (if the agent is not running in OpenShift). Pod_Namespace should be empty if you do not wish
+// for the agent to monitor anything in OpenShift.
 // USED FOR YAML
 type Kubernetes struct {
 	Master_Url    string ",omitempty"
@@ -68,11 +65,11 @@ type Kubernetes struct {
 // Config defines the agent's full YAML configuration.
 // USED FOR YAML
 type Config struct {
-	Identity ",omitempty"
-	Hawkular_Server
-	Collector  ",omitempty"
-	Kubernetes ",omitempty"
-	Endpoints  []collector.Endpoint ",omitempty"
+	Identity        security.Identity ",omitempty"
+	Hawkular_Server Hawkular_Server
+	Collector       Collector            ",omitempty"
+	Kubernetes      Kubernetes           ",omitempty"
+	Endpoints       []collector.Endpoint ",omitempty"
 }
 
 func NewConfig() (c *Config) {
@@ -83,9 +80,9 @@ func NewConfig() (c *Config) {
 
 	c.Hawkular_Server.Url = getDefaultString(ENV_HS_URL, "http://127.0.0.1:8080")
 	c.Hawkular_Server.Tenant = getDefaultString(ENV_HS_TENANT, "hawkular")
-	c.Hawkular_Server.Username = getDefaultString(ENV_HS_USERNAME, "")
-	c.Hawkular_Server.Password = getDefaultString(ENV_HS_PASSWORD, "")
-	c.Hawkular_Server.Token = getDefaultString(ENV_HS_TOKEN, "")
+	c.Hawkular_Server.Credentials.Username = getDefaultString(ENV_HS_USERNAME, "")
+	c.Hawkular_Server.Credentials.Password = getDefaultString(ENV_HS_PASSWORD, "")
+	c.Hawkular_Server.Credentials.Token = getDefaultString(ENV_HS_TOKEN, "")
 
 	c.Collector.Minimum_Collection_Interval_Secs = 10
 

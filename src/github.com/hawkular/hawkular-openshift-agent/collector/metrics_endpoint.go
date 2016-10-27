@@ -2,6 +2,8 @@ package collector
 
 import (
 	"github.com/hawkular/hawkular-client-go/metrics"
+
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 )
 
 type EndpointType string
@@ -31,6 +33,7 @@ type MonitoredMetric struct {
 type Endpoint struct {
 	Type                     EndpointType
 	Url                      string
+	Credentials              security.Credentials
 	Collection_Interval_Secs int
 	Tenant                   string
 	Metrics                  []MonitoredMetric

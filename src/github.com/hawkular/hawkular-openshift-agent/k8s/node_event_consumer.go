@@ -147,9 +147,10 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		// Note that the tenant for all metrics collected from this endpoint
 		// must be the same as the namespace of the pod where the endpoint is located
 		newEndpoint := &collector.Endpoint{
-			Url:    url.String(),
-			Type:   cmeEndpoint.Type,
-			Tenant: ne.Namespace,
+			Url:                      url.String(),
+			Type:                     cmeEndpoint.Type,
+			Tenant:                   ne.Namespace,
+			Credentials:              cmeEndpoint.Credentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
 			Metrics:                  make([]collector.MonitoredMetric, len(cmeEndpoint.Metrics)),
 		}
@@ -172,11 +173,11 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		switch cmeEndpoint.Type {
 		case collector.ENDPOINT_TYPE_PROMETHEUS:
 			{
-				theCollector = impl.NewPrometheusMetricsCollector(id, *newEndpoint)
+				theCollector = impl.NewPrometheusMetricsCollector(id, nec.Config.Identity, *newEndpoint)
 			}
 		case collector.ENDPOINT_TYPE_JOLOKIA:
 			{
-				theCollector = impl.NewJolokiaMetricsCollector(id, *newEndpoint)
+				theCollector = impl.NewJolokiaMetricsCollector(id, nec.Config.Identity, *newEndpoint)
 			}
 		default:
 			{

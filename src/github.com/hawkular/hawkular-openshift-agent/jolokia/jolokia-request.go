@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
-const jsonContentType string = "application/json"
+const userAgent string = "Hawkular/Hawkular-OpenShift-Agent"
+const acceptContentType string = "application/json"
 
 // today we only support read
 type RequestType string
@@ -51,7 +53,7 @@ func (jrs *JolokiaRequests) AddRequest(jr JolokiaRequest) {
 
 // SendRequests will send all the requests in a bulk request message to given Jolokia endpoint URL and return the responses in
 // a bulk JolokiaResponses object.
-func (jrs *JolokiaRequests) SendRequests(url string, httpClient *http.Client) (*JolokiaResponses, error) {
+func (jrs *JolokiaRequests) SendRequests(url string, credentials *security.Credentials, httpClient *http.Client) (*JolokiaResponses, error) {
 	reqBody, err := json.Marshal(jrs.Requests)
 	if err != nil {
 		return nil, err
@@ -61,10 +63,32 @@ func (jrs *JolokiaRequests) SendRequests(url string, httpClient *http.Client) (*
 		log.Tracef("Sending bulk Jolokia request to [%v] with [%v] individual requests:\n%v", url, len(jrs.Requests), string(reqBody))
 	}
 
-	resp, err := httpClient.Post(url, jsonContentType, bytes.NewBuffer(reqBody))
-	defer resp.Body.Close()
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("Cannot create HTTP POST request for Jolokia URL [%v]: err= %v", url, err)
+	}
+
+	req.Header.Add("Accept", acceptContentType)
+	req.Header.Add("User-Agent", userAgent)
+
+	// Add the auth header if we need one
+	headerName, headerValue, err := credentials.GetHttpAuthHeader()
+	if err != nil {
+		return nil, fmt.Errorf("Cannot create HTTP request auth header for Jolokia URL [%v]: err= %v", url, err)
+	}
+	if headerName != "" {
+		req.Header.Add(headerName, headerValue)
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Jolokia request failed. %v/%v", resp.StatusCode, resp.Status)
 	}
 
 	respBuffer := new(bytes.Buffer)

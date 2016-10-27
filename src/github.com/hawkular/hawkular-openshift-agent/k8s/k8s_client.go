@@ -8,7 +8,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config"
 )
 
-const USERAGENT string = "Hawkular/Hawkular-OpenShift-Agent"
+const userAgent string = "Hawkular/Hawkular-OpenShift-Agent"
 
 func GetKubernetesClient(conf *config.Config) (coreClient *v1.CoreClient, err error) {
 
@@ -41,7 +41,7 @@ func GetKubernetesClient(conf *config.Config) (coreClient *v1.CoreClient, err er
 
 	}
 
-	restConfig.UserAgent = USERAGENT
+	restConfig.UserAgent = userAgent
 
 	client, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
