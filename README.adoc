@@ -1,13 +1,13 @@
 = Hawkular OpenShift Agent image:https://travis-ci.org/hawkular/hawkular-openshift-agent.svg["Build Status", link="https://travis-ci.org/hawkular/hawkular-openshift-agent"]
 
-Hawkular OpenShift Agent is a Hawkular feed implemented in the Go Programming Language. Its main purpose is to be deployed on a node within an Open Shift environment so it can collect metrics from endpoints deployed in one or more pods within the node. However, it can also be used to collect metrics from endpoints outside of Open Shift.
+Hawkular OpenShift Agent is a Hawkular feed implemented in the Go Programming Language. Its main purpose is to monitor a node within an OpenShift environment, collecting metrics from Prometheus and/or Jolokia endpoints deployed in one or more pods within the node. It can also be used to collect metrics from endpoints outside of OpenShift. The agent can be deployed inside the OpenShift node it is monitoring, or outside of OpenShift completely.
 
-Note it does not collect or store inventory at this time - this is strictly a metric collection and storage agent that integrates with Hawkular Metrics.
+Note that the agent does not collect or store inventory at this time - this is strictly a metric collection and storage agent that integrates with Hawkular Metrics.
 
 == Building
 
 [NOTE]
-These build instructions assume you have the following installed on your system: (1) Go Programming Language, (2) git, and (3) make. To run Hawkular OpenShift Agent after you build it, it is assumed you have Open Shift installed on your system as well. You can find a set of link:http://management-platform.blogspot.com/2016/10/installing-open-shift-origin-and-go-for.html[instructions on how to install Go and Open Shift here].
+These build instructions assume you have the following installed on your system: (1) Go Programming Language, (2) git, and (3) make. To run Hawkular OpenShift Agent after you build it, it is assumed you have OpenShift installed on your system as well. You can find a set of link:http://management-platform.blogspot.com/2016/10/installing-open-shift-origin-and-go-for.html[instructions on how to install Go and OpenShift here].
 
 To build Hawkular OpenShift Agent:
 
@@ -57,7 +57,7 @@ make test
 To run Hawkular OpenShift Agent:
 
 [NOTE]
-To customize Hawkular OpenShift Agent's configuration so it can point to your Open Shift environment you need to make the appropriate edits to config.yaml. The Open Shift CA cert file can be found in your Open Shift installation at `/var/lib/origin/openshift.local.config/master/ca.crt`. If you installed Open Shift in a VM via vagrant, you can use `vagrant ssh` to get there.
+To customize Hawkular OpenShift Agent's configuration so it can point to your OpenShift environment you need to make the appropriate edits to config.yaml. The OpenShift CA cert file can be found in your OpenShift installation at `/var/lib/origin/openshift.local.config/master/ca.crt`. If you installed OpenShift in a VM via vagrant, you can use `vagrant ssh` to get there. If you wish to configure the agent with environment variables as opposed to the config file, see link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/src/github.com/hawkular/hawkular-openshift-agent/config/config.go[here] for the environment variables that the agent looks for.
 
 [source,shell]
 ----
@@ -81,13 +81,13 @@ If you don't want to store your token in the YAML file, you can pass it via an e
 K8S_TOKEN=`oc whoami -t` ${GOPATH}/bin/hawkular-openshift-agent -config config.yaml
 ----
 
-== Configuring Open Shift
+== Configuring OpenShift
 
-When Hawkular OpenShift Agent is monitoring resources running on an Open Shift node, it looks at custom annotations and config maps found in Open Shift to know what to monitor. In effect, the pods tell Hawkular OpenShift Agent what to monitor, and Hawkular OpenShift Agent does it. (Note that where "Open Shift" is mentioned, it is normally synonymous with "Kubernetes" because Hawkular OpenShift Agent is really interfacing with the underlying Kubernetes software that is running in Open Shift)
+When Hawkular OpenShift Agent is monitoring resources running on an OpenShift node, it looks at custom annotations and config maps found in OpenShift to know what to monitor. In effect, the pods tell Hawkular OpenShift Agent what to monitor, and Hawkular OpenShift Agent does it. (Note that where "OpenShift" is mentioned, it is normally synonymous with "Kubernetes" because Hawkular OpenShift Agent is really interfacing with the underlying Kubernetes software that is running in OpenShift)
 
-One caveat must be mentioned up front. Hawkular OpenShift Agent will only monitor a single Open Shift node. If you want to monitor multiple Open Shift nodes, you must run one Hawkular OpenShift Agent process per node.
+One caveat must be mentioned up front. Hawkular OpenShift Agent will only monitor a single OpenShift node. If you want to monitor multiple OpenShift nodes, you must run one Hawkular OpenShift Agent process per node.
 
-There are two features in Open Shift that Hawkular OpenShift Agent takes advantage of when it comes to configuring what Hawkular OpenShift Agent should be monitoring - one is pod annotations and the second is project config maps.
+There are two features in OpenShift that Hawkular OpenShift Agent takes advantage of when it comes to configuring what Hawkular OpenShift Agent should be monitoring - one is pod annotations and the second is project config maps.
 
 === Pod Annotations
 
@@ -95,7 +95,7 @@ Each pod running on the node has a set of annotations. An annotation is simply a
 
 === Project Config Map
 
-Pods are grouped in what are called "projects" in Open Shift (Kubernetes calls these "namespaces" - if you see "namespace" in the Hawkular OpenShift Agent configuration settings and log messages, realize it is talking about an Open Shift project). Each project has what is called a "config map". Similiar to annotations, config maps contain name/value pairs. The values can be as simple as short strings or as complex as complete YAML or JSON blobs. Because config maps are on projects, they are associated with multiple pods (the pods within the project).
+Pods are grouped in what are called "projects" in OpenShift (Kubernetes calls these "namespaces" - if you see "namespace" in the Hawkular OpenShift Agent configuration settings and log messages, realize it is talking about an OpenShift project). Each project has what is called a "config map". Similiar to annotations, config maps contain name/value pairs. The values can be as simple as short strings or as complex as complete YAML or JSON blobs. Because config maps are on projects, they are associated with multiple pods (the pods within the project).
 
 Hawkular OpenShift Agent takes advantage of a project's config maps by using them as places to put YAML configuration for each monitored pod that belongs to the project. Each pod configuration is found in one config map. The config map that Hawkular OpenShift Agent will look for must be named the same as the value found in a pod's "hawkular-openshift-agent" annotation.
 
@@ -103,7 +103,7 @@ Hawkular OpenShift Agent takes advantage of a project's config maps by using the
 
 Each Hawkular OpenShift Agent config map must have one and only one entry which must be named "hawkular-openshift-agent". A config map entry is a YAML configuration. The Go representation of the YAML schema is found link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/src/github.com/hawkular/hawkular-openshift-agent/k8s/configmap_entry.go[here].
 
-So, in short, each Open Shift project (aka Kubernetes namespace) will have multiple config maps each with an entry named "hawkular-openshift-agent" where those entries contain YAML configuration containing information about what should be monitored on a pod. A named config map is referenced by a pod's annotation also called "hawkular-openshift-agent".
+So, in short, each OpenShift project (aka Kubernetes namespace) will have multiple config maps each with an entry named "hawkular-openshift-agent" where those entries contain YAML configuration containing information about what should be monitored on a pod. A named config map is referenced by a pod's annotation also called "hawkular-openshift-agent".
 
 Hawkular OpenShift Agent examines each pod on the node and by cross-referencing the pod annotations with the project config maps, Hawkular OpenShift Agent knows what it should manage.
 
@@ -165,7 +165,7 @@ oc annotate pods app-pod hawkular-openshift-agent-
 
 == Configuring External Endpoints To Monitor
 
-Hawkular OpenShift Agent is being developed primarily for running within an Open Shift environment. However, strictly speaking, it does not need to run in or monitor Open Shift. You can run Hawkular OpenShift Agent within your own VM, container, or bare metal and configure it to collect metrics from external endpoints you define in the main config.yaml configuration file.
+Hawkular OpenShift Agent is being developed primarily for running within an OpenShift environment. However, strictly speaking, it does not need to run in or monitor OpenShift. You can run Hawkular OpenShift Agent within your own VM, container, or bare metal and configure it to collect metrics from external endpoints you define in the main config.yaml configuration file.
 
 As an example, suppose you want Hawkular OpenShift Agent to scrape metrics from your Prometheus endpoint running at "http://yourcorp.com:9090/metrics" and store those metrics in Hawkular Metrics. You can add an `endpoints` section to your Hawkular OpenShift Agent's configuration file pointing to that endpoint which enables Hawkular OpenShift Agent to begin monitoring that endpoint as soon as Hawkular OpenShift Agent starts. The `endpoints` section of your YAML configuration file could look like this:
 
@@ -175,3 +175,195 @@ As an example, suppose you want Hawkular OpenShift Agent to scrape metrics from 
   url: "http://yourcorp.com:9090/metrics"
   collection_interval_secs: 300
 ----
+
+== Prometheus Endpoints
+
+A full Prometheus endpoint configuration can look like this:
+
+[source,yaml]
+----
+- type: "prometheus"
+  # If this is an endpoint within an OpenShift pod:
+  protocol: https
+  port: 9090
+  path: /metrics
+  # If this is an endpoint running outside of OpenShift:
+  #url: "https://yourcorp.com:9090/metrics"
+  credentials:
+    token: your-bearer-token-here
+    #username: your-user
+    #password: your-pass
+  collection_interval_secs: 300
+  metrics:
+  - name: go_memstats_last_gc_time_seconds
+    id: gc_time_secs
+  - name: go_memstats_frees_total
+----
+
+Some things to note about configuring your Prometheus endpoints:
+
+* Prometheus endpoints can serve metric data in either text or binary form. The agent automatically supports both - there is no special configuration needed. The agent will detect what form the data is in when the endpoint returns it and parses the data accordingly.
+* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a configmap), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
+* The agent supports either http or https endpoints. If the Prometheus endpoint is over the https protocol, you must configure
+the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Indentity section of the agent's configuration file:
+[source,yaml]
+----
+identity:
+  cert_file: /path/to/file.crt
+  private_key_file: /path/to/file.key
+----
+* The credentials are optional. If the Prometheus endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
+* You do not specify a metric's "type" since it will be determined directly from the Prometheus data itself.
+
+== Jolokia Endpoints
+
+A full Jolokia endpoint configuration can look like this:
+
+[source,yaml]
+----
+- type: "jolokia"
+  # If this is an endpoint within an OpenShift pod:
+  protocol: https
+  port: 8080
+  path: /jolokia
+  # If this is an endpoint running outside of OpenShift:
+  #url: "https://yourcorp.com:8080/jolokia"
+  credentials:
+    token: your-bearer-token-here
+    #username: your-user
+    #password: your-pass
+  collection_interval_secs: 300
+  metrics:
+  - name: java.lang:type=Threading#ThreadCount
+    type: counter
+    id:   VM Thread Count
+  - name: java.lang:type=Memory#HeapMemoryUsage#used
+    type: gauge
+    id:   VM Heap Memory Used
+----
+
+Some things to note about configuring your Jolokia endpoints:
+
+* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a configmap), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
+* The agent supports either http or https endpoints. If the Jolokia endpoint is over the https protocol, you must configure
+the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Indentity section of the agent's configuration file:
+[source,yaml]
+----
+identity:
+  cert_file: /path/to/file.crt
+  private_key_file: /path/to/file.key
+----
+* The credentials are optional. If the Jolokia endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
+* You must specify a metric's "type" as either "counter" or "gauge".
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
+* A metric "name" follows a strict format. First is the full MBean name (e.g. `java.lang:type=Threading`) followed by a hash (#) followed by the attribute that contains the metric data (e.g. `ThreadCount`). If the attribute is a composite attribute, then you must append a second hash followed by the composite attribute's subpath name which contains the actual metric value. For example, `java.lang:type=Memory#HeapMemoryUsage#used` will collect the `used` value of the composite attribute `HeapMemoryUsage` from the MBean `java.lang:type=Memory`.
+
+== Environment Variables
+
+Many of the agent's configuration settings can optionally be set via environment variables. If one of the environment variables below are set, they serve as the default value for its associated YAML configuration setting. The following are currently supported:
+
+[cols="1,1a"]
+|===
+|Environment Variable Name|YAML Setting
+
+|HAWKULAR_SERVER_URL
+|
+[source,yaml]
+----
+hawkular_server:
+  url: VALUE
+----
+
+|HAWKULAR_SERVER_TENANT
+|
+[source,yaml]
+----
+hawkular_server:
+  tenant: VALUE
+----
+
+|HAWKULAR_SERVER_USERNAME
+|
+[source,yaml]
+----
+hawkular_server:
+  credentials:
+    username: VALUE
+----
+
+|HAWKULAR_SERVER_PASSWORD
+|
+[source,yaml]
+----
+hawkular_server:
+  credentials:
+    password: VALUE
+----
+
+|HAWKULAR_SERVER_TOKEN
+|
+[source,yaml]
+----
+hawkular_server:
+  credentials:
+    token: VALUE
+----
+
+|HAWKULAR_OPENSHIFT_AGENT_CERT_FILE
+|
+[source,yaml]
+----
+identity:
+  cert_file: VALUE
+----
+
+|HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE
+|
+[source,yaml]
+----
+identity:
+  private_key_file: VALUE
+----
+
+|K8S_MASTER_URL
+|
+[source,yaml]
+----
+kubernetes:
+  master_url: VALUE
+----
+
+|K8S_POD_NAMESPACE
+|
+[source,yaml]
+----
+kubernetes:
+  pod_namespace: VALUE
+----
+
+|K8S_POD_NAME
+|
+[source,yaml]
+----
+kubernetes:
+  pod_name: VALUE
+----
+
+|K8S_TOKEN
+|
+[source,yaml]
+----
+kubernetes:
+  token: VALUE
+----
+
+|K8S_CA_CERT_FILE
+|
+[source,yaml]
+----
+kubernetes:
+  ca_cert_file: VALUE
+----
+|===
