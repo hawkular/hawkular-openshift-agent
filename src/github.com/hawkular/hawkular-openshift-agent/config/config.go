@@ -9,6 +9,7 @@ import (
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
@@ -63,12 +64,14 @@ type Kubernetes struct {
 }
 
 // Config defines the agent's full YAML configuration.
+// Tags specified here will be attached to all metrics this agent collects and stores.
 // USED FOR YAML
 type Config struct {
 	Identity        security.Identity ",omitempty"
 	Hawkular_Server Hawkular_Server
 	Collector       Collector            ",omitempty"
 	Kubernetes      Kubernetes           ",omitempty"
+	Tags            tags.Tags            ",omitempty"
 	Endpoints       []collector.Endpoint ",omitempty"
 }
 

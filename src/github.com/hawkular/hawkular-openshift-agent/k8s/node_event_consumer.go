@@ -149,20 +149,36 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		newEndpoint := &collector.Endpoint{
 			Url:                      url.String(),
 			Type:                     cmeEndpoint.Type,
-			Tenant:                   ne.Namespace,
+			Tenant:                   ne.Pod.Namespace,
 			Credentials:              cmeEndpoint.Credentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
-			Metrics:                  make([]collector.MonitoredMetric, len(cmeEndpoint.Metrics)),
+			Metrics:                  cmeEndpoint.Metrics,
+			Tags:                     cmeEndpoint.Tags,
 		}
 
-		for _, k8sMetric := range cmeEndpoint.Metrics {
-			mm := collector.MonitoredMetric{
-				Type: k8sMetric.Type,
-				Name: k8sMetric.Name,
-			}
-			newEndpoint.Metrics = append(newEndpoint.Metrics, mm)
+		// Replace all ${env} tokens in all metric tags and the endpoint tags
+		additionalEnv := &map[string]string{
+			"POD:nodename":  ne.Pod.NodeName,
+			"POD:namespace": ne.Pod.Namespace,
+			"POD:name":      ne.Pod.Name,
+			"POD:ipaddress": ne.Pod.IPAddress,
+			"POD:uid":       ne.Pod.Uid,
+		}
+		newEndpoint.Tags.ExpandTokens(true, additionalEnv)
+		for _, m := range newEndpoint.Metrics {
+			m.Tags.ExpandTokens(true, additionalEnv)
 		}
 
+		// if a pod has labels, add them to the endpoint tags so they go on all metrics
+		newEndpoint.Tags.AppendTags(ne.Pod.Labels)
+
+		// make sure the endpoint is configured correctly
+		if err := newEndpoint.ValidateEndpoint(); err != nil {
+			glog.Warningf("Will not start collecting for endpoint in pod [%v] - invalid endpoint. err=%v", ne.Pod.GetIdentifier(), err)
+			continue
+		}
+
+		// get an ID to be used for the collector
 		id, err := getIdForEndpoint(ne.Pod, cmeEndpoint)
 		if err != nil {
 			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot get ID. err=%v", ne.Pod.GetIdentifier(), err)

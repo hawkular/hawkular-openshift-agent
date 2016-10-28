@@ -1,5 +1,5 @@
 hash: 9cf7d7776c91815b858479ffe9402b7fe31ed08866ca61f7eb5c1f45225c5d08
-updated: 2016-10-19T16:37:53.998409112-04:00
+updated: 2016-10-31T09:47:17.806678452-04:00
 imports:
 - name: github.com/blang/semver
   version: 60ec3488bfea7cca02b021d106d9911120d25fe9
@@ -35,7 +35,7 @@ imports:
 - name: github.com/google/gofuzz
   version: fd52762d25a41827db7ef64c43756fd4b9f7e382
 - name: github.com/hawkular/hawkular-client-go
-  version: 4f5da7e951592445b686f95a0acdb0f860095d70
+  version: 72ea12c211dba93fb6cda6341a0fe3dd89db8a2b
   subpackages:
   - metrics
 - name: github.com/juju/ratelimit

@@ -10,24 +10,26 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/collector/impl"
 	"github.com/hawkular/hawkular-openshift-agent/config"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
-// MetricsCollectorManager is responsible for periodically collecting metrics from
-// many different endpoints.
+// MetricsCollectorManager is responsible for periodically collecting metrics from many different endpoints.
 type MetricsCollectorManager struct {
-	TickersLock *sync.Mutex
-	Tickers     map[string]*time.Ticker
-	Config      *config.Config
-	metricsChan chan []hmetrics.MetricHeader
+	TickersLock    *sync.Mutex
+	Tickers        map[string]*time.Ticker
+	Config         *config.Config
+	metricsChan    chan []hmetrics.MetricHeader
+	metricDefsChan chan []hmetrics.MetricDefinition
 }
 
-func NewMetricsCollectorManager(conf *config.Config, metricsChan chan []hmetrics.MetricHeader) *MetricsCollectorManager {
+func NewMetricsCollectorManager(conf *config.Config, metricsChan chan []hmetrics.MetricHeader, metricDefsChan chan []hmetrics.MetricDefinition) *MetricsCollectorManager {
 	mcm := &MetricsCollectorManager{
-		TickersLock: &sync.Mutex{},
-		Tickers:     make(map[string]*time.Ticker),
-		Config:      conf,
-		metricsChan: metricsChan,
+		TickersLock:    &sync.Mutex{},
+		Tickers:        make(map[string]*time.Ticker),
+		Config:         conf,
+		metricsChan:    metricsChan,
+		metricDefsChan: metricDefsChan,
 	}
 	log.Tracef("New metrics collector manager has been created. config=%v", conf)
 	return mcm
@@ -81,6 +83,9 @@ func (mcm *MetricsCollectorManager) StartCollecting(collector collector.MetricsC
 		interval = mcm.Config.Collector.Minimum_Collection_Interval_Secs
 	}
 
+	// before we start collecting metrics, we need to declare the metric definitions
+	mcm.declareMetricDefinitions(collector.GetEndpoint())
+
 	glog.Infof("START collecting metrics from [%v] every [%v]s", id, interval)
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	mcm.Tickers[id] = ticker
@@ -121,4 +126,29 @@ func (mcm *MetricsCollectorManager) StopCollectingAll() {
 		ticker.Stop()
 		delete(mcm.Tickers, id)
 	}
+}
+
+func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector.Endpoint) {
+
+	metricDefs := make([]hmetrics.MetricDefinition, len(endpoint.Metrics))
+
+	// For each metric in the endpoint, create a metric def for it;
+	// notice metric tags override endpoint tags which override global tags
+	for i, metric := range endpoint.Metrics {
+		allMetricTags := tags.Tags{}
+		allMetricTags.AppendTags(mcm.Config.Tags) // global tags are overridden by...
+		allMetricTags.AppendTags(endpoint.Tags)   // endpoint tags which are overridden by...
+		allMetricTags.AppendTags(metric.Tags)     // metric tags.
+
+		metricDefs[i] = hmetrics.MetricDefinition{
+			Tenant: endpoint.Tenant,
+			Type:   metric.Type,
+			ID:     metric.Id,
+			Tags:   map[string]string(allMetricTags),
+		}
+	}
+
+	log.Tracef("Metric definitions being declared for endpoint: %v", endpoint.String())
+
+	mcm.metricDefsChan <- metricDefs
 }

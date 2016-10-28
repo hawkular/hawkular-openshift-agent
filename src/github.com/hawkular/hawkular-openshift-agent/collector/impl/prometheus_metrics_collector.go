@@ -31,14 +31,10 @@ func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoi
 	}
 
 	// Put all metric names in a map so we can quickly look them up to know which metrics should be stored and which are to be ignored.
-	// Notice the value of the map is the metric ID - this will be the Hawkular Metrics ID when the metric is stored
+	// Notice the value of the map is the metric ID - this will be the Hawkular Metrics ID when the metric is stored.
 	mc.metricNameIdMap = make(map[string]string, len(endpoint.Metrics))
 	for _, m := range endpoint.Metrics {
-		id := m.Id
-		if id == "" {
-			id = m.Name
-		}
-		mc.metricNameIdMap[m.Name] = id
+		mc.metricNameIdMap[m.Name] = m.Id
 	}
 
 	return
@@ -58,7 +54,6 @@ func (pc *PrometheusMetricsCollector) GetEndpoint() *collector.Endpoint {
 // collects all metrics it find there, and returns those metrics.
 // CollectMetrics implements a method from MetricsCollector interface
 func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHeader, err error) {
-	log.Debugf("Told to collect Prometheus metrics from [%v]", pc.Endpoint.Url)
 
 	client, err := http.GetHttpClient(pc.Identity)
 	if err != nil {
@@ -68,6 +63,14 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 
 	url := pc.Endpoint.Url
 	now := time.Now()
+
+	if len(pc.Endpoint.Metrics) == 0 {
+		log.Debugf("There are no metrics defined for Prometheus endpoint [%v]", url)
+		metrics = make([]hmetrics.MetricHeader, 0)
+		return
+	}
+
+	log.Debugf("Told to collect [%v] Prometheus metrics from [%v]", len(pc.Endpoint.Metrics), url)
 
 	metricFamilies, err := prometheus.Scrape(url, &pc.Endpoint.Credentials, client)
 	if err != nil {
@@ -142,7 +145,7 @@ func (pc *PrometheusMetricsCollector) convertGauge(promMetricFamily *prom.Metric
 		metric.Data[i] = hmetrics.Datapoint{
 			Timestamp: now,
 			Value:     g.GetValue(),
-			Tags:      pc.convertLabelsMap(m.GetLabel()),
+			Tags:      pc.prepareTagsMap(m.GetLabel()),
 		}
 	}
 
@@ -162,17 +165,21 @@ func (pc *PrometheusMetricsCollector) convertCounter(promMetricFamily *prom.Metr
 		metric.Data[i] = hmetrics.Datapoint{
 			Timestamp: now,
 			Value:     g.GetValue(),
-			Tags:      pc.convertLabelsMap(m.GetLabel()),
+			Tags:      pc.prepareTagsMap(m.GetLabel()),
 		}
 	}
 
 	return
 }
 
-func (pc *PrometheusMetricsCollector) convertLabelsMap(promLabels []*prom.LabelPair) (hmetricsLabels map[string]string) {
-	hmetricsLabels = make(map[string]string, len(promLabels))
+func (pc *PrometheusMetricsCollector) prepareTagsMap(promLabels []*prom.LabelPair) (hmetricsTags map[string]string) {
+	totalTags := len(promLabels)
+	hmetricsTags = make(map[string]string, totalTags)
+
+	// all Prometheus labels are added as tags to the metric datapoint
 	for _, l := range promLabels {
-		hmetricsLabels[l.GetName()] = l.GetValue()
+		hmetricsTags[l.GetName()] = l.GetValue()
 	}
+
 	return
 }

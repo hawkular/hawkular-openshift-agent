@@ -8,6 +8,17 @@ notifications:
     channels:
     - chat.freenode.net#hawkular
 
+# Workaround issue https://github.com/Masterminds/glide/issues/639
+# Run this before_install and do not run "make install_glide" during the install.
+before_install:
+  - GLIDE_OS_ARCH=`go env GOHOSTOS`-`go env GOHOSTARCH`
+  - GLIDE_TAG=$(curl -s https://glide.sh/version)
+  - GLIDE_LATEST_RELEASE_URL="https://github.com/Masterminds/glide/releases/download/${GLIDE_TAG}/glide-${GLIDE_TAG}-${GLIDE_OS_ARCH}.tar.gz"
+  - wget ${GLIDE_LATEST_RELEASE_URL} -O /tmp/glide.tar.gz
+  - mkdir /tmp/glide
+  - tar --directory=/tmp/glide -xvf /tmp/glide.tar.gz
+  - export PATH=$PATH:/tmp/glide/${GLIDE_OS_ARCH}
+
 # Our source code layout is the full GOPATH location.
 # This is different than how Travis expects so let's tell Travis
 # to change its environment to point to the proper GOPATH.
@@ -17,7 +28,7 @@ install:
   - export GOPATH=${TRAVIS_BUILD_DIR}
   - export PATH=${GOPATH}/bin:${PATH}
   - go env
-  - make install_glide
+#  - make install_glide
   - make install_deps
 
 script: make test

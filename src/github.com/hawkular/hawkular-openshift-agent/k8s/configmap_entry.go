@@ -9,6 +9,7 @@ import (
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
@@ -31,6 +32,7 @@ type K8SEndpoint struct {
 	Path                     string
 	Credentials              security.Credentials
 	Collection_Interval_Secs int
+	Tags                     tags.Tags
 	Metrics                  []collector.MonitoredMetric
 }
 
@@ -46,7 +48,7 @@ func (e K8SEndpoint) GetUrl(host string) (u *url.URL, err error) {
 	if e.Path[0] == '/' {
 		leadingSlash = ""
 	}
-	u, err = url.Parse(fmt.Sprintf("%v://%v:%v%v%v)", e.Protocol, host, e.Port, leadingSlash, e.Path))
+	u, err = url.Parse(fmt.Sprintf("%v://%v:%v%v%v", e.Protocol, host, e.Port, leadingSlash, e.Path))
 	return
 }
 
