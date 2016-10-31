@@ -62,6 +62,16 @@ func main() {
 	}
 	log.Tracef("Hawkular OpenShift Agent Configuration:\n%s", Configuration)
 
+	// replace all ${env} tokens in global tags, all endpoint tags, and all endpoint metric tags
+	Configuration.Tags.ExpandTokens(true, nil)
+	for _, e := range Configuration.Endpoints {
+		e.Tags.ExpandTokens(true, nil)
+		for _, m := range e.Metrics {
+			m.Tags.ExpandTokens(true, nil)
+		}
+	}
+	log.Tracef("Hawkular OpenShift Agent Configuration with tokens expanded in tags:\n%s", Configuration)
+
 	if err := validateConfig(); err != nil {
 		glog.Fatal(err)
 	}
@@ -74,7 +84,8 @@ func main() {
 	storageManager.StartStoringMetrics()
 
 	// prepare the collector manager and start monitoring the pre-configured endpoints
-	collectorManager := manager.NewMetricsCollectorManager(Configuration, storageManager.MetricsChannel)
+	collectorManager := manager.NewMetricsCollectorManager(Configuration,
+		storageManager.MetricsChannel, storageManager.MetricDefinitionsChannel)
 	collectorManager.StartCollectingEndpoints(Configuration.Endpoints)
 
 	// Start monitoring the node, if any
@@ -116,6 +127,12 @@ func validateConfig() error {
 	err := Configuration.Hawkular_Server.Credentials.ValidateCredentials()
 	if err != nil {
 		return fmt.Errorf("Hawkular Server configuration is invalid: %v", err)
+	}
+
+	for _, e := range Configuration.Endpoints {
+		if err := e.ValidateEndpoint(); err != nil {
+			return fmt.Errorf("Hawkular Server configuration is invalid: %v", err)
+		}
 	}
 
 	return nil

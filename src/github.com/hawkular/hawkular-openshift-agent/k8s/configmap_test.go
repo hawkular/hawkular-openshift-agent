@@ -6,6 +6,7 @@ import (
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 )
 
 func TestYamlText(t *testing.T) {
@@ -21,6 +22,9 @@ func TestYamlText(t *testing.T) {
 				Id:   "metric1id",
 				Type: hmetrics.Gauge,
 				Name: "metric1",
+				Tags: tags.Tags{
+					"tag1": "tag1value",
+				},
 			},
 			collector.MonitoredMetric{
 				Id:   "metric2id",
@@ -62,10 +66,18 @@ endpoints:
   port: 8888
   path: /the/path
   collection_interval_secs: 12345
+  tags:
+    endpointtagname1: endpointtag1
+    endpointtagname2: endpointtag2
+    endpointtagname3: endpointtag3
   metrics:
   - id: metric1id
     name: metric1
     type: gauge
+    tags:
+      tagname1: tagvalue1
+      tagname2: ${POD:name}
+      tagname3: $HOSTNAME
   - id: metric2id
     name: metric2
     type: counter
@@ -101,6 +113,24 @@ endpoints:
 	}
 	if cme.Endpoints[0].Metrics[0].Type != hmetrics.Gauge {
 		t.Fatalf("Endpoint.Metrics[0] type is wrong")
+	}
+	if cme.Endpoints[0].Tags["endpointtagname1"] != "endpointtag1" {
+		t.Fatalf("Endpoint tag 1 is wrong")
+	}
+	if cme.Endpoints[0].Tags["endpointtagname2"] != "endpointtag2" {
+		t.Fatalf("Endpoint tag 2 is wrong")
+	}
+	if cme.Endpoints[0].Tags["endpointtagname3"] != "endpointtag3" {
+		t.Fatalf("Endpoint tag 3 is wrong")
+	}
+	if cme.Endpoints[0].Metrics[0].Tags["tagname1"] != "tagvalue1" {
+		t.Fatalf("Endpoint.Metrics[0] tag 1 is wrong")
+	}
+	if cme.Endpoints[0].Metrics[0].Tags["tagname2"] != "${POD:name}" {
+		t.Fatalf("Endpoint.Metrics[0] tag 2 is wrong")
+	}
+	if cme.Endpoints[0].Metrics[0].Tags["tagname3"] != "$HOSTNAME" {
+		t.Fatalf("Endpoint.Metrics[0] tag 3 is wrong")
 	}
 
 	yaml2, err := MarshalConfigMapEntry(cme)

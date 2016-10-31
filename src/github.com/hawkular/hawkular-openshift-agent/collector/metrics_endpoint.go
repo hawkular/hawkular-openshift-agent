@@ -1,9 +1,12 @@
 package collector
 
 import (
+	"fmt"
+
 	"github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 )
 
 type EndpointType string
@@ -18,17 +21,20 @@ const (
 // be identical to the actual metric name. The "Name" is the name of the metric as it is
 // found in the endpoint. This is the true name of the metric as it is exposed from the system
 // from where it came from.
+// Tags specified here will be attached to the metric when stored to Hawkular Metrics.
 // USED FOR YAML
 type MonitoredMetric struct {
-	Id   string
+	Id   string ",omitempty"
 	Name string
 	Type metrics.MetricType
+	Tags tags.Tags ",omitempty"
 }
 
 // Endpoint provides information about how to connect to a particular endpoint in order
 // to collect metrics from it.
 // If tenant is not supplied, the global tenant ID defined
 // in the global agent configuration file should be used.
+// Tags specified here will be attached to all metrics coming from this endpoint.
 // USED FOR YAML (see agent config file)
 type Endpoint struct {
 	Type                     EndpointType
@@ -36,5 +42,56 @@ type Endpoint struct {
 	Credentials              security.Credentials
 	Collection_Interval_Secs int
 	Tenant                   string
+	Tags                     tags.Tags ",omitempty"
 	Metrics                  []MonitoredMetric
+}
+
+func (m *MonitoredMetric) String() string {
+	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], tags=[%v]", m.Id, m.Name, m.Type, m.Tags)
+}
+
+func (e *Endpoint) String() string {
+	if e == nil {
+		return ""
+	}
+	metricStrings := make([]string, len(e.Metrics))
+	for i, m := range e.Metrics {
+		metricStrings[i] = m.String()
+	}
+	return fmt.Sprintf("Endpoint: type=[%v], url=[%v], coll_int=[%v], tenant=[%v], tags=[%v], metrics=[%v]",
+		e.Type, e.Url, e.Collection_Interval_Secs, e.Tenant, e.Tags, metricStrings)
+}
+
+// ValidateEndpoint will check the endpoint configuration for correctness.
+// If things are missing but can be corrected with defaults, that will be done.
+// If something is wrong that cannot be corrected, a non-nil error is returned.
+func (e *Endpoint) ValidateEndpoint() error {
+	if err := e.Credentials.ValidateCredentials(); err != nil {
+		return err
+	}
+
+	if e.Url == "" {
+		return fmt.Errorf("Endpoint is missing URL")
+	}
+
+	if e.Type == "" {
+		return fmt.Errorf("Endpoint [%v] is missing a valid type", e.Url)
+	}
+
+	for i, m := range e.Metrics {
+		if m.Name == "" {
+			return fmt.Errorf("Endpoint [%v] has a metric without a name", e.Url)
+		}
+
+		if m.Type == "" {
+			return fmt.Errorf("Endpoint [%v] metric [%s] is missing its type", e.Url, m.Name)
+		}
+
+		// if there is no metric ID given, just use the metric name itself
+		if m.Id == "" {
+			e.Metrics[i].Id = m.Name
+		}
+	}
+
+	return nil
 }

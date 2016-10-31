@@ -111,7 +111,7 @@ Hawkular OpenShift Agent examines each pod on the node and by cross-referencing 
 
 Suppose you have a node running a project called "my-project" that consists of 3 pods (named "web-pod", "app-pod", and "db-pod"). Suppose you do not want Hawkular OpenShift Agent to monitor the "db-pod" but you do want it to monitor the other two pods in your project.
 
-First create two config maps on your "my-project" that each contain a config map entry that indicate what you want to monitor on your two pods. One way you can do this is create a YAML file that represents your config maps and via the "oc" Open Shift command line tool create the config maps. A sample YAML configuration for the web-pod config map could look like this (the schema of this YAML will change in the future, this is just an example).
+First create two config maps on your "my-project" that each contain a config map entry that indicate what you want to monitor on your two pods. One way you can do this is create a YAML file that represents your config maps and via the "oc" OpenShift command line tool create the config maps. A sample YAML configuration for the web-pod config map could look like this (the schema of this YAML will change in the future, this is just an example).
 
 [source,yaml]
 ----
@@ -197,7 +197,9 @@ A full Prometheus endpoint configuration can look like this:
   metrics:
   - name: go_memstats_last_gc_time_seconds
     id: gc_time_secs
+    type: gauge
   - name: go_memstats_frees_total
+    type: counter
 ----
 
 Some things to note about configuring your Prometheus endpoints:
@@ -214,7 +216,6 @@ identity:
 ----
 * The credentials are optional. If the Prometheus endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
-* You do not specify a metric's "type" since it will be determined directly from the Prometheus data itself.
 
 == Jolokia Endpoints
 
@@ -367,3 +368,79 @@ kubernetes:
   ca_cert_file: VALUE
 ----
 |===
+
+== Metric Tags
+
+Metric data can be tagged with additional metadata called _tags_. A metric tag is a simple name/value pair. Tagging metrics allows you to further describe the metric and allows you to query for metric data based on tag queries. For more information on tags and querying tagged metric data, see the Hawkular-Metrics documentation.
+
+Hawkular OpenShift Agent can be configured to attach custom tags to the metrics it collects. There are three places where you can define custom tags in Hawkular OpenShift Agent:
+
+* In the global configuration of the agent (all tags defined here will be attached to all metrics stored by the agent)
+* In an endpoint configuration (all tags defined here will be attached to all metrics collected from that endpoint)
+* In a metric configuration (all tags defined here will only be attached to the metric)
+
+To define global tags, you would add a top-level `tags` section in the global agent configuration file. The following configuration snippet will tell the agent to attach the tags "my-tag" (with value "my-tag-value") and "another-tag" (with value "another-tag-value") to each and every metric the agent collects.
+
+[source,yaml]
+----
+tags:
+- my-tag: my-tag-value
+- another-tag: another-tag-value
+----
+
+To define endpoint tags (that is, tags that will be attached to every metric collected from the endpoint), you would add a `tags` section within the endpoint configuration. The following configuration snippet will tell the agent to attach the tags "my-endpoint-tag" and "my-other-endpoint-tag" to every metric that is collected from this specific Jolokia endpoint:
+
+[source,yaml]
+----
+endpoints:
+- type: jolokia
+  tags:
+    my-endpoint-tag: the-endpoint-tag-value
+    my-other-endpoint-tag: the-endpoint-tag-value
+----
+
+To define tags on individual metrics, you would add a `tags` section within a metric configuration. The following configuration snippet will tell the agent to attach the tags "my-metric-tag" and "my-other-metric-tag" to the metric named "java.lang.type=Threading#ThreadCount" that is collected from this specific Jolokia endpoint:
+
+[source,yaml]
+----
+endpoints:
+- type: jolokia
+  metrics:
+  - name: java.lang.type=Threading#ThreadCount
+    type: gauge
+    tags:
+      my-metric-tag: the-metric-tag-value
+      my-other-metric-tag: the-metric-tag-value
+----
+
+Tag values can be defined with token expressions in the form of `${var}` or `$var` where _var_ is either an agent environment variable name or (if the tag definition is found in an OpenShift configmap entry) one of the following:
+
+[cols="1,1a"]
+|===
+|Token Name|Description
+
+|POD:nodename
+|The name of the node where the metric was collected from.
+
+|POD:namespace
+|The namespace of the pod where the metric was collected from.
+
+|POD:name
+|The name of the pod where the metric was collected from.
+
+|POD:ipaddress
+|The IP address of the pod where the metric was collected from.
+
+|POD:uid
+|The UID of the pod where the metric was collected from.
+|===
+
+For example:
+
+[source,yaml]
+----
+tags:
+  my-user-tag: my-agent-user=$USER
+  my-pod-name: ${POD:name}
+  some-env-tag: ${SOME_ENV_VAR}
+----

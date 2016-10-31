@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 )
 
 func TestEnvVar(t *testing.T) {
@@ -126,6 +128,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 func TestLoadSave(t *testing.T) {
 	testConf := Config{
+		Identity: security.Identity{
+			Cert_File:        "/my/cert",
+			Private_Key_File: "/my/key",
+		},
 		Collector: Collector{
 			Minimum_Collection_Interval_Secs: 12345,
 		},
@@ -135,6 +141,10 @@ func TestLoadSave(t *testing.T) {
 		Kubernetes: Kubernetes{
 			Pod_Namespace: "TestLoadSave namespace",
 			Pod_Name:      "TestLoadSave name",
+		},
+		Tags: tags.Tags{
+			"tag1": "tagvalue1",
+			"tag2": "tagvalue2",
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -163,6 +173,14 @@ func TestLoadSave(t *testing.T) {
 		t.Errorf("Failed to load from file: %v", err)
 	}
 
+	t.Logf("Config from file\n%v", conf)
+
+	if conf.Identity.Cert_File != "/my/cert" {
+		t.Errorf("Failed to unmarshal identity:\n%v", conf)
+	}
+	if conf.Identity.Private_Key_File != "/my/key" {
+		t.Errorf("Failed to unmarshal identity:\n%v", conf)
+	}
 	if conf.Collector.Minimum_Collection_Interval_Secs != 12345 {
 		t.Errorf("Failed to unmarshal collection interval:\n%v", conf)
 	}
@@ -180,6 +198,12 @@ func TestLoadSave(t *testing.T) {
 	}
 	if conf.Endpoints[1].Collection_Interval_Secs != 234 {
 		t.Error("Second endpoint is not correct")
+	}
+	if conf.Tags["tag1"] != "tagvalue1" {
+		t.Error("Tag1 is not correct")
+	}
+	if conf.Tags["tag2"] != "tagvalue2" {
+		t.Error("Tag2 is not correct")
 	}
 
 }

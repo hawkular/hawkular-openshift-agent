@@ -91,14 +91,9 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 				Value:     resp.GetValueAsFloat(),
 			}
 
-			id := jc.Endpoint.Metrics[i].Id
-			if id == "" {
-				id = jc.Endpoint.Metrics[i].Name
-			}
-
 			metric := hmetrics.MetricHeader{
 				Type:   jc.Endpoint.Metrics[i].Type,
-				ID:     id,
+				ID:     jc.Endpoint.Metrics[i].Id,
 				Tenant: jc.Endpoint.Tenant,
 				Data:   data,
 			}

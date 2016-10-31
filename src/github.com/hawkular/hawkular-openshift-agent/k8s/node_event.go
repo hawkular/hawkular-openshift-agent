@@ -16,7 +16,7 @@ const (
 
 // NodeEvent indicates when something changed with the node (either a pod or config map changed)
 type NodeEvent struct {
-	Trigger
-	*Pod
-	*ConfigMapEntry
+	Trigger        Trigger
+	Pod            *Pod
+	ConfigMapEntry *ConfigMapEntry
 }
