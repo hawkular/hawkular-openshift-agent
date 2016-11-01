@@ -46,15 +46,19 @@ func (nec *NodeEventConsumer) Start() {
 		return
 	}
 
-	nodeName, err := GetNodeName(conf, client)
+	k8sNode, err := GetLocalNode(conf, client)
 	if err != nil {
 		glog.Error(err)
 		return
 	}
 
+	node := Node{
+		Name: k8sNode.GetName(),
+		UID:  string(k8sNode.GetUID()),
+	}
 	nec.CollectorIds = make(map[string][]string)
 
-	nec.Discovery = NewDiscovery(conf, client, nodeName)
+	nec.Discovery = NewDiscovery(conf, client, node)
 	nec.Discovery.start()
 	go nec.consumeNodeEvents()
 }
@@ -137,7 +141,7 @@ func (nec *NodeEventConsumer) consumeNodeEvents() {
 // need to start getting their metrics collected.
 func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 	for _, cmeEndpoint := range ne.ConfigMapEntry.Endpoints {
-		url, err := cmeEndpoint.GetUrl(ne.Pod.IPAddress)
+		url, err := cmeEndpoint.GetUrl(ne.Pod.PodIP)
 		if err != nil {
 			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot build URL. err=%v", ne.Pod.GetIdentifier(), err)
 			continue
@@ -158,11 +162,12 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 
 		// Replace all ${env} tokens in all metric tags and the endpoint tags
 		additionalEnv := &map[string]string{
-			"POD:nodename":  ne.Pod.NodeName,
+			"POD:nodename":  ne.Pod.Node.Name,
+			"POD:nodeuid":   ne.Pod.Node.UID,
 			"POD:namespace": ne.Pod.Namespace,
 			"POD:name":      ne.Pod.Name,
-			"POD:ipaddress": ne.Pod.IPAddress,
-			"POD:uid":       ne.Pod.Uid,
+			"POD:ip":        ne.Pod.PodIP,
+			"POD:uid":       ne.Pod.UID,
 		}
 		newEndpoint.Tags.ExpandTokens(true, additionalEnv)
 		for _, m := range newEndpoint.Metrics {
@@ -227,7 +232,7 @@ func (nec *NodeEventConsumer) stopCollecting(ne *NodeEvent) {
 }
 
 func getIdForEndpoint(p *Pod, e K8SEndpoint) (id string, err error) {
-	url, err := e.GetUrl(p.IPAddress)
+	url, err := e.GetUrl(p.PodIP)
 	if err != nil {
 		return
 	}
