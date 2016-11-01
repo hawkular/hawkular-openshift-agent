@@ -10,9 +10,12 @@ func Test(t *testing.T) {
 			Name: "node-name",
 			UID:  "abcxyz",
 		},
-		Name:      "pod1-name",
-		Namespace: "pod1-namespace",
-		UID:       "pod1-uuid",
+		Namespace: Namespace{
+			Name: "pod1-namespace",
+			UID:  "123abc",
+		},
+		Name: "pod1-name",
+		UID:  "pod1-uuid",
 	}
 
 	p2 := &Pod{
@@ -20,9 +23,12 @@ func Test(t *testing.T) {
 			Name: "node-name",
 			UID:  "abcxyz",
 		},
-		Name:      "pod2-name",
-		Namespace: "pod2-namespace",
-		UID:       "pod2-uuid",
+		Namespace: Namespace{
+			Name: "pod2-namespace",
+			UID:  "321cba",
+		},
+		Name: "pod2-name",
+		UID:  "pod2-uuid",
 	}
 
 	pi := NewPodInventory(Node{

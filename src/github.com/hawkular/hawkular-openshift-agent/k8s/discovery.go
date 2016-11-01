@@ -60,7 +60,7 @@ func (d *Discovery) sendNodeEventDueToChangedPod(pod *Pod, trigger Trigger) {
 
 	configMapName, hasAnno := pod.Annotations[HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME]
 	if hasAnno == true {
-		cm, ok := d.Inventory.ConfigMaps.GetEntry(pod.Namespace, configMapName)
+		cm, ok := d.Inventory.ConfigMaps.GetEntry(pod.Namespace.Name, configMapName)
 		if ok == true {
 			cme = cm.Entry
 			log.Debugf("Changed pod [%v] with annotation [%v=%v] has a config map",
@@ -86,7 +86,7 @@ func (d *Discovery) sendNodeEventDueToChangedPod(pod *Pod, trigger Trigger) {
 func (d *Discovery) sendNodeEventDueToChangedConfigMap(namespace string, name string, cm *ConfigMap, trigger Trigger) {
 	d.Inventory.Pods.ForEachPod(func(p *Pod) bool {
 		// if the pod isn't in the namespace whose config map changed, then skip it and go on to the next
-		if p.Namespace != namespace {
+		if p.Namespace.Name != namespace {
 			return true
 		}
 
@@ -134,9 +134,20 @@ func (d *Discovery) watchPods() {
 	go func() {
 		for event := range watcher.ResultChan() {
 			podFromEvent := event.Object.(*v1.Pod)
+			namespaceFromEvent, err := d.Client.Namespaces().Get(podFromEvent.GetNamespace())
+			var namespaceUID string
+			if err != nil {
+				glog.Warning("Failed to obtain UID of namespace [%v]. err=%v", podFromEvent.GetNamespace(), err)
+			} else {
+				namespaceUID = string(namespaceFromEvent.GetUID())
+			}
+
 			pod := &Pod{
-				Node:        d.Inventory.Node,
-				Namespace:   podFromEvent.GetNamespace(),
+				Node: d.Inventory.Node,
+				Namespace: Namespace{
+					Name: podFromEvent.GetNamespace(),
+					UID:  namespaceUID,
+				},
 				Name:        podFromEvent.GetName(),
 				UID:         string(podFromEvent.GetUID()),
 				PodIP:       podFromEvent.Status.PodIP,
@@ -153,7 +164,7 @@ func (d *Discovery) watchPods() {
 					// tell the channel about the change
 					d.sendNodeEventDueToChangedPod(pod, POD_ADDED)
 
-					d.watchConfigMap(pod.Namespace)
+					d.watchConfigMap(pod.Namespace.Name)
 				}
 			case watch.Deleted:
 				{
@@ -166,14 +177,14 @@ func (d *Discovery) watchPods() {
 					// if there are no more pods in the namespace, no more need to keep watching for configmaps
 					stopWatcher := true
 					d.Inventory.Pods.ForEachPod(func(p *Pod) bool {
-						if pod.Namespace == p.Namespace {
+						if pod.Namespace.Name == p.Namespace.Name {
 							stopWatcher = false
 						}
 						return stopWatcher // if we know already we should not stop the watcher, we can abort the iteration now, too
 					})
 					if stopWatcher == true {
-						log.Debugf("No more pods in namespace [%v], unwatching configmaps", pod.Namespace)
-						d.unwatchConfigMap(pod.Namespace)
+						log.Debugf("No more pods in namespace [%v], unwatching configmaps", pod.Namespace.Name)
+						d.unwatchConfigMap(pod.Namespace.Name)
 					}
 				}
 			case watch.Modified:
@@ -184,7 +195,7 @@ func (d *Discovery) watchPods() {
 					// tell the channel about the change
 					d.sendNodeEventDueToChangedPod(pod, POD_MODIFIED)
 
-					d.watchConfigMap(pod.Namespace) // in case for some reason we aren't watching it, watch it now
+					d.watchConfigMap(pod.Namespace.Name) // in case for some reason we aren't watching it, watch it now
 				}
 			default:
 				{

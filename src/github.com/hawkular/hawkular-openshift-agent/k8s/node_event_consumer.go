@@ -153,7 +153,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		newEndpoint := &collector.Endpoint{
 			Url:                      url.String(),
 			Type:                     cmeEndpoint.Type,
-			Tenant:                   ne.Pod.Namespace,
+			Tenant:                   ne.Pod.Namespace.Name,
 			Credentials:              cmeEndpoint.Credentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
 			Metrics:                  cmeEndpoint.Metrics,
@@ -162,12 +162,13 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 
 		// Replace all ${env} tokens in all metric tags and the endpoint tags
 		additionalEnv := &map[string]string{
-			"POD:nodename":  ne.Pod.Node.Name,
-			"POD:nodeuid":   ne.Pod.Node.UID,
-			"POD:namespace": ne.Pod.Namespace,
-			"POD:name":      ne.Pod.Name,
-			"POD:ip":        ne.Pod.PodIP,
-			"POD:uid":       ne.Pod.UID,
+			"POD:node_name":      ne.Pod.Node.Name,
+			"POD:node_uid":       ne.Pod.Node.UID,
+			"POD:namespace_name": ne.Pod.Namespace.Name,
+			"POD:namespace_uid":  ne.Pod.Namespace.UID,
+			"POD:name":           ne.Pod.Name,
+			"POD:ip":             ne.Pod.PodIP,
+			"POD:uid":            ne.Pod.UID,
 		}
 		newEndpoint.Tags.ExpandTokens(true, additionalEnv)
 		for _, m := range newEndpoint.Metrics {

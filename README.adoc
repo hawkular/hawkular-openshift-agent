@@ -419,14 +419,17 @@ Tag values can be defined with token expressions in the form of `${var}` or `$va
 |===
 |Token Name|Description
 
-|POD:nodename
+|POD:node_name
 |The name of the node where the metric was collected from.
 
-|POD:nodeuid
+|POD:node_uid
 |The unique ID of the node where the metric was collected from.
 
-|POD:namespace
-|The namespace of the pod where the metric was collected from.
+|POD:namespace_name
+|The name of the namespace of the pod where the metric was collected from.
+
+|POD:namespace_uid
+|The unique ID of the namespace of the pod where the metric was collected from.
 
 |POD:name
 |The name of the pod where the metric was collected from.
