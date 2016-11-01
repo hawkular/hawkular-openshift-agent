@@ -3,15 +3,15 @@ package k8s
 import ()
 
 type Inventory struct {
-	NodeName   string
+	Node       Node
 	Pods       PodInventory
 	ConfigMaps *ConfigMaps
 }
 
-func NewInventory(nodeName string) *Inventory {
+func NewInventory(node Node) *Inventory {
 	i := Inventory{
-		NodeName:   nodeName,
-		Pods:       NewPodInventory(nodeName),
+		Node:       node,
+		Pods:       NewPodInventory(node),
 		ConfigMaps: NewConfigMaps(),
 	}
 

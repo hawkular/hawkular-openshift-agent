@@ -6,20 +6,29 @@ import (
 
 func Test(t *testing.T) {
 	p1 := &Pod{
-		NodeName:  "node-name",
+		Node: Node{
+			Name: "node-name",
+			UID:  "abcxyz",
+		},
 		Name:      "pod1-name",
 		Namespace: "pod1-namespace",
-		Uid:       "pod1-uuid",
+		UID:       "pod1-uuid",
 	}
 
 	p2 := &Pod{
-		NodeName:  "node-name",
+		Node: Node{
+			Name: "node-name",
+			UID:  "abcxyz",
+		},
 		Name:      "pod2-name",
 		Namespace: "pod2-namespace",
-		Uid:       "pod2-uuid",
+		UID:       "pod2-uuid",
 	}
 
-	pi := NewPodInventory("pod_inventory_test")
+	pi := NewPodInventory(Node{
+		Name: "node-name",
+		UID:  "abcxyz",
+	})
 
 	if len(pi.DiscoveredPods) != 0 {
 		t.Fatalf("Should have 0 pods: %v", pi)
@@ -103,10 +112,10 @@ func Test(t *testing.T) {
 	anno["one"] = "1"
 
 	p2modified := &Pod{
-		NodeName:    p2.NodeName,
+		Node:        p2.Node,
 		Name:        p2.Name,
 		Namespace:   p2.Namespace,
-		Uid:         p2.Uid,
+		UID:         p2.UID,
 		Annotations: anno,
 	}
 

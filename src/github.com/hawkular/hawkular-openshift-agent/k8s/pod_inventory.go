@@ -5,13 +5,13 @@ import (
 )
 
 type PodInventory struct {
-	NodeName       string
+	Node           Node
 	DiscoveredPods map[string]*Pod // key is a pod identifier
 }
 
-func NewPodInventory(nodeName string) PodInventory {
+func NewPodInventory(node Node) PodInventory {
 	return PodInventory{
-		NodeName:       nodeName,
+		Node:           node,
 		DiscoveredPods: make(map[string]*Pod),
 	}
 }
@@ -43,5 +43,5 @@ func (pi *PodInventory) ForEachPod(f func(*Pod) bool) {
 }
 
 func (pi *PodInventory) String() string {
-	return fmt.Sprintf("PodInventory: node-name=[%v], pods=[%v]", pi.NodeName, pi.DiscoveredPods)
+	return fmt.Sprintf("PodInventory: node-name=[%v], pods=[%v]", pi.Node.Name, pi.DiscoveredPods)
 }

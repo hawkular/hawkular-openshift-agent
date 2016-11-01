@@ -29,12 +29,12 @@ type Discovery struct {
 	Inventory         *Inventory
 }
 
-func NewDiscovery(conf *config.Config, client *core.CoreClient, nodeName string) *Discovery {
+func NewDiscovery(conf *config.Config, client *core.CoreClient, node Node) *Discovery {
 	d := Discovery{
 		AgentConfig:       conf,
 		Client:            client,
 		ConfigMapWatchers: make(map[string]watch.Interface),
-		Inventory:         NewInventory(nodeName),
+		Inventory:         NewInventory(node),
 	}
 	return &d
 }
@@ -117,7 +117,7 @@ func (d *Discovery) sendNodeEventDueToChangedConfigMap(namespace string, name st
 
 func (d *Discovery) watchPods() {
 	// we only want to listen to pods on our own node
-	fieldSelector := fields.OneTermEqualSelector("spec.nodeName", d.Inventory.NodeName)
+	fieldSelector := fields.OneTermEqualSelector("spec.nodeName", d.Inventory.Node.Name)
 
 	listOptions := api.ListOptions{
 		Watch:         true,
@@ -135,11 +135,11 @@ func (d *Discovery) watchPods() {
 		for event := range watcher.ResultChan() {
 			podFromEvent := event.Object.(*v1.Pod)
 			pod := &Pod{
-				NodeName:    d.Inventory.NodeName,
+				Node:        d.Inventory.Node,
 				Namespace:   podFromEvent.GetNamespace(),
 				Name:        podFromEvent.GetName(),
-				Uid:         string(podFromEvent.GetUID()),
-				IPAddress:   podFromEvent.Status.PodIP,
+				UID:         string(podFromEvent.GetUID()),
+				PodIP:       podFromEvent.Status.PodIP,
 				Labels:      podFromEvent.GetLabels(),
 				Annotations: podFromEvent.GetAnnotations(),
 			}
