@@ -151,6 +151,7 @@ func (d *Discovery) watchPods() {
 				Name:        podFromEvent.GetName(),
 				UID:         string(podFromEvent.GetUID()),
 				PodIP:       podFromEvent.Status.PodIP,
+				HostIP:      podFromEvent.Status.HostIP,
 				Labels:      podFromEvent.GetLabels(),
 				Annotations: podFromEvent.GetAnnotations(),
 			}

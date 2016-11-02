@@ -119,8 +119,8 @@ func Test(t *testing.T) {
 
 	p2modified := &Pod{
 		Node:        p2.Node,
-		Name:        p2.Name,
 		Namespace:   p2.Namespace,
+		Name:        p2.Name,
 		UID:         p2.UID,
 		Annotations: anno,
 	}
