@@ -168,6 +168,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			"POD:namespace_uid":  ne.Pod.Namespace.UID,
 			"POD:name":           ne.Pod.Name,
 			"POD:ip":             ne.Pod.PodIP,
+			"POD:host_ip":        ne.Pod.HostIP,
 			"POD:uid":            ne.Pod.UID,
 		}
 		newEndpoint.Tags.ExpandTokens(true, additionalEnv)

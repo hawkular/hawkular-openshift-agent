@@ -10,6 +10,7 @@ type Pod struct {
 	Name        string
 	UID         string
 	PodIP       string
+	HostIP      string
 	Labels      map[string]string
 	Annotations map[string]string
 }
@@ -20,6 +21,6 @@ func (p *Pod) GetIdentifier() string {
 }
 
 func (p *Pod) String() string {
-	return fmt.Sprintf("Pod: [%v], ip=[%v], labels=[%v], annotations=[%v]",
-		p.GetIdentifier(), p.PodIP, p.Labels, p.Annotations)
+	return fmt.Sprintf("Pod: [%v], pod-ip=[%v], host-ip=[%v], labels=[%v], annotations=[%v]",
+		p.GetIdentifier(), p.PodIP, p.HostIP, p.Labels, p.Annotations)
 }
