@@ -160,22 +160,6 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			Tags:                     cmeEndpoint.Tags,
 		}
 
-		// Replace all ${env} tokens in all metric tags and the endpoint tags
-		additionalEnv := &map[string]string{
-			"POD:node_name":      ne.Pod.Node.Name,
-			"POD:node_uid":       ne.Pod.Node.UID,
-			"POD:namespace_name": ne.Pod.Namespace.Name,
-			"POD:namespace_uid":  ne.Pod.Namespace.UID,
-			"POD:name":           ne.Pod.Name,
-			"POD:ip":             ne.Pod.PodIP,
-			"POD:host_ip":        ne.Pod.HostIP,
-			"POD:uid":            ne.Pod.UID,
-		}
-		newEndpoint.Tags.ExpandTokens(true, additionalEnv)
-		for _, m := range newEndpoint.Metrics {
-			m.Tags.ExpandTokens(true, additionalEnv)
-		}
-
 		// if a pod has labels, add them to the endpoint tags so they go on all metrics
 		newEndpoint.Tags.AppendTags(ne.Pod.Labels)
 
@@ -192,15 +176,27 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			continue
 		}
 
+		// Define additional envvars with pod specific data for use in replacing ${env} tokens in tags.
+		additionalEnv := map[string]string{
+			"POD:node_name":      ne.Pod.Node.Name,
+			"POD:node_uid":       ne.Pod.Node.UID,
+			"POD:namespace_name": ne.Pod.Namespace.Name,
+			"POD:namespace_uid":  ne.Pod.Namespace.UID,
+			"POD:name":           ne.Pod.Name,
+			"POD:ip":             ne.Pod.PodIP,
+			"POD:host_ip":        ne.Pod.HostIP,
+			"POD:uid":            ne.Pod.UID,
+		}
+
 		var theCollector collector.MetricsCollector
 		switch cmeEndpoint.Type {
 		case collector.ENDPOINT_TYPE_PROMETHEUS:
 			{
-				theCollector = impl.NewPrometheusMetricsCollector(id, nec.Config.Identity, *newEndpoint)
+				theCollector = impl.NewPrometheusMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv)
 			}
 		case collector.ENDPOINT_TYPE_JOLOKIA:
 			{
-				theCollector = impl.NewJolokiaMetricsCollector(id, nec.Config.Identity, *newEndpoint)
+				theCollector = impl.NewJolokiaMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv)
 			}
 		default:
 			{

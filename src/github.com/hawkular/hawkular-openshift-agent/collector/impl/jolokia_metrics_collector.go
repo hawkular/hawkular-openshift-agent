@@ -16,17 +16,20 @@ import (
 )
 
 type JolokiaMetricsCollector struct {
-	Id       string
-	Identity *security.Identity
-	Endpoint *collector.Endpoint
+	Id          string
+	Identity    *security.Identity
+	Endpoint    *collector.Endpoint
+	Environment map[string]string
 }
 
-func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint) (mc *JolokiaMetricsCollector) {
+func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *JolokiaMetricsCollector) {
 	mc = &JolokiaMetricsCollector{
-		Id:       id,
-		Identity: &identity,
-		Endpoint: &endpoint,
+		Id:          id,
+		Identity:    &identity,
+		Endpoint:    &endpoint,
+		Environment: env,
 	}
+
 	return
 }
 
@@ -38,6 +41,11 @@ func (jc *JolokiaMetricsCollector) GetId() string {
 // GetEndpoint implements a method from MetricsCollector interface
 func (jc *JolokiaMetricsCollector) GetEndpoint() *collector.Endpoint {
 	return jc.Endpoint
+}
+
+// GetAdditionalEnvironment implements a method from MetricsCollector interface
+func (jc *JolokiaMetricsCollector) GetAdditionalEnvironment() map[string]string {
+	return jc.Environment
 }
 
 // CollectMetrics does the real work of actually connecting to a remote Jolokia endpoint,

@@ -20,7 +20,8 @@ func (t *Tags) AppendTags(moreTags map[string]string) {
 // ExpandTokens will replace all tag values such that $name or ${name}
 // expressions are replaced with their corresponding values found in either
 // the operating system environment variable table and/or the given
-// additional environment map.
+// additional environment map. The expanded tags map is returned.
+//
 // A default value can be optionally specified in the following manner:
 //    ${name=default}
 // If a default value is not specified, an empty string is used as the default.
@@ -31,9 +32,9 @@ func (t *Tags) AppendTags(moreTags map[string]string) {
 // additionalEnv value will be used to replace the $name token.
 // If a name is not found, the default value is used to replace the $name token.
 // If you want a literal $ in the string, use $$.
-func (t *Tags) ExpandTokens(useOsEnv bool, additionalEnv *map[string]string) {
+func (t *Tags) ExpandTokens(useOsEnv bool, additionalEnv map[string]string) map[string]string {
 	if t == nil {
-		return
+		return map[string]string{}
 	}
 
 	mappingFunc := func(s string) string {
@@ -51,10 +52,8 @@ func (t *Tags) ExpandTokens(useOsEnv bool, additionalEnv *map[string]string) {
 		}
 
 		// Look up the value, first in the additional env map, then in the OS env map
-		if additionalEnv != nil {
-			if val, ok := (*additionalEnv)[s]; ok {
-				return val
-			}
+		if val, ok := additionalEnv[s]; ok {
+			return val
 		}
 
 		if useOsEnv {
@@ -66,7 +65,11 @@ func (t *Tags) ExpandTokens(useOsEnv bool, additionalEnv *map[string]string) {
 		return defaultVal
 	}
 
+	ret := make(map[string]string, len(*t))
+
 	for k, v := range *t {
-		(*t)[k] = os.Expand(v, mappingFunc)
+		ret[k] = os.Expand(v, mappingFunc)
 	}
+
+	return ret
 }
