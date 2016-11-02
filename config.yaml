@@ -1,8 +1,9 @@
 hawkular_server:
   url: http://127.0.0.1:8080
   tenant: hawkular
-  username: jdoe
-  password: password
+  credentials:
+    username: jdoe
+    password: password
 collector:
   minimum_collection_interval_secs: 10
 kubernetes:
@@ -11,3 +12,11 @@ kubernetes:
   #token: ...bearer token here...
   #pod_name: hawkular-metrics-ns2ij
   #pod_namespace: openshift-infra
+tags:
+  namespace_id: ${POD:namespace_uid}
+  namespace_name: ${POD:namespace_name}
+  node_name: ${POD:node_name}
+  pod_id: ${POD:uid}
+  pod_name: ${POD:name}
+  pod_namespace: ${POD:namespace_name}
+  labels: ${POD:labels}
