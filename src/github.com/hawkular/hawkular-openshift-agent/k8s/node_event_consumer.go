@@ -1,6 +1,9 @@
 package k8s
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/golang/glog"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
@@ -186,6 +189,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			"POD:ip":             ne.Pod.PodIP,
 			"POD:host_ip":        ne.Pod.HostIP,
 			"POD:uid":            ne.Pod.UID,
+			"POD:labels":         joinMap(ne.Pod.Labels),
 		}
 
 		var theCollector collector.MetricsCollector
@@ -236,4 +240,14 @@ func getIdForEndpoint(p *Pod, e K8SEndpoint) (id string, err error) {
 	}
 	id = url.String()
 	return
+}
+
+func joinMap(m map[string]string) string {
+	s := make([]string, len(m))
+	i := 0
+	for k, v := range m {
+		s[i] = fmt.Sprintf("%v=%v", k, v)
+		i++
+	}
+	return strings.Join(s, ",")
 }
