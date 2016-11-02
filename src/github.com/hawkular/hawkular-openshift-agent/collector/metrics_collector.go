@@ -13,6 +13,10 @@ type MetricsCollector interface {
 	// GetEndpoint returns information that describes the remote endpoint.
 	GetEndpoint() *Endpoint
 
+	// GetAdditionalEnvironment provides a map of additional name/value pairs used to expand tokens within tags defined for endpoint metrics.
+	// These are extra name/value pairs that do not include the OS environment which will always be used in addition to the returned map.
+	GetAdditionalEnvironment() map[string]string
+
 	// CollectMetrics connects to the remote endpoint and collects the metrics it finds there.
 	CollectMetrics() ([]hmetrics.MetricHeader, error)
 }

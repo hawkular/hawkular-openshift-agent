@@ -43,11 +43,11 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 			switch e.Type {
 			case collector.ENDPOINT_TYPE_PROMETHEUS:
 				{
-					theCollector = impl.NewPrometheusMetricsCollector(id, mcm.Config.Identity, e)
+					theCollector = impl.NewPrometheusMetricsCollector(id, mcm.Config.Identity, e, nil)
 				}
 			case collector.ENDPOINT_TYPE_JOLOKIA:
 				{
-					theCollector = impl.NewJolokiaMetricsCollector(id, mcm.Config.Identity, e)
+					theCollector = impl.NewJolokiaMetricsCollector(id, mcm.Config.Identity, e, nil)
 				}
 			default:
 				{
@@ -84,7 +84,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(collector collector.MetricsC
 	}
 
 	// before we start collecting metrics, we need to declare the metric definitions
-	mcm.declareMetricDefinitions(collector.GetEndpoint())
+	mcm.declareMetricDefinitions(collector.GetEndpoint(), collector.GetAdditionalEnvironment())
 
 	glog.Infof("START collecting metrics from [%v] every [%v]s", id, interval)
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
@@ -128,17 +128,22 @@ func (mcm *MetricsCollectorManager) StopCollectingAll() {
 	}
 }
 
-func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector.Endpoint) {
+func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector.Endpoint, additionalEnv map[string]string) {
 
 	metricDefs := make([]hmetrics.MetricDefinition, len(endpoint.Metrics))
 
 	// For each metric in the endpoint, create a metric def for it;
 	// notice metric tags override endpoint tags which override global tags
+	globalTags := mcm.Config.Tags.ExpandTokens(true, additionalEnv)
+	endpointTags := endpoint.Tags.ExpandTokens(true, additionalEnv)
+
 	for i, metric := range endpoint.Metrics {
+		metricTags := metric.Tags.ExpandTokens(true, additionalEnv)
+
 		allMetricTags := tags.Tags{}
-		allMetricTags.AppendTags(mcm.Config.Tags) // global tags are overridden by...
-		allMetricTags.AppendTags(endpoint.Tags)   // endpoint tags which are overridden by...
-		allMetricTags.AppendTags(metric.Tags)     // metric tags.
+		allMetricTags.AppendTags(globalTags)   // global tags are overridden by...
+		allMetricTags.AppendTags(endpointTags) // endpoint tags which are overridden by...
+		allMetricTags.AppendTags(metricTags)   // metric tags.
 
 		metricDefs[i] = hmetrics.MetricDefinition{
 			Tenant: endpoint.Tenant,

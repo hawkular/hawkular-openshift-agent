@@ -20,14 +20,16 @@ type PrometheusMetricsCollector struct {
 	Id              string
 	Identity        *security.Identity
 	Endpoint        *collector.Endpoint
+	Environment     map[string]string
 	metricNameIdMap map[string]string
 }
 
-func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint) (mc *PrometheusMetricsCollector) {
+func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *PrometheusMetricsCollector) {
 	mc = &PrometheusMetricsCollector{
-		Id:       id,
-		Identity: &identity,
-		Endpoint: &endpoint,
+		Id:          id,
+		Identity:    &identity,
+		Endpoint:    &endpoint,
+		Environment: env,
 	}
 
 	// Put all metric names in a map so we can quickly look them up to know which metrics should be stored and which are to be ignored.
@@ -48,6 +50,11 @@ func (pc *PrometheusMetricsCollector) GetId() string {
 // GetEndpoint implements a method from MetricsCollector interface
 func (pc *PrometheusMetricsCollector) GetEndpoint() *collector.Endpoint {
 	return pc.Endpoint
+}
+
+// GetAdditionalEnvironment implements a method from MetricsCollector interface
+func (pc *PrometheusMetricsCollector) GetAdditionalEnvironment() map[string]string {
+	return pc.Environment
 }
 
 // CollectMetrics does the real work of actually connecting to a remote Prometheus endpoint,

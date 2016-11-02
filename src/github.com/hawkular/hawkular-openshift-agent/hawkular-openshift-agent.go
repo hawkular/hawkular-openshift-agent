@@ -62,16 +62,6 @@ func main() {
 	}
 	log.Tracef("Hawkular OpenShift Agent Configuration:\n%s", Configuration)
 
-	// replace all ${env} tokens in global tags, all endpoint tags, and all endpoint metric tags
-	Configuration.Tags.ExpandTokens(true, nil)
-	for _, e := range Configuration.Endpoints {
-		e.Tags.ExpandTokens(true, nil)
-		for _, m := range e.Metrics {
-			m.Tags.ExpandTokens(true, nil)
-		}
-	}
-	log.Tracef("Hawkular OpenShift Agent Configuration with tokens expanded in tags:\n%s", Configuration)
-
 	if err := validateConfig(); err != nil {
 		glog.Fatal(err)
 	}
