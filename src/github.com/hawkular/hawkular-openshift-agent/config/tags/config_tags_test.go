@@ -27,7 +27,25 @@ func TestAppend(t *testing.T) {
 	assertTagValue(t, tags, "lastone", "lastvalue")
 }
 
-func TestReplaceEnvVars(t *testing.T) {
+func TestExpandWithDefault(t *testing.T) {
+	envvar1 := "first envvar"
+	defer os.Unsetenv("TEST_FIRST_ENVVAR")
+	os.Setenv("TEST_FIRST_ENVVAR", envvar1)
+
+	tags := Tags{
+		"tag1": "${TEST_FIRST_ENVVAR=This default is not needed}",
+		"tag2": "${THIS_DOES_NOT_EXIST=default value}",
+		"tag3": "${THIS_DOES_NOT_EXIST}",
+	}
+
+	tags.ExpandTokens(true, nil)
+
+	assertTagValue(t, tags, "tag1", envvar1)
+	assertTagValue(t, tags, "tag2", "default value")
+	assertTagValue(t, tags, "tag3", "")
+}
+
+func TestExpandEnvVars(t *testing.T) {
 	envvar1 := "first envvar"
 	defer os.Unsetenv("TEST_FIRST_ENVVAR")
 	os.Setenv("TEST_FIRST_ENVVAR", envvar1)
