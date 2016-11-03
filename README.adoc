@@ -59,7 +59,7 @@ make test
 To run Hawkular OpenShift Agent:
 
 [NOTE]
-To customize Hawkular OpenShift Agent's configuration so it can point to your OpenShift environment you need to make the appropriate edits to config.yaml. The OpenShift CA cert file can be found in your OpenShift installation at `/var/lib/origin/openshift.local.config/master/ca.crt`. If you installed OpenShift in a VM via vagrant, you can use `vagrant ssh` to get there. If you wish to configure the agent with environment variables as opposed to the config file, see link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/src/github.com/hawkular/hawkular-openshift-agent/config/config.go[here] for the environment variables that the agent looks for.
+To customize Hawkular OpenShift Agent's configuration so it can point to your OpenShift environment you need to make the appropriate edits to config.yaml. The OpenShift CA cert file can be found in your OpenShift installation at `/var/lib/origin/openshift.local.config/master/ca.crt`. If you installed OpenShift in a VM via vagrant, you can use `vagrant ssh` to get there. If you wish to configure the agent with environment variables as opposed to the config file, see link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/config/config.go[here] for the environment variables that the agent looks for.
 
 [source,shell]
 ----
@@ -103,7 +103,7 @@ Hawkular OpenShift Agent takes advantage of a project's config maps by using the
 
 === Config Map Entry Schema
 
-Each Hawkular OpenShift Agent config map must have one and only one entry which must be named "hawkular-openshift-agent". A config map entry is a YAML configuration. The Go representation of the YAML schema is found link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/src/github.com/hawkular/hawkular-openshift-agent/k8s/configmap_entry.go[here].
+Each Hawkular OpenShift Agent config map must have one and only one entry which must be named "hawkular-openshift-agent". A config map entry is a YAML configuration. The Go representation of the YAML schema is found link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/k8s/configmap_entry.go[here].
 
 So, in short, each OpenShift project (aka Kubernetes namespace) will have multiple config maps each with an entry named "hawkular-openshift-agent" where those entries contain YAML configuration containing information about what should be monitored on a pod. A named config map is referenced by a pod's annotation also called "hawkular-openshift-agent".
 
