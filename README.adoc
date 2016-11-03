@@ -11,14 +11,16 @@ These build instructions assume you have the following installed on your system:
 
 To build Hawkular OpenShift Agent:
 
-* Clone this repository inside a GOPATH. These instructions will use the example GOPATH of "/source/go/hawkular-openshift-agent"
+* Clone this repository inside a GOPATH. These instructions will use the example GOPATH of "/source/go/hawkular-openshift-agent" but you can use whatever you want. Just change the first line of the below instructions to use your GOPATH.
 
 [source,shell]
 ----
-mkdir -p /source/go
-cd /source/go
+export GOPATH=/source/go/hawkular-openshift-agent
+mkdir -p $GOPATH
+cd $GOPATH
+mkdir -p src/github.com/hawkular
+cd src/github.com/hawkular
 git clone git@github.com:hawkular/hawkular-openshift-agent.git
-export GOPATH=`pwd`/hawkular-openshift-agent
 export PATH=${PATH}:${GOPATH}/bin
 ----
 
@@ -26,7 +28,7 @@ export PATH=${PATH}:${GOPATH}/bin
 
 [source,shell]
 ----
-cd $GOPATH
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
 make install_glide
 ----
 
@@ -34,7 +36,7 @@ make install_glide
 
 [source,shell]
 ----
-cd $GOPATH
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
 make install_deps
 ----
 
@@ -42,7 +44,7 @@ make install_deps
 
 [source,shell]
 ----
-cd $GOPATH
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
 make build
 ----
 
@@ -50,7 +52,7 @@ make build
 
 [source,shell]
 ----
-cd $GOPATH
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
 make test
 ----
 
@@ -61,7 +63,7 @@ To customize Hawkular OpenShift Agent's configuration so it can point to your Op
 
 [source,shell]
 ----
-cd $GOPATH
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
 make run
 ----
 
@@ -69,7 +71,7 @@ To install the Hawkular OpenShift Agent executable so you can run it outside of 
 
 [source,shell]
 ----
-cd $GOPATH
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
 make
 ${GOPATH}/bin/hawkular-openshift-agent -config <your-config-file>
 ----
