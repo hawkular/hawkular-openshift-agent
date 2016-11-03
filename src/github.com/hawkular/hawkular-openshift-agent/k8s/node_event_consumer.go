@@ -189,6 +189,8 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			"POD:ip":             ne.Pod.PodIP,
 			"POD:host_ip":        ne.Pod.HostIP,
 			"POD:uid":            ne.Pod.UID,
+			"POD:hostname":       ne.Pod.Hostname,
+			"POD:subdomain":      ne.Pod.Subdomain,
 			"POD:labels":         joinMap(ne.Pod.Labels),
 		}
 
