@@ -64,15 +64,16 @@ To customize Hawkular OpenShift Agent's configuration so it can point to your Op
 [source,shell]
 ----
 cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
+make install
 make run
 ----
 
-To install the Hawkular OpenShift Agent executable so you can run it outside of the Makefile, run the default target (which is "build") and use the "hawkular-openshift-agent" executable that is placed in the GOPATH /bin directory.
+The "install" target installs the Hawkular OpenShift Agent executable in your GOPATH /bin directory so you can run it outside of the Makefile:
 
 [source,shell]
 ----
 cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
-make
+make install
 ${GOPATH}/bin/hawkular-openshift-agent -config <your-config-file>
 ----
 
