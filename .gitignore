@@ -27,9 +27,5 @@ _testmain.go
 .project
 .settings/
 
-# Binaries
-bin/*
-!bin/README.adoc
-
 # Deps
-src/github.com/hawkular/hawkular-openshift-agent/vendor/
+vendor/
