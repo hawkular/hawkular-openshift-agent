@@ -17,8 +17,13 @@ clean:
 
 build:
 	@echo Building...
-	${GO_BUILD_ENVVARS} go install \
+	${GO_BUILD_ENVVARS} go build \
 	   -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
+
+install:
+	@echo Installing...
+	${GO_BUILD_ENVVARS} go install \
+           -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
 
 build-test:
 	@echo Building and installing test dependencies to help speed up test runs.
