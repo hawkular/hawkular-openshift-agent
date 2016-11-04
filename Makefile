@@ -12,8 +12,9 @@ all: build
 
 clean:
 	@echo Cleaning...
-	@rm -f bin/hawkular-openshift-agent
-	@rm -rf pkg/*
+	@rm -f hawkular-openshift-agent
+	@rm -rf ${GOPATH}/bin/hawkular-openshift-agent
+	@rm -rf ${GOPATH}/pkg/*
 
 build:
 	@echo Building...
