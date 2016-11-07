@@ -8,6 +8,10 @@ GO_BUILD_ENVVARS = \
 	GOARCH=amd64 \
 	CGO_ENABLED=0 \
 
+DOCKER_NAME = hawkular/hawkular-openshift-agent
+DOCKER_VERSION = latest
+DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
+
 all: build
 
 clean:
@@ -15,12 +19,20 @@ clean:
 	@rm -f hawkular-openshift-agent
 	@rm -rf ${GOPATH}/bin/hawkular-openshift-agent
 	@rm -rf ${GOPATH}/pkg/*
+	@rm -rf _output/*
 
-build:
+build:  clean
 	@echo Building...
 	${GO_BUILD_ENVVARS} go build \
 	   -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
 
+docker: build
+	@echo Building Docker Image...
+	@mkdir -p _output/docker
+	@cp -r deploy/docker/* _output/docker
+	@cp hawkular-openshift-agent _output/docker	
+	docker build -t ${DOCKER_TAG} _output/docker
+ 
 install:
 	@echo Installing...
 	${GO_BUILD_ENVVARS} go install \
