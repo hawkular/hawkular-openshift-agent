@@ -142,6 +142,22 @@ func Unmarshal(yamlString string) (conf *Config, err error) {
 		return nil, fmt.Errorf("Failed to parse yaml data. error=%v", err)
 	}
 
+	// yaml unmarshalling leaves empty tags as nil - we want empty but non-nil
+	if conf.Tags == nil {
+		conf.Tags = tags.Tags{}
+	}
+
+	for i, e := range conf.Endpoints {
+		if e.Tags == nil {
+			conf.Endpoints[i].Tags = tags.Tags{}
+		}
+		for j, m := range e.Metrics {
+			if m.Tags == nil {
+				conf.Endpoints[i].Metrics[j].Tags = tags.Tags{}
+			}
+		}
+	}
+
 	return
 }
 

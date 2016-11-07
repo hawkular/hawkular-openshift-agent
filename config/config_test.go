@@ -110,6 +110,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 		},
 	}
 
+	testConf.Endpoints[0].Metrics = make([]collector.MonitoredMetric, 1)
+	testConf.Endpoints[0].Metrics[0] = collector.MonitoredMetric{
+		Name: "a:b=c",
+		Type: "gauge",
+	}
+
 	yamlString, err := Marshal(&testConf)
 	if err != nil {
 		t.Errorf("Failed to marshal: %v", err)
@@ -140,6 +146,15 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}
 	if conf.Endpoints[1].Collection_Interval_Secs != 234 {
 		t.Error("Second endpoint is not correct")
+	}
+	if conf.Tags == nil || len(conf.Tags) > 0 {
+		t.Error("Global tags should be empty but not nil")
+	}
+	if conf.Endpoints[0].Tags == nil || len(conf.Endpoints[0].Tags) > 0 {
+		t.Error("Endpoint tags should be empty but not nil")
+	}
+	if conf.Endpoints[0].Metrics[0].Tags == nil || len(conf.Endpoints[0].Metrics[0].Tags) > 0 {
+		t.Error("Metric tags should be empty but not nil")
 	}
 }
 
