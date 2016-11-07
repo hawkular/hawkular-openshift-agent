@@ -293,9 +293,9 @@ identity:
 
 Many of the agent's configuration settings can optionally be set via environment variables. If one of the environment variables below are set, they serve as the default value for its associated YAML configuration setting. The following are currently supported:
 
-[cols="1,1a"]
+[cols="1,1a,1"]
 |===
-|Environment Variable Name|YAML Setting
+|Environment Variable Name|YAML Setting|Comments
 
 |HAWKULAR_SERVER_URL
 |
@@ -304,6 +304,7 @@ Many of the agent's configuration settings can optionally be set via environment
 hawkular_server:
   url: VALUE
 ----
+|This is the Hawkuar Metrics server where all metric data will be stored
 
 |HAWKULAR_SERVER_TENANT
 |
@@ -312,6 +313,7 @@ hawkular_server:
 hawkular_server:
   tenant: VALUE
 ----
+|The default tenant ID to be used if external endpoints do not define their own. Note that OpenShift endpoints always have a tenant which is the same as its pod namespace and thus this setting is not used in that case.
 
 |HAWKULAR_SERVER_USERNAME
 |
@@ -321,6 +323,7 @@ hawkular_server:
   credentials:
     username: VALUE
 ----
+|Username used when connecting to Hawkular Metrics
 
 |HAWKULAR_SERVER_PASSWORD
 |
@@ -330,6 +333,7 @@ hawkular_server:
   credentials:
     password: VALUE
 ----
+|Password used when connecting to Hawkular Metrics
 
 |HAWKULAR_SERVER_TOKEN
 |
@@ -339,6 +343,7 @@ hawkular_server:
   credentials:
     token: VALUE
 ----
+|Bearer token used when connecting to Hawkular Metrics. If specified, username and password are ignored.
 
 |HAWKULAR_OPENSHIFT_AGENT_CERT_FILE
 |
@@ -347,6 +352,7 @@ hawkular_server:
 identity:
   cert_file: VALUE
 ----
+|The certificate that identifies this agent.
 
 |HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE
 |
@@ -355,6 +361,7 @@ identity:
 identity:
   private_key_file: VALUE
 ----
+|The private key that identifies this agent.
 
 |K8S_MASTER_URL
 |
@@ -363,6 +370,7 @@ identity:
 kubernetes:
   master_url: VALUE
 ----
+|The location of the OpenShift master. If left blank, it is assumed this agent is running within OpenShift and thus does not need a URL to connect to the master.
 
 |K8S_POD_NAMESPACE
 |
@@ -371,6 +379,7 @@ kubernetes:
 kubernetes:
   pod_namespace: VALUE
 ----
+|The namespace of the pod where this agent is running. If this is left blank, it is assumed this agent is not running within OpenShift.
 
 |K8S_POD_NAME
 |
@@ -379,6 +388,7 @@ kubernetes:
 kubernetes:
   pod_name: VALUE
 ----
+|The name of the pod where this agent is running. Only required if the agent is running within OpenShift.
 
 |K8S_TOKEN
 |
@@ -387,6 +397,7 @@ kubernetes:
 kubernetes:
   token: VALUE
 ----
+|The bearer token required to connect to the OpenShift master.
 
 |K8S_CA_CERT_FILE
 |
@@ -395,6 +406,7 @@ kubernetes:
 kubernetes:
   ca_cert_file: VALUE
 ----
+|The certificate required to connect to the OpenShift master.
 |===
 
 == Metric Tags
