@@ -94,6 +94,17 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 		glog.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
 	}
 
+	// yaml unmarshalling leaves empty tags as nil - we want empty but non-nil
+	for i, e := range cme.Endpoints {
+		if e.Tags == nil {
+			cme.Endpoints[i].Tags = tags.Tags{}
+		}
+		for j, m := range e.Metrics {
+			if m.Tags == nil {
+				cme.Endpoints[i].Metrics[j].Tags = tags.Tags{}
+			}
+		}
+	}
 	return
 }
 

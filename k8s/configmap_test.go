@@ -26,6 +26,58 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 )
 
+func TestConfigMapEntryYamlNilTags(t *testing.T) {
+	yaml1 := `
+endpoints:
+- type: prometheus
+  protocol: https
+  port: 8888
+  path: /the/path
+  collection_interval_secs: 12345
+  metrics:
+  - id: metric1id
+    name: metric1
+    type: gauge
+`
+	cme, err := UnmarshalConfigMapEntry(yaml1)
+	if err != nil {
+		t.Fatalf("Could not unmarshal ConfigMapEntry yaml. err=%v", err)
+	}
+
+	if cme.Endpoints[0].Type != collector.ENDPOINT_TYPE_PROMETHEUS {
+		t.Fatalf("Endpoint.Type is wrong")
+	}
+	if cme.Endpoints[0].Tags == nil {
+		t.Fatalf("Endpoint tags should not be nil")
+	}
+	if len(cme.Endpoints[0].Tags) != 0 {
+		t.Fatalf("Endpoint tags should be empty but not nil")
+	}
+	if cme.Endpoints[0].Metrics[0].Tags == nil {
+		t.Fatalf("Metric tags should not be nil")
+	}
+	if len(cme.Endpoints[0].Metrics[0].Tags) != 0 {
+		t.Fatalf("Metric tags should be empty but not nil")
+	}
+
+	yaml2, err := MarshalConfigMapEntry(cme)
+	if err != nil {
+		t.Fatalf("Could not marshal ConfigMapEntry. err=%v", err)
+	}
+
+	cme2, err := UnmarshalConfigMapEntry(yaml2)
+	if err != nil {
+		t.Fatalf("Could not unmarshal ConfigMapEntry yaml. err=%v", err)
+	}
+	if cme2.Endpoints[0].Tags == nil || len(cme2.Endpoints[0].Tags) != 0 {
+		t.Fatalf("Endpoint tags should be empty but not nil")
+	}
+	if cme2.Endpoints[0].Metrics[0].Tags == nil || len(cme2.Endpoints[0].Metrics[0].Tags) != 0 {
+		t.Fatalf("Metric tags should be empty but not nil")
+	}
+
+}
+
 func TestYamlText(t *testing.T) {
 	cme := NewConfigMapEntry()
 	cme.Endpoints = append(cme.Endpoints, K8SEndpoint{
