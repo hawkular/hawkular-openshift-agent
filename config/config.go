@@ -28,7 +28,6 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
-	"github.com/golang/glog"
 	"strings"
 )
 
