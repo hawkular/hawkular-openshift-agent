@@ -1,0 +1,40 @@
+== Deploying to OpenShift
+
+[NOTE]
+====
+Origin Metrics must be already installed and the agent must be installed to the same project. Normally this is the `openshift-infra` project.
+
+----
+$ oc project openshift-infra
+----
+====
+
+=== Create the Agent Service Account
+
+----
+$ oc create -f - <<API
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hawkular-agent
+API
+----
+
+=== Grant Hawkular Agent Security Permisions
+
+----
+$ oadm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
+----
+
+=== Create the Config Map used to configure the Agent
+
+----
+$ oc create -f hawkular-openshift-agent-configmap.yaml
+----
+
+=== Deploy the Agent
+
+----
+$ oc process -f hawkular-openshift-agent.yaml | oc create -f - 
+----
+

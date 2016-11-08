@@ -1,6 +1,12 @@
 # The compliled Hawkular OpenShift Agent binary
 hawkular-openshift-agent
 
+# Files specific to our build process
+_output
+
+# Swap files
+.*.sw*
+
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a
@@ -29,6 +35,9 @@ _testmain.go
 # Eclipse
 .project
 .settings/
+
+# IntelliJ
+.idea/
 
 # Deps
 vendor/

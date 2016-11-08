@@ -25,6 +25,9 @@ import (
 
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/log"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 )
 
 type MetricsStorageManager struct {
@@ -157,12 +160,29 @@ func (ms *MetricsStorageManager) consumeMetrics() {
 }
 
 func getHawkularMetricsClient(conf *config.Config) (*hmetrics.Client, error) {
+
+	tlsConfig := &tls.Config{}
+
+	if (conf.Hawkular_Server.CAFile != "") {
+		certs := x509.NewCertPool()
+
+		cert, err := ioutil.ReadFile(conf.Hawkular_Server.CAFile);
+		if err != nil {
+			glog.Warningf("Failed to load the CA file for Hawkular Metrics. You may not be able to properly connect to the Hawkular Metrics server. err=%v", err)
+		}
+
+		certs.AppendCertsFromPEM(cert)
+		tlsConfig.RootCAs = certs
+	}
+
+
 	params := hmetrics.Parameters{
 		Tenant:   conf.Hawkular_Server.Tenant,
 		Url:      conf.Hawkular_Server.Url,
 		Username: conf.Hawkular_Server.Credentials.Username,
 		Password: conf.Hawkular_Server.Credentials.Password,
 		Token:    conf.Hawkular_Server.Credentials.Token,
+		TLSConfig: tlsConfig,
 	}
 
 	return hmetrics.NewHawkularClient(params)
