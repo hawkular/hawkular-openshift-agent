@@ -28,15 +28,17 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
+	"strings"
 )
 
 // Environment vars can define some default values
 const (
-	ENV_HS_URL      = "HAWKULAR_SERVER_URL"
-	ENV_HS_TENANT   = "HAWKULAR_SERVER_TENANT"
-	ENV_HS_USERNAME = "HAWKULAR_SERVER_USERNAME"
-	ENV_HS_PASSWORD = "HAWKULAR_SERVER_PASSWORD"
-	ENV_HS_TOKEN    = "HAWKULAR_SERVER_TOKEN"
+	ENV_HS_URL          = "HAWKULAR_SERVER_URL"
+	ENV_HS_TENANT       = "HAWKULAR_SERVER_TENANT"
+	ENV_HS_USERNAME     = "HAWKULAR_SERVER_USERNAME"
+	ENV_HS_PASSWORD     = "HAWKULAR_SERVER_PASSWORD"
+	ENV_HS_TOKEN        = "HAWKULAR_SERVER_TOKEN"
+	ENV_HS_CA_CERT_FILE = "HAWKULAR_SERVER_CA_CERT_FILE"
 
 	ENV_IDENTITY_CERT_FILE        = "HAWKULAR_OPENSHIFT_AGENT_CERT_FILE"
 	ENV_IDENTITY_PRIVATE_KEY_FILE = "HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE"
@@ -54,9 +56,10 @@ const (
 // one may be configured.
 // USED FOR YAML
 type Hawkular_Server struct {
-	Url         string
-	Tenant      string
-	Credentials security.Credentials ",omitempty"
+	Url          string
+	Tenant       string
+	Credentials  security.Credentials ",omitempty"
+	CA_Cert_File string               ",omitempty"
 }
 
 // Collector provides information about collecting metrics from monitored endpoints.
@@ -100,9 +103,11 @@ func NewConfig() (c *Config) {
 
 	c.Hawkular_Server.Url = getDefaultString(ENV_HS_URL, "http://127.0.0.1:8080")
 	c.Hawkular_Server.Tenant = getDefaultString(ENV_HS_TENANT, "hawkular")
-	c.Hawkular_Server.Credentials.Username = getDefaultString(ENV_HS_USERNAME, "")
-	c.Hawkular_Server.Credentials.Password = getDefaultString(ENV_HS_PASSWORD, "")
-	c.Hawkular_Server.Credentials.Token = getDefaultString(ENV_HS_TOKEN, "")
+	// If we are passing the username/password/token via an environment variable from a secret, we need to trim
+	c.Hawkular_Server.Credentials.Username = strings.TrimSpace(getDefaultString(ENV_HS_USERNAME, ""))
+	c.Hawkular_Server.Credentials.Password = strings.TrimSpace(getDefaultString(ENV_HS_PASSWORD, ""))
+	c.Hawkular_Server.Credentials.Token = strings.TrimSpace(getDefaultString(ENV_HS_TOKEN, ""))
+	c.Hawkular_Server.CA_Cert_File = getDefaultString(ENV_HS_CA_CERT_FILE, "")
 
 	c.Collector.Minimum_Collection_Interval_Secs = 10
 

@@ -18,6 +18,9 @@
 package storage
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"reflect"
 
 	"github.com/golang/glog"
@@ -157,12 +160,28 @@ func (ms *MetricsStorageManager) consumeMetrics() {
 }
 
 func getHawkularMetricsClient(conf *config.Config) (*hmetrics.Client, error) {
+
+	tlsConfig := &tls.Config{}
+
+	if conf.Hawkular_Server.CA_Cert_File != "" {
+		certs := x509.NewCertPool()
+
+		cert, err := ioutil.ReadFile(conf.Hawkular_Server.CA_Cert_File)
+		if err != nil {
+			glog.Warningf("Failed to load the CA file for Hawkular Metrics. You may not be able to properly connect to the Hawkular Metrics server. err=%v", err)
+		}
+
+		certs.AppendCertsFromPEM(cert)
+		tlsConfig.RootCAs = certs
+	}
+
 	params := hmetrics.Parameters{
-		Tenant:   conf.Hawkular_Server.Tenant,
-		Url:      conf.Hawkular_Server.Url,
-		Username: conf.Hawkular_Server.Credentials.Username,
-		Password: conf.Hawkular_Server.Credentials.Password,
-		Token:    conf.Hawkular_Server.Credentials.Token,
+		Tenant:    conf.Hawkular_Server.Tenant,
+		Url:       conf.Hawkular_Server.Url,
+		Username:  conf.Hawkular_Server.Credentials.Username,
+		Password:  conf.Hawkular_Server.Credentials.Password,
+		Token:     conf.Hawkular_Server.Credentials.Token,
+		TLSConfig: tlsConfig,
 	}
 
 	return hmetrics.NewHawkularClient(params)

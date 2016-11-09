@@ -1,0 +1,54 @@
+== Deploying to OpenShift
+
+=== Build the Agent Docker Image
+
+Make sure you first create the Hawkular OpenShift Agent docker image by running `make docker`
+
+[NOTE]
+====
+After you build the docker image, you can perform the manual steps below to deploy it,
+or you can run the `deploy-to-openshift.sh` script.
+====
+
+=== Switch To The Correct Project
+
+Origin Metrics must already be installed within an OpenShift project. Normally this is the `openshift-infra` project.
+You need to switch to that project because you must install the agent in that specific project.
+
+----
+$ oc project openshift-infra
+----
+
+=== Create the Agent Service Account
+
+----
+$ oc create -f - <<API
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hawkular-agent
+API
+----
+
+=== Grant Hawkular Agent Security Permisions
+
+[NOTE]
+====
+If you do not have the `oadm` command line utility available, you can use `oc adm` instead
+====
+
+----
+$ oadm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
+----
+
+=== Create the Agent Config Map
+
+----
+$ oc create -f hawkular-openshift-agent-configmap.yaml
+----
+
+=== Deploy the Agent
+
+----
+$ oc process -f hawkular-openshift-agent.yaml | oc create -f - 
+----
