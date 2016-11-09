@@ -149,13 +149,16 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector
 
 	metricDefs := make([]hmetrics.MetricDefinition, len(endpoint.Metrics))
 
-	// For each metric in the endpoint, create a metric def for it;
-	// notice metric tags override endpoint tags which override global tags
+	// For each metric in the endpoint, create a metric def for it.
+	// Notice metric tags override endpoint tags which override global tags.
+	// Do NOT allow pods to use agent environment variables since agent env vars may contain
+	// sensitive data (such as passwords). Only the global agent config can define tags
+	// with env var tokens.
 	globalTags := mcm.Config.Tags.ExpandTokens(true, additionalEnv)
-	endpointTags := endpoint.Tags.ExpandTokens(true, additionalEnv)
+	endpointTags := endpoint.Tags.ExpandTokens(false, additionalEnv)
 
 	for i, metric := range endpoint.Metrics {
-		metricTags := metric.Tags.ExpandTokens(true, additionalEnv)
+		metricTags := metric.Tags.ExpandTokens(false, additionalEnv)
 
 		allMetricTags := tags.Tags{}
 		allMetricTags.AppendTags(globalTags)   // global tags are overridden by...
