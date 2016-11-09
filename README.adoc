@@ -32,7 +32,7 @@ Note that the agent does not collect or store inventory at this time - this is s
 == Building
 
 [NOTE]
-These build instructions assume you have the following installed on your system: (1) link:http://golang.org/doc/install[Go Programming Language], (2) link:http://git-scm.com/book/en/v2/Getting-Started-Installing-Git[git], (3) link:https://docs.docker.com/installation/[Docker], and (4) make. To run Hawkular OpenShift Agent inside OpenShift after you build it, it is assumed you have OpenShift installed on your system as well. You can find a set of link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/deploy/openshift/README.adoc[instructions on how to build and install OpenShift here].
+These build instructions assume you have the following installed on your system: (1) link:http://golang.org/doc/install[Go Programming Language], (2) link:http://git-scm.com/book/en/v2/Getting-Started-Installing-Git[git], (3) link:https://docs.docker.com/installation/[Docker], and (4) make. To run Hawkular OpenShift Agent inside OpenShift after you build it, it is assumed you have a running OpenShift environment available to you. If you do not, you can find a set of link:#building-installing-and-running-openshift[instructions on how to build and install OpenShift below].
 
 To build Hawkular OpenShift Agent:
 
@@ -89,11 +89,11 @@ make test
 
 If you already have a running OpenShift environment where you want to deploy and run the agent you can skip this section and go directly to link:#building-the-docker-image[the next section]. These instructions help you get a local copy of OpenShift Origin installed and running so you can then deploy the Hawkular OpenShift Agent inside of it.
 
-[NOTE]
+[TIP]
 It is highly recommended that you read the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] to become familiar with what is needed to build from source and run. You will still need to perform the additional instructions listed below, however.
 
 [NOTE]
-All instructions in this section assume your console's current working directory is the location where the scripts are found.
+All instructions in this section assume your console's current working directory is the location where the scripts are found. The scripts are found in the link:deploy/openshift[deploy/openshift] directory.
 
 ===== Prepare the Build Environment
 
@@ -129,14 +129,14 @@ In order for Hawkular OpenShift Agent to store its metric data, you need a Hawku
 ./afterstart-openshift.sh
 ----
 
-3) To fully and completely stop and cleanup OpenShift Origin, run the stop script:
+[TIP]
+After the `start-openshift.sh` script completes, you will have soft links that point to the OpenShift master "ca.crt" file as well as to the directory where the OpenShift Origin binaries are located. These are provided as a convienence. They will be removed when you shut down via the `stop-openshift.sh` script.
+
+To fully and completely stop and cleanup OpenShift Origin, run the stop script:
 
 ----
 ./stop-openshift.sh
 ----
-
-[NOTE]
-After the `start-openshift.sh` script completes, you will have soft links that point to the OpenShift master "ca.crt" file as well as to the directory where the OpenShift Origin binaries are located. These are provided as a convienence. They will be removed when you shut down via the `stop-openshift.sh` script.
 
 ==== Building the Docker Image
 
@@ -150,11 +150,16 @@ make docker
 
 ==== Deploying the Agent Inside OpenShift
 
-[NOTE]
-After you build the docker image, you can perform the manual steps below to deploy it,
-or you can run the `deploy-agent.sh` script. The instructions you see below are essentially what the `deploy-agent.sh` script does.
+[TIP]
+====
+After you build the agent's docker image, you can perform the manual steps below to deploy it,
+or you can run the deploy script which essentially does the manual steps for you.
+----
+./deploy-agent.sh
+----
+====
 
-link:https://github.com/openshift/origin-metrics[Origin Metrics] must already be installed within an OpenShift project, normally the project named `openshift-infra`. You need to switch to that project because you must install the agent in that specific project. You then create the agent service account, grant the agent the necessary security permissions, create the agent's config map, and then deploy the agent. You will find the yaml files needed to create these in the link:https://github.com/hawkular/hawkular-openshift-agent/tree/master/deploy/openshift[deploy/openshift] directory.
+link:https://github.com/openshift/origin-metrics[Origin Metrics] must already be installed within an OpenShift project, normally the project named `openshift-infra`. You need to switch to that project because you must install the agent in that specific project. You then create the agent service account, grant the agent the necessary security permissions, create the agent's config map, and then deploy the agent. You will find the yaml files needed to create these in the link:deploy/openshift[deploy/openshift] directory.
 
 [source,shell]
 ----
