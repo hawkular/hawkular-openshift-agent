@@ -453,7 +453,7 @@ endpoints:
       my-other-metric-tag: the-metric-tag-value
 ----
 
-Tag values can be defined with token expressions in the form of `${var}` or `$var` where _var_ is either an agent environment variable name or (if the tag definition is found in an OpenShift configmap entry) one of the following:
+Tag values can be defined with token expressions in the form of `${var}` or `$var` where _var_ is either an agent environment variable name (only supported in global tags) or, if the tag definition is found in an OpenShift configmap entry, one of the following:
 
 [cols="1,1a"]
 |===
@@ -490,7 +490,7 @@ Tag values can be defined with token expressions in the form of `${var}` or `$va
 |The subdomain of the host to which the pod is assigned.
 
 |POD:labels
-|The Pod labels concatenated in a single string separated by commas, e.g. `label1=value1,label2=value2,...`
+|The Pod labels concatenated in a single string separated by commas, e.g. `label1:value1,label2:value2,...`
 |===
 
 For example:
@@ -498,7 +498,6 @@ For example:
 [source,yaml]
 ----
 tags:
-  my-user-tag: my-agent-user=$USER
   my-pod-name: ${POD:name}
-  some-env-tag: ${SOME_ENV_VAR}
+  some-env-tag: var is ${SOME_ENV_VAR}
 ----
