@@ -1,7 +1,7 @@
 VERSION = 0.0.1
 COMMIT_HASH = $(shell git rev-parse HEAD)
 
-VERBOSE_MODE ?= 1
+VERBOSE_MODE ?= 4
 
 GO_BUILD_ENVVARS = \
 	GOOS=linux \

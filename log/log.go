@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	debug glog.Level = glog.Level(1)
-	trace glog.Level = glog.Level(2)
+	debug glog.Level = glog.Level(4)
+	trace glog.Level = glog.Level(5)
 )
 
 // Debug will log a message at verbose level 1 and will ensure the caller's stack frame is used
