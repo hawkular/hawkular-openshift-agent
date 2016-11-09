@@ -47,7 +47,7 @@ objects:
                 fieldPath: metadata.name
           - name: HAWKULAR_SERVER_URL
             value: https://hawkular-metrics
-          - name: HAWKULAR_SERVER_CA_FILE
+          - name: HAWKULAR_SERVER_CA_CERT_FILE
             value: "/hawkular-metrics-certificate/hawkular-metrics-ca.certificate"
           - name: HAWKULAR_SERVER_USERNAME
             valueFrom:
