@@ -1,3 +1,10 @@
-Documentation on how to use these files to deploy the agent to OpenShift is now found here:
+== Deploying Agent
 
+Documentation on how to use these files to deploy the agent to OpenShift is now found here:
 https://github.com/hawkular/hawkular-openshift-agent/blob/master/README.adoc#running-inside-openshift
+
+== Installing OpenShift
+
+It is assumed that you already have OpenShift installed and running. If you do not, see:
+
+https://github.com/hawkular/hawkular-openshift-agent/blob/master/deploy/openshift/os_origin/README.adoc

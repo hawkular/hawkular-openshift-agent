@@ -1,0 +1,13 @@
+== Installing OpenShift Origin
+
+These instructions help you get a local copy of OpenShift Origin installed and running.
+You can follow the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] to build from source.
+
+=== Installing Origin Metrics
+
+Because you need Origin Metrics installed (which contains Hawkular Metrics, the metric storage system, which does not come with OpenShift Origin when building from source), you have to run a few more steps. 
+
+* Run `start-openshift.sh`
+* Once it is fully started, run `afterstart-openshift.sh`
+
+To fully and completely stop OpenShift, run `stop-openshift.sh`
