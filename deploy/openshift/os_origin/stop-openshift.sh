@@ -1,5 +1,11 @@
 #!/bin/sh
 
+##############################################################################
+# stop-openshift.sh
+#
+# Run this script when you want to fully and completely stop OpenShift.
+##############################################################################
+
 source ./env-openshift.sh
 
 echo Will stop OpenShift that is located here: ${OPENSHIFT_BINARY_DIR}

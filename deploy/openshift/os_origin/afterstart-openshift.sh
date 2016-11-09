@@ -1,5 +1,14 @@
 #!/bin/sh
 
+##############################################################################
+# afterstart-openshift.sh
+#
+# Run this script after OpenShift has been started via start-openshift.sh.
+#
+# This script will complete the setup of OpenShift to make it ready
+# for Hawkular OpenShift Agent to be deployed in it.
+##############################################################################
+
 source ./env-openshift.sh
 
 echo Will complete the setup of OpenShift that is located here: ${OPENSHIFT_BINARY_DIR}
@@ -50,4 +59,4 @@ ${OPENSHIFT_BINARY_DIR}/oadm policy add-cluster-role-to-user cluster-reader syst
 ${OPENSHIFT_BINARY_DIR}/oc secrets new metrics-deployer nothing=/dev/null
 ${OPENSHIFT_BINARY_DIR}/oc policy add-role-to-user view system:serviceaccount:openshift-infra:hawkular -n openshift-infra
 ${OPENSHIFT_BINARY_DIR}/oc process -f /tmp/metrics.yaml -v HAWKULAR_METRICS_HOSTNAME=hawkular-metrics.example.com -v USE_PERSISTENT_STORAGE=false -v MODE=redeploy | ${OPENSHIFT_BINARY_DIR}/oc create -f -
-echo Hawkular Metrics should be spinning up now.
+echo Hawkular Metrics should be spinning up now. Please be patient, it could take several minutes for it to be ready.
