@@ -1,13 +1,24 @@
 == Installing OpenShift Origin
 
-These instructions help you get a local copy of OpenShift Origin installed and running.
-You can follow the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] to build from source.
+These instructions help you get a local copy of OpenShift Origin installed and running so you can then deploy the Hawkular OpenShift Agent inside of it.
 
-=== Installing Origin Metrics
+=== Prepare Your Environment
 
-Because you need Origin Metrics installed (which contains Hawkular Metrics, the metric storage system, which does not come with OpenShift Origin when building from source), you have to run a few more steps. 
+The file `env-openshift.sh` sets some environment variables that are used by the scripts to download, build, configure, start, and stop OpenShift Origin. Edit this file so that the values match what you want for your environment.
 
-* Run `start-openshift.sh`
-* Once it is fully started, run `afterstart-openshift.sh`
+=== Build from Source
 
-To fully and completely stop OpenShift, run `stop-openshift.sh`
+TODO provide docs on the scripts (yet to be written) that git clone and build
+
+[NOTE]
+If you'd like, you can go directly to the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] and follow them to build from source. But you will still need to perform the additional instructions listed below.
+
+=== Installing Origin Metrics and Running OpenShift Origin
+
+In order for Hawkular OpenShift Agent to store its metric data, you need a Hawkular Metrics server. Origin Metrics provides this Hawkular Metrics server and is deployed inside OpenShift Origin. Because Origin Metrics does not come with OpenShift Origin when building from source, you have to use the scripts below to both install Origin Metrics and start OpenShift Origin.
+
+1. Start OpenShift Origin by running `start-openshift.sh`
+
+2. Once OpenShift Origin is fully started, run `afterstart-openshift.sh` to complete its setup
+
+3. To fully and completely stop and cleanup OpenShift Origin, run `stop-openshift.sh`
