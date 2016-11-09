@@ -265,7 +265,7 @@ func joinMap(m map[string]string) string {
 	s := make([]string, len(m))
 	i := 0
 	for k, v := range m {
-		s[i] = fmt.Sprintf("%v=%v", k, v)
+		s[i] = fmt.Sprintf("%v:%v", k, v)
 		i++
 	}
 	return strings.Join(s, ",")
