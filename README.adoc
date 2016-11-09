@@ -123,7 +123,7 @@ In order for Hawkular OpenShift Agent to store its metric data, you need a Hawku
 ./start-openshift.sh
 ----
 
-2) Once OpenShift Origin is fully started and you can log into the console (at `http://${OPENSHIFT_IP_ADDRESS}:8443`), you need to complete its setup:
+2) Once OpenShift Origin is fully started and you can log into the console (at `http://${OPENSHIFT_IP_ADDRESS}:8443`), you need to complete its setup (run this in another console since the `start-openshift.sh` you ran in step 1 runs in the foreground):
 
 ----
 ./afterstart-openshift.sh
