@@ -32,7 +32,7 @@ Note that the agent does not collect or store inventory at this time - this is s
 == Building
 
 [NOTE]
-These build instructions assume you have the following installed on your system: (1) link:http://golang.org/doc/install[Go Programming Language], (2) link:http://git-scm.com/book/en/v2/Getting-Started-Installing-Git[git], (3) link:https://docs.docker.com/installation/[Docker], and (3) make. To run Hawkular OpenShift Agent inside OpenShift after you build it, it is assumed you have OpenShift installed on your system as well. You can find a set of link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/deploy/openshift/README.adoc[instructions on how to build and install OpenShift here].
+These build instructions assume you have the following installed on your system: (1) link:http://golang.org/doc/install[Go Programming Language], (2) link:http://git-scm.com/book/en/v2/Getting-Started-Installing-Git[git], (3) link:https://docs.docker.com/installation/[Docker], and (4) make. To run Hawkular OpenShift Agent inside OpenShift after you build it, it is assumed you have OpenShift installed on your system as well. You can find a set of link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/deploy/openshift/README.adoc[instructions on how to build and install OpenShift here].
 
 To build Hawkular OpenShift Agent:
 

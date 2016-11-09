@@ -60,7 +60,7 @@ After the `start-openshift.sh` script completes, you will have soft links that p
 
 === Deploying the Agent Into OpenShift Origin
 
-Now that you have a running OpenShift environment, you can deploy the Hawkular OpenShift Agent inside it. You simply run the deploy script to do this:
+Now that you have a running OpenShift environment, you can deploy the Hawkular OpenShift Agent inside it. If you have previously built the agent and its Docker container, you can simply run the deploy script to do this:
 
 ----
 ./deploy-agent.sh
