@@ -3,7 +3,8 @@
 ##############################################################################
 # afterstart-openshift.sh
 #
-# Run this script after OpenShift has been started via start-openshift.sh.
+# This script is automatically run after OpenShift has been started via
+# start-openshift.sh.
 #
 # This script will complete the setup of OpenShift to make it ready
 # for Hawkular OpenShift Agent to be deployed in it.

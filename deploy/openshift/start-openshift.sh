@@ -11,6 +11,8 @@
 # into this OpenShift installation.
 ##############################################################################
 
+_THIS_SCRIPT_DIR="$(cd -P "$(dirname "$0")" && pwd)"
+
 source ./env-openshift.sh
 
 echo Will start OpenShift that is located here: ${OPENSHIFT_BINARY_DIR}
@@ -48,4 +50,21 @@ sudo sed -i 's/metricsPublicURL: ""/metricsPublicURL: https:\/\/hawkular-metrics
 echo OpenShift will use hawkular-metrics.example.com for Hawkular Metrics URL
 
 # Start OpenShift
-sudo ${OPENSHIFT_BINARY_DIR}/openshift start --node-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/node-${OPENSHIFT_IP_ADDRESS}/node-config.yaml --master-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/master-config.yaml
+set -m
+sudo ${OPENSHIFT_BINARY_DIR}/openshift start --node-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/node-${OPENSHIFT_IP_ADDRESS}/node-config.yaml --master-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/master-config.yaml &
+
+# Wait for OpenShift to come up
+_WAIT_FOR_THIS_URL=https://${OPENSHIFT_IP_ADDRESS}:8443/console
+echo Waiting for OpenShift console to be available at ${_WAIT_FOR_THIS_URL}
+until $(curl --output /dev/null --silent --head --insecure --fail ${_WAIT_FOR_THIS_URL}); do
+  sleep 5
+done
+sleep 5
+echo OpenShift ready - completing the setup.
+
+# Now that OpenShift is started, we need to finish the OpenShift setup via afterstart script
+cd $_THIS_SCRIPT_DIR
+./afterstart-openshift.sh
+
+# Bring OpenShift server process back into foreground
+fg

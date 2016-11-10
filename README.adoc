@@ -120,19 +120,16 @@ Download the source (via git clone) and build the OpenShift Origin binaries by s
 
 ===== Installing Origin Metrics and Running OpenShift Origin
 
-In order for Hawkular OpenShift Agent to store its metric data, you need a Hawkular Metrics server. Origin Metrics provides this Hawkular Metrics server and is deployed inside OpenShift Origin. Because Origin Metrics does not come with OpenShift Origin when building from source, you have to use the scripts below to both install Origin Metrics and start OpenShift Origin.
+In order for Hawkular OpenShift Agent to store its metric data, you need a Hawkular Metrics server. Origin Metrics provides this Hawkular Metrics server and is deployed inside OpenShift Origin. Because Origin Metrics does not come with OpenShift Origin when building from source, you have to use the scripts below to install Origin Metrics, start OpenShift Origin, and stop it.
 
-1) Start OpenShift Origin
+You start OpenShift Origin by running:
 
 ----
 ./start-openshift.sh
 ----
 
-2) Once OpenShift Origin is fully started and you can log into the console (at `http://${OPENSHIFT_IP_ADDRESS}:8443`), you need to complete its setup by running the "after-start" script. Run this in another console since the `start-openshift.sh` you ran in step 1 runs in the foreground:
-
-----
-./afterstart-openshift.sh
-----
+[NOTE]
+Once OpenShift Origin is fully started and the console at `http://${OPENSHIFT_IP_ADDRESS}:8443` is ready, more setup is needed but is completed automatically for you (via the `afterstart-openshift.sh` script).
 
 [TIP]
 After the `start-openshift.sh` script completes, you will have soft links that point to the OpenShift master "ca.crt" file as well as to the directory where the OpenShift Origin binaries are located. These are provided as a convienence. They will be removed when you shut down via the `stop-openshift.sh` script.
