@@ -91,11 +91,14 @@ If you already have a running OpenShift environment where you want to deploy and
 
 These instructions help you get a local copy of OpenShift Origin installed and running so you can then deploy the Hawkular OpenShift Agent inside of it.
 
+All instructions in this section assume your console's current working directory is the location where the scripts are found. The scripts are found in the link:deploy/openshift[deploy/openshift] directory. So go there now:
+
+----
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift
+----
+
 [TIP]
 It is highly recommended that you read the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] to become familiar with what is needed to build from source and run. You will still need to perform the additional instructions listed below, however.
-
-[NOTE]
-All instructions in this section assume your console's current working directory is the location where the scripts are found. The scripts are found in the link:deploy/openshift[deploy/openshift] directory.
 
 [NOTE]
 When you need to log into the OpenShift environment, the default credentials to use are "admin" for username and "admin" for password.
