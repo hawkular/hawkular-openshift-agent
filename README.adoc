@@ -111,7 +111,7 @@ There needs to be an entry in `/etc/hosts` that maps the hostname `hawkular-metr
 127.0.0.1   localhost hawkular-metrics.example.com
 ----
 
-Also, if you are running Docker as a service via systemd then you must add the `--insecure-registry` argument with an appropriate value to its options in `/etc/sysconfig/docker` - you usually will want to use `172.30.0.0/16` as the value. For example, `/etc/sysconfig/docker` should have a line that will look something like this:
+You also must make sure your Docker daemon is running. If you are running Docker as a service via systemd then you must add the `--insecure-registry` argument with an appropriate value to its options in `/etc/sysconfig/docker` - you usually will want to use `172.30.0.0/16` as the value. For example, `/etc/sysconfig/docker` should have a line that will look something like this:
 
 ----
 OPTIONS='--selinux-enabled --log-driver=journald --insecure-registry 172.30.0.0/16'
