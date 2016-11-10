@@ -1,3 +1,16 @@
-Documentation on how to use these files to deploy the agent to OpenShift is now found here:
+Refer to the link:/README.adoc#running-inside-openshift[main README] to learn how to use the files in this directory.
 
-https://github.com/hawkular/hawkular-openshift-agent/blob/master/README.adoc#running-inside-openshift
+In short, these files are used to build, start, and stop your own OpenShift environment:
+
+* env-openshift.sh
+* build-openshift.sh
+* start-openshift.sh
+* afterstart-openshift.sh
+* stop-openshift.sh
+
+These files are used to deploy and undeploy the agent in a running OpenShift environment:
+
+* deploy-agent.sh
+* undeploy-agent.sh
+* hawkular-openshift-agent-configmap.yaml
+* hawkular-openshift-agent.yaml
