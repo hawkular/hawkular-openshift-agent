@@ -103,6 +103,22 @@ It is highly recommended that you read the link:https://github.com/openshift/ori
 [NOTE]
 When you need to log into the OpenShift environment, the default credentials to use are "admin" for username and "admin" for password.
 
+===== Prepare the Operating System
+
+There needs to be an entry in `/etc/hosts` that maps the hostname `hawkular-metrics.example.com` to 127.0.0.1. So make sure your `/etc/hosts` has a line that looks something like this:
+
+----
+127.0.0.1   localhost hawkular-metrics.example.com
+----
+
+Also, if you are running Docker as a service via systemd then you must add the `--insecure-registry` argument with an appropriate value to its options in `/etc/sysconfig/docker` - you usually will want to use `172.30.0.0/16` as the value. For example, `/etc/sysconfig/docker` should have a line that will look something like this:
+
+----
+OPTIONS='--selinux-enabled --log-driver=journald --insecure-registry 172.30.0.0/16'
+----
+
+Once you do that, restart the Docker service. If you are not running Docker as a service, make sure that argument is passed to your running Docker daemon. See the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin documentation] for more details.
+
 ===== Prepare the Build Environment
 
 The file `env-openshift.sh` sets some variables that are used by the scripts to download, build, configure, start, and stop OpenShift Origin. Edit this file so that the values match what you want for your environment.
