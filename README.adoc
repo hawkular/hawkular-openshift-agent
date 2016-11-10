@@ -87,13 +87,18 @@ make test
 
 ==== Building, Installing, and Running OpenShift
 
-If you already have a running OpenShift environment where you want to deploy and run the agent you can skip this section and go directly to link:#building-the-docker-image[the next section]. These instructions help you get a local copy of OpenShift Origin installed and running so you can then deploy the Hawkular OpenShift Agent inside of it.
+If you already have a running OpenShift environment where you want to deploy and run the agent you can skip this section and go directly to link:#building-the-docker-image[the next section].
+
+These instructions help you get a local copy of OpenShift Origin installed and running so you can then deploy the Hawkular OpenShift Agent inside of it.
 
 [TIP]
 It is highly recommended that you read the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] to become familiar with what is needed to build from source and run. You will still need to perform the additional instructions listed below, however.
 
 [NOTE]
 All instructions in this section assume your console's current working directory is the location where the scripts are found. The scripts are found in the link:deploy/openshift[deploy/openshift] directory.
+
+[NOTE]
+When you need to log into the OpenShift environment, the default credentials to use are "admin" for username and "admin" for password.
 
 ===== Prepare the Build Environment
 
@@ -123,7 +128,7 @@ In order for Hawkular OpenShift Agent to store its metric data, you need a Hawku
 ./start-openshift.sh
 ----
 
-2) Once OpenShift Origin is fully started and you can log into the console (at `http://${OPENSHIFT_IP_ADDRESS}:8443`), you need to complete its setup (run this in another console since the `start-openshift.sh` you ran in step 1 runs in the foreground):
+2) Once OpenShift Origin is fully started and you can log into the console (at `http://${OPENSHIFT_IP_ADDRESS}:8443`), you need to complete its setup by running the "after-start" script. Run this in another console since the `start-openshift.sh` you ran in step 1 runs in the foreground:
 
 ----
 ./afterstart-openshift.sh
@@ -419,6 +424,15 @@ hawkular_server:
 ----
 |The default tenant ID to be used if external endpoints do not define their own. Note that OpenShift endpoints always have a tenant which is the same as its pod namespace and thus this setting is not used in that case.
 
+|HAWKULAR_SERVER_CA_CERT_FILE
+|
+[source,yaml]
+----
+hawkular_server:
+  ca_cert_file: VALUE
+----
+|File that contains the certificate that is required to connect to Hawkular Metrics
+
 |HAWKULAR_SERVER_USERNAME
 |
 [source,yaml]
@@ -456,7 +470,7 @@ hawkular_server:
 identity:
   cert_file: VALUE
 ----
-|The certificate that identifies this agent.
+|File that contains the certificate that identifies this agent.
 
 |HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE
 |
@@ -465,7 +479,7 @@ identity:
 identity:
   private_key_file: VALUE
 ----
-|The private key that identifies this agent.
+|File that contains the private key that identifies this agent.
 
 |K8S_MASTER_URL
 |
@@ -510,7 +524,7 @@ kubernetes:
 kubernetes:
   ca_cert_file: VALUE
 ----
-|The certificate required to connect to the OpenShift master.
+|File that contains the certificate required to connect to the OpenShift master.
 |===
 
 == Metric Tags
