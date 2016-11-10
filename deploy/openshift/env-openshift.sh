@@ -9,7 +9,7 @@
 # This is the GOPATH where you want the OpenShift Origin project to go
 OPENSHIFT_GOPATH=${HOME}/source/go/openshift
 
-# This is the IP address where OpenShift will bind its master
+# This is the IP address where OpenShift will bind its master (do not use any within the loopback range of 127.0.0.x)
 OPENSHIFT_IP_ADDRESS=192.168.1.2
 
 #
