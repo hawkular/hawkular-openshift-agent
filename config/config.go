@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
-	"strings"
 )
 
 // Environment vars can define some default values
@@ -63,9 +63,14 @@ type Hawkular_Server struct {
 }
 
 // Collector provides information about collecting metrics from monitored endpoints.
+// Tags specified here will be attached to all metrics this agent collects and stores.
+// ID_Prefix is a string (with potential ${env} tokens) that is prepended to all IDs of
+// all metrics collected by the agent.
 // USED FOR YAML
 type Collector struct {
 	Minimum_Collection_Interval_Secs int
+	Tags                             tags.Tags ",omitempty"
+	Metric_ID_Prefix                 string
 }
 
 // Kubernetes provides all the details necessary to communicate with the Kubernetes system.
@@ -84,14 +89,12 @@ type Kubernetes struct {
 }
 
 // Config defines the agent's full YAML configuration.
-// Tags specified here will be attached to all metrics this agent collects and stores.
 // USED FOR YAML
 type Config struct {
 	Identity        security.Identity ",omitempty"
 	Hawkular_Server Hawkular_Server
 	Collector       Collector            ",omitempty"
 	Kubernetes      Kubernetes           ",omitempty"
-	Tags            tags.Tags            ",omitempty"
 	Endpoints       []collector.Endpoint ",omitempty"
 }
 
@@ -148,8 +151,8 @@ func Unmarshal(yamlString string) (conf *Config, err error) {
 	}
 
 	// yaml unmarshalling leaves empty tags as nil - we want empty but non-nil
-	if conf.Tags == nil {
-		conf.Tags = tags.Tags{}
+	if conf.Collector.Tags == nil {
+		conf.Collector.Tags = tags.Tags{}
 	}
 
 	for i, e := range conf.Endpoints {

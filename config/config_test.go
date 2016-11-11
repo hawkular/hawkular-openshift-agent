@@ -132,6 +132,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Collector.Minimum_Collection_Interval_Secs != 12345 {
 		t.Errorf("Failed to unmarshal collection interval:\n%v", conf)
 	}
+	if conf.Collector.Metric_ID_Prefix != "" {
+		t.Errorf("Failed to unmarshal empty metric ID prefix:\n%v", conf)
+	}
 	if conf.Hawkular_Server.Url != "http://server:80" {
 		t.Errorf("Failed to unmarshal server url:\n%v", conf)
 	}
@@ -147,7 +150,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Endpoints[1].Collection_Interval_Secs != 234 {
 		t.Error("Second endpoint is not correct")
 	}
-	if conf.Tags == nil || len(conf.Tags) > 0 {
+	if conf.Collector.Tags == nil || len(conf.Collector.Tags) > 0 {
 		t.Error("Global tags should be empty but not nil")
 	}
 	if conf.Endpoints[0].Tags == nil || len(conf.Endpoints[0].Tags) > 0 {
@@ -166,6 +169,11 @@ func TestLoadSave(t *testing.T) {
 		},
 		Collector: Collector{
 			Minimum_Collection_Interval_Secs: 12345,
+			Metric_ID_Prefix:                 "prefix",
+			Tags: tags.Tags{
+				"tag1": "tagvalue1",
+				"tag2": "tagvalue2",
+			},
 		},
 		Hawkular_Server: Hawkular_Server{
 			Url: "http://TestLoadSave:80",
@@ -173,10 +181,6 @@ func TestLoadSave(t *testing.T) {
 		Kubernetes: Kubernetes{
 			Pod_Namespace: "TestLoadSave namespace",
 			Pod_Name:      "TestLoadSave name",
-		},
-		Tags: tags.Tags{
-			"tag1": "tagvalue1",
-			"tag2": "tagvalue2",
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -216,6 +220,9 @@ func TestLoadSave(t *testing.T) {
 	if conf.Collector.Minimum_Collection_Interval_Secs != 12345 {
 		t.Errorf("Failed to unmarshal collection interval:\n%v", conf)
 	}
+	if conf.Collector.Metric_ID_Prefix != "prefix" {
+		t.Errorf("Failed to unmarshal metric ID prefix:\n%v", conf)
+	}
 	if conf.Hawkular_Server.Url != "http://TestLoadSave:80" {
 		t.Errorf("Failed to unmarshal server url:\n%v", conf)
 	}
@@ -231,10 +238,10 @@ func TestLoadSave(t *testing.T) {
 	if conf.Endpoints[1].Collection_Interval_Secs != 234 {
 		t.Error("Second endpoint is not correct")
 	}
-	if conf.Tags["tag1"] != "tagvalue1" {
+	if conf.Collector.Tags["tag1"] != "tagvalue1" {
 		t.Error("Tag1 is not correct")
 	}
-	if conf.Tags["tag2"] != "tagvalue2" {
+	if conf.Collector.Tags["tag2"] != "tagvalue2" {
 		t.Error("Tag2 is not correct")
 	}
 

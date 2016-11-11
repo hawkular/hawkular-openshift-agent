@@ -153,11 +153,13 @@ Once OpenShift Origin is fully started and the console at `http://${OPENSHIFT_IP
 [TIP]
 After the `start-openshift.sh` script completes, you will have soft links that point to the OpenShift master "ca.crt" file as well as to the directory where the OpenShift Origin binaries are located. These are provided as a convienence. They will be removed when you shut down via the `stop-openshift.sh` script.
 
-To fully and completely stop and cleanup OpenShift Origin, run the stop script:
-
+[TIP]
+====
+When you no longer want to use your running OpenShift Origin server, run the following command to fully and completely stop and cleanup your OpenShift Origin server:
 ----
 ./stop-openshift.sh
 ----
+====
 
 ==== Building the Docker Image
 
@@ -368,7 +370,7 @@ identity:
   private_key_file: /path/to/file.key
 ----
 * The credentials are optional. If the Prometheus endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
-* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
 
 == Jolokia Endpoints
 
@@ -411,7 +413,7 @@ identity:
 * The credentials are optional. If the Jolokia endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
 * You must specify a metric's "type" as either "counter" or "gauge".
-* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
 * A metric "name" follows a strict format. First is the full MBean name (e.g. `java.lang:type=Threading`) followed by a hash (#) followed by the attribute that contains the metric data (e.g. `ThreadCount`). If the attribute is a composite attribute, then you must append a second hash followed by the composite attribute's subpath name which contains the actual metric value. For example, `java.lang:type=Memory#HeapMemoryUsage#used` will collect the `used` value of the composite attribute `HeapMemoryUsage` from the MBean `java.lang:type=Memory`.
 
 == Environment Variables
@@ -549,17 +551,18 @@ Metric data can be tagged with additional metadata called _tags_. A metric tag i
 
 Hawkular OpenShift Agent can be configured to attach custom tags to the metrics it collects. There are three places where you can define custom tags in Hawkular OpenShift Agent:
 
-* In the global configuration of the agent (all tags defined here will be attached to all metrics stored by the agent)
+* In the agent's global configuration (all tags defined here will be attached to all metrics stored by the agent)
 * In an endpoint configuration (all tags defined here will be attached to all metrics collected from that endpoint)
 * In a metric configuration (all tags defined here will only be attached to the metric)
 
-To define global tags, you would add a top-level `tags` section in the global agent configuration file. The following configuration snippet will tell the agent to attach the tags "my-tag" (with value "my-tag-value") and "another-tag" (with value "another-tag-value") to each and every metric the agent collects.
+To define global tags, you would add a `tags` section under `collector` in the agent's global configuration file. The following configuration snippet will tell the agent to attach the tags "my-tag" (with value "my-tag-value") and "another-tag" (with value "another-tag-value") to each and every metric the agent collects.
 
 [source,yaml]
 ----
-tags:
-- my-tag: my-tag-value
-- another-tag: another-tag-value
+collector:
+  tags:
+  - my-tag: my-tag-value
+  - another-tag: another-tag-value
 ----
 
 To define endpoint tags (that is, tags that will be attached to every metric collected from the endpoint), you would add a `tags` section within the endpoint configuration. The following configuration snippet will tell the agent to attach the tags "my-endpoint-tag" and "my-other-endpoint-tag" to every metric that is collected from this specific Jolokia endpoint:
