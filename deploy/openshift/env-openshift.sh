@@ -24,3 +24,13 @@ OPENSHIFT_GITHUB_SOURCE_DIR=${OPENSHIFT_GOPATH}/src/github.com/openshift/origin
 
 # This is where the OpenShift Origin binaries will be after the source is built
 OPENSHIFT_BINARY_DIR=${OPENSHIFT_GITHUB_SOURCE_DIR}/_output/local/bin/`go env GOHOSTOS`/`go env GOARCH`
+
+#
+# Make sure the environment is as expected
+#
+
+go env > /dev/null 2>&1
+if [ "$?" != "0" ]; then
+  echo Go is not in your PATH. Aborting.
+  exit 1
+fi
