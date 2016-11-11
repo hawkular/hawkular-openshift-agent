@@ -171,7 +171,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		// Note that the tenant for all metrics collected from this endpoint
 		// must be the same as the namespace of the pod where the endpoint is located
 		newEndpoint := &collector.Endpoint{
-			Url:                      url.String(),
+			URL:                      url.String(),
 			Type:                     cmeEndpoint.Type,
 			Tenant:                   ne.Pod.Namespace.Name,
 			Credentials:              cmeEndpoint.Credentials,

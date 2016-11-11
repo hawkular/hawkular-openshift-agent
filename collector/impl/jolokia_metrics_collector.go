@@ -33,7 +33,7 @@ import (
 )
 
 type JolokiaMetricsCollector struct {
-	Id          string
+	ID          string
 	Identity    *security.Identity
 	Endpoint    *collector.Endpoint
 	Environment map[string]string
@@ -41,7 +41,7 @@ type JolokiaMetricsCollector struct {
 
 func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *JolokiaMetricsCollector) {
 	mc = &JolokiaMetricsCollector{
-		Id:          id,
+		ID:          id,
 		Identity:    &identity,
 		Endpoint:    &endpoint,
 		Environment: env,
@@ -52,7 +52,7 @@ func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint 
 
 // GetId implements a method from MetricsCollector interface
 func (jc *JolokiaMetricsCollector) GetId() string {
-	return jc.Id
+	return jc.ID
 }
 
 // GetEndpoint implements a method from MetricsCollector interface
@@ -70,7 +70,7 @@ func (jc *JolokiaMetricsCollector) GetAdditionalEnvironment() map[string]string 
 // CollectMetrics implements a method from MetricsCollector interface
 func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHeader, err error) {
 
-	url := jc.Endpoint.Url
+	url := jc.Endpoint.URL
 	now := time.Now()
 
 	if len(jc.Endpoint.Metrics) == 0 {
@@ -118,7 +118,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 			metric := hmetrics.MetricHeader{
 				Type:   jc.Endpoint.Metrics[i].Type,
-				ID:     jc.Endpoint.Metrics[i].Id,
+				ID:     jc.Endpoint.Metrics[i].ID,
 				Tenant: jc.Endpoint.Tenant,
 				Data:   data,
 			}
