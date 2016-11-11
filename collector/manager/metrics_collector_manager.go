@@ -18,6 +18,7 @@
 package manager
 
 import (
+	"os"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
+	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
 
 // MetricsCollectorManager is responsible for periodically collecting metrics from many different endpoints.
@@ -107,11 +109,19 @@ func (mcm *MetricsCollectorManager) StartCollecting(collector collector.MetricsC
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	mcm.Tickers[id] = ticker
 	go func() {
+
+		// we need these to expand tokens in the IDs
+		mappingFunc := expand.MappingFunc(false, collector.GetAdditionalEnvironment())
+		mappingFuncWithEnv := expand.MappingFunc(true, collector.GetAdditionalEnvironment())
+
 		for _ = range ticker.C {
 			metrics, err := collector.CollectMetrics()
 			if err != nil {
 				glog.Warningf("Failed to collect metrics from [%v]. err=%v", id, err)
 			} else {
+				for i, m := range metrics {
+					metrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(m.ID, mappingFunc)
+				}
 				mcm.metricsChan <- metrics
 			}
 		}
@@ -154,8 +164,12 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector
 	// Do NOT allow pods to use agent environment variables since agent env vars may contain
 	// sensitive data (such as passwords). Only the global agent config can define tags
 	// with env var tokens.
-	globalTags := mcm.Config.Tags.ExpandTokens(true, additionalEnv)
+	globalTags := mcm.Config.Collector.Tags.ExpandTokens(true, additionalEnv)
 	endpointTags := endpoint.Tags.ExpandTokens(false, additionalEnv)
+
+	// we need these to expand tokens in the IDs
+	mappingFunc := expand.MappingFunc(false, additionalEnv)
+	mappingFuncWithEnv := expand.MappingFunc(true, additionalEnv)
 
 	for i, metric := range endpoint.Metrics {
 		metricTags := metric.Tags.ExpandTokens(false, additionalEnv)
@@ -168,7 +182,7 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector
 		metricDefs[i] = hmetrics.MetricDefinition{
 			Tenant: endpoint.Tenant,
 			Type:   metric.Type,
-			ID:     metric.Id,
+			ID:     os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(metric.Id, mappingFunc),
 			Tags:   map[string]string(allMetricTags),
 		}
 	}
