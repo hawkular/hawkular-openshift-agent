@@ -31,7 +31,7 @@ func GetKubernetesClient(conf *config.Config) (coreClient *v1.CoreClient, err er
 
 	var restConfig *rest.Config
 
-	url := conf.Kubernetes.Master_Url
+	url := conf.Kubernetes.Master_URL
 	token := conf.Kubernetes.Token
 	caCertFile := conf.Kubernetes.CA_Cert_File
 

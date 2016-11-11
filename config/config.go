@@ -56,7 +56,7 @@ const (
 // one may be configured.
 // USED FOR YAML
 type Hawkular_Server struct {
-	Url          string
+	URL          string
 	Tenant       string
 	Credentials  security.Credentials ",omitempty"
 	CA_Cert_File string               ",omitempty"
@@ -81,7 +81,7 @@ type Collector struct {
 // for the agent to monitor anything in OpenShift.
 // USED FOR YAML
 type Kubernetes struct {
-	Master_Url    string ",omitempty"
+	Master_URL    string ",omitempty"
 	Token         string ",omitempty"
 	CA_Cert_File  string ",omitempty"
 	Pod_Namespace string ",omitempty"
@@ -104,7 +104,7 @@ func NewConfig() (c *Config) {
 	c.Identity.Cert_File = getDefaultString(ENV_IDENTITY_CERT_FILE, "")
 	c.Identity.Private_Key_File = getDefaultString(ENV_IDENTITY_PRIVATE_KEY_FILE, "")
 
-	c.Hawkular_Server.Url = getDefaultString(ENV_HS_URL, "http://127.0.0.1:8080")
+	c.Hawkular_Server.URL = getDefaultString(ENV_HS_URL, "http://127.0.0.1:8080")
 	c.Hawkular_Server.Tenant = getDefaultString(ENV_HS_TENANT, "hawkular")
 	// If we are passing the username/password/token via an environment variable from a secret, we need to trim
 	c.Hawkular_Server.Credentials.Username = strings.TrimSpace(getDefaultString(ENV_HS_USERNAME, ""))
@@ -114,7 +114,7 @@ func NewConfig() (c *Config) {
 
 	c.Collector.Minimum_Collection_Interval_Secs = 10
 
-	c.Kubernetes.Master_Url = getDefaultString(ENV_K8S_MASTER_URL, "")
+	c.Kubernetes.Master_URL = getDefaultString(ENV_K8S_MASTER_URL, "")
 	c.Kubernetes.Pod_Namespace = getDefaultString(ENV_K8S_POD_NAMESPACE, "")
 	c.Kubernetes.Pod_Name = getDefaultString(ENV_K8S_POD_NAME, "")
 	c.Kubernetes.Token = getDefaultString(ENV_K8S_TOKEN, "")

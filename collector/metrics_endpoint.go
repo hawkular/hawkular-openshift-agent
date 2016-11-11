@@ -41,7 +41,7 @@ const (
 // Tags specified here will be attached to the metric when stored to Hawkular Metrics.
 // USED FOR YAML
 type MonitoredMetric struct {
-	Id   string ",omitempty"
+	ID   string ",omitempty"
 	Name string
 	Type metrics.MetricType
 	Tags tags.Tags ",omitempty"
@@ -55,7 +55,7 @@ type MonitoredMetric struct {
 // USED FOR YAML (see agent config file)
 type Endpoint struct {
 	Type                     EndpointType
-	Url                      string
+	URL                      string
 	Credentials              security.Credentials
 	Collection_Interval_Secs int
 	Tenant                   string
@@ -64,7 +64,7 @@ type Endpoint struct {
 }
 
 func (m *MonitoredMetric) String() string {
-	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], tags=[%v]", m.Id, m.Name, m.Type, m.Tags)
+	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], tags=[%v]", m.ID, m.Name, m.Type, m.Tags)
 }
 
 func (e *Endpoint) String() string {
@@ -76,7 +76,7 @@ func (e *Endpoint) String() string {
 		metricStrings[i] = m.String()
 	}
 	return fmt.Sprintf("Endpoint: type=[%v], url=[%v], coll_int=[%v], tenant=[%v], tags=[%v], metrics=[%v]",
-		e.Type, e.Url, e.Collection_Interval_Secs, e.Tenant, e.Tags, metricStrings)
+		e.Type, e.URL, e.Collection_Interval_Secs, e.Tenant, e.Tags, metricStrings)
 }
 
 // ValidateEndpoint will check the endpoint configuration for correctness.
@@ -87,26 +87,26 @@ func (e *Endpoint) ValidateEndpoint() error {
 		return err
 	}
 
-	if e.Url == "" {
+	if e.URL == "" {
 		return fmt.Errorf("Endpoint is missing URL")
 	}
 
 	if e.Type == "" {
-		return fmt.Errorf("Endpoint [%v] is missing a valid type", e.Url)
+		return fmt.Errorf("Endpoint [%v] is missing a valid type", e.URL)
 	}
 
 	for i, m := range e.Metrics {
 		if m.Name == "" {
-			return fmt.Errorf("Endpoint [%v] has a metric without a name", e.Url)
+			return fmt.Errorf("Endpoint [%v] has a metric without a name", e.URL)
 		}
 
 		if m.Type == "" {
-			return fmt.Errorf("Endpoint [%v] metric [%s] is missing its type", e.Url, m.Name)
+			return fmt.Errorf("Endpoint [%v] metric [%s] is missing its type", e.URL, m.Name)
 		}
 
 		// if there is no metric ID given, just use the metric name itself
-		if m.Id == "" {
-			e.Metrics[i].Id = m.Name
+		if m.ID == "" {
+			e.Metrics[i].ID = m.Name
 		}
 	}
 

@@ -88,7 +88,7 @@ func TestYamlText(t *testing.T) {
 		Path:     "/1111",
 		Metrics: []collector.MonitoredMetric{
 			collector.MonitoredMetric{
-				Id:   "metric1id",
+				ID:   "metric1id",
 				Type: hmetrics.Gauge,
 				Name: "metric1",
 				Tags: tags.Tags{
@@ -96,7 +96,7 @@ func TestYamlText(t *testing.T) {
 				},
 			},
 			collector.MonitoredMetric{
-				Id:   "metric2id",
+				ID:   "metric2id",
 				Type: hmetrics.Counter,
 				Name: "metric2",
 			},
@@ -174,7 +174,7 @@ endpoints:
 	if len(cme.Endpoints[0].Metrics) != 2 {
 		t.Fatalf("Endpoint.Metrics length is wrong")
 	}
-	if cme.Endpoints[0].Metrics[0].Id != "metric1id" {
+	if cme.Endpoints[0].Metrics[0].ID != "metric1id" {
 		t.Fatalf("Endpoint.Metrics[0] id is wrong")
 	}
 	if cme.Endpoints[0].Metrics[0].Name != "metric1" {

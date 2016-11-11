@@ -38,7 +38,7 @@ func TestEnvVar(t *testing.T) {
 
 	conf := NewConfig()
 
-	if conf.Hawkular_Server.Url != "http://TestEnvVar:9090" {
+	if conf.Hawkular_Server.URL != "http://TestEnvVar:9090" {
 		t.Error("Hawkular Server URL is wrong")
 	}
 	if conf.Hawkular_Server.Credentials.Token != "abc123" {
@@ -58,7 +58,7 @@ func TestDefaults(t *testing.T) {
 	if conf.Collector.Minimum_Collection_Interval_Secs != 10 {
 		t.Error("Minimum collection interval default is wrong")
 	}
-	if conf.Hawkular_Server.Url != "http://127.0.0.1:8080" {
+	if conf.Hawkular_Server.URL != "http://127.0.0.1:8080" {
 		t.Error("Hawkular Server URL is wrong")
 	}
 	if conf.Hawkular_Server.Tenant != "hawkular" {
@@ -90,7 +90,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Minimum_Collection_Interval_Secs: 12345,
 		},
 		Hawkular_Server: Hawkular_Server{
-			Url: "http://server:80",
+			URL: "http://server:80",
 		},
 		Kubernetes: Kubernetes{
 			Pod_Namespace: "TestMarshalUnmarshal namespace",
@@ -98,12 +98,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 		},
 		Endpoints: []collector.Endpoint{
 			{
-				Url:  "http://host:1111/metrics",
+				URL:  "http://host:1111/metrics",
 				Type: collector.ENDPOINT_TYPE_PROMETHEUS,
 				Collection_Interval_Secs: 123,
 			},
 			{
-				Url:  "http://host:2222/jolokia",
+				URL:  "http://host:2222/jolokia",
 				Type: collector.ENDPOINT_TYPE_JOLOKIA,
 				Collection_Interval_Secs: 234,
 			},
@@ -135,7 +135,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Collector.Metric_ID_Prefix != "" {
 		t.Errorf("Failed to unmarshal empty metric ID prefix:\n%v", conf)
 	}
-	if conf.Hawkular_Server.Url != "http://server:80" {
+	if conf.Hawkular_Server.URL != "http://server:80" {
 		t.Errorf("Failed to unmarshal server url:\n%v", conf)
 	}
 	if conf.Kubernetes.Pod_Namespace != "TestMarshalUnmarshal namespace" {
@@ -176,7 +176,7 @@ func TestLoadSave(t *testing.T) {
 			},
 		},
 		Hawkular_Server: Hawkular_Server{
-			Url: "http://TestLoadSave:80",
+			URL: "http://TestLoadSave:80",
 		},
 		Kubernetes: Kubernetes{
 			Pod_Namespace: "TestLoadSave namespace",
@@ -184,12 +184,12 @@ func TestLoadSave(t *testing.T) {
 		},
 		Endpoints: []collector.Endpoint{
 			{
-				Url:  "http://host:1111/metrics",
+				URL:  "http://host:1111/metrics",
 				Type: collector.ENDPOINT_TYPE_PROMETHEUS,
 				Collection_Interval_Secs: 123,
 			},
 			{
-				Url:  "http://host:2222/jolokia",
+				URL:  "http://host:2222/jolokia",
 				Type: collector.ENDPOINT_TYPE_JOLOKIA,
 				Collection_Interval_Secs: 234,
 			},
@@ -223,7 +223,7 @@ func TestLoadSave(t *testing.T) {
 	if conf.Collector.Metric_ID_Prefix != "prefix" {
 		t.Errorf("Failed to unmarshal metric ID prefix:\n%v", conf)
 	}
-	if conf.Hawkular_Server.Url != "http://TestLoadSave:80" {
+	if conf.Hawkular_Server.URL != "http://TestLoadSave:80" {
 		t.Errorf("Failed to unmarshal server url:\n%v", conf)
 	}
 	if conf.Kubernetes.Pod_Namespace != "TestLoadSave namespace" {

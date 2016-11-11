@@ -34,7 +34,7 @@ import (
 )
 
 type PrometheusMetricsCollector struct {
-	Id              string
+	ID              string
 	Identity        *security.Identity
 	Endpoint        *collector.Endpoint
 	Environment     map[string]string
@@ -43,7 +43,7 @@ type PrometheusMetricsCollector struct {
 
 func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *PrometheusMetricsCollector) {
 	mc = &PrometheusMetricsCollector{
-		Id:          id,
+		ID:          id,
 		Identity:    &identity,
 		Endpoint:    &endpoint,
 		Environment: env,
@@ -53,7 +53,7 @@ func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoi
 	// Notice the value of the map is the metric ID - this will be the Hawkular Metrics ID when the metric is stored.
 	mc.metricNameIdMap = make(map[string]string, len(endpoint.Metrics))
 	for _, m := range endpoint.Metrics {
-		mc.metricNameIdMap[m.Name] = m.Id
+		mc.metricNameIdMap[m.Name] = m.ID
 	}
 
 	return
@@ -61,7 +61,7 @@ func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoi
 
 // GetId implements a method from MetricsCollector interface
 func (pc *PrometheusMetricsCollector) GetId() string {
-	return pc.Id
+	return pc.ID
 }
 
 // GetEndpoint implements a method from MetricsCollector interface
@@ -81,11 +81,11 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 
 	client, err := http.GetHttpClient(pc.Identity)
 	if err != nil {
-		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.Url, err)
+		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.URL, err)
 		return
 	}
 
-	url := pc.Endpoint.Url
+	url := pc.Endpoint.URL
 	now := time.Now()
 
 	if len(pc.Endpoint.Metrics) == 0 {
@@ -98,7 +98,7 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 
 	metricFamilies, err := prometheus.Scrape(url, &pc.Endpoint.Credentials, client)
 	if err != nil {
-		err = fmt.Errorf("Failed to collect Prometheus metrics from [%v]. err=%v", pc.Endpoint.Url, err)
+		err = fmt.Errorf("Failed to collect Prometheus metrics from [%v]. err=%v", pc.Endpoint.URL, err)
 		return
 	}
 

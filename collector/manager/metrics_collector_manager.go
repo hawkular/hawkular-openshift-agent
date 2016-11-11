@@ -58,7 +58,7 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 	if endpoints != nil {
 		for _, e := range endpoints {
 			var theCollector collector.MetricsCollector
-			id := e.Url
+			id := e.URL
 			switch e.Type {
 			case collector.ENDPOINT_TYPE_PROMETHEUS:
 				{
@@ -70,7 +70,7 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 				}
 			default:
 				{
-					glog.Warningf("Will not start collecting for endpoint [%v] - unknown endpoint type [%v]", e.Url, e.Type)
+					glog.Warningf("Will not start collecting for endpoint [%v] - unknown endpoint type [%v]", e.URL, e.Type)
 					return
 				}
 			}
@@ -182,7 +182,7 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(endpoint *collector
 		metricDefs[i] = hmetrics.MetricDefinition{
 			Tenant: endpoint.Tenant,
 			Type:   metric.Type,
-			ID:     os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(metric.Id, mappingFunc),
+			ID:     os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(metric.ID, mappingFunc),
 			Tags:   map[string]string(allMetricTags),
 		}
 	}
