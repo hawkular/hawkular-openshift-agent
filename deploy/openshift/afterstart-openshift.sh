@@ -17,7 +17,7 @@ echo Will complete the setup of OpenShift that is located here: ${OPENSHIFT_BINA
 cd ${OPENSHIFT_BINARY_DIR}
 
 # Log in to allow the oc commands to pass
-${OPENSHIFT_BINARY_DIR}/oc login https://${OPENSHIFT_IP_ADDRESS}:8443 --username=admin --password=admin
+${OPENSHIFT_BINARY_DIR}/oc login https://${OPENSHIFT_IP_ADDRESS}:8443 --username=admin --password=admin --insecure-skip-tls-verify=true
 
 # Add the docker registry
 sudo chmod +r ${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/admin.kubeconfig
