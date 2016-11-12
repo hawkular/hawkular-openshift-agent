@@ -318,6 +318,38 @@ If you want Hawkular OpenShift Agent to stop monitoring a pod, it is as simple a
 oc annotate pods app-pod hawkular-openshift-agent-
 ----
 
+=== Try It!
+
+There is a example Docker image you can deploy in your OpenShift environment to see this all work together. The example Docker image will provide you with a WildFly application server that has a Jolokia endpoint installed. You can configure the agent to collect metrics from that Jolokia-enabld WildFly application server such as the "ThreadCount" metric from the MBean "java.lang:type=Threading" and the "used" metric from the composite "HeapMemoryUsage" attribute from the MBean "java.lang:type=Memory".
+
+Assuming you already have your OpenShift environment up and running and you have the Hawkular OpenShift Agent deployed within that OpenShift environment, you can use the link:deploy/openshift/jolokia-wildfly-example/deploy-to-openshift.sh[example deploy-to-openshift.sh] script to deploy this Jolokia-enabled WildFly application server into your OpenShift environment.
+
+[source,shell]
+----
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift/jolokia-wildfly-example
+./deploy-to-openshift.sh
+----
+
+[NOTE]
+====
+The `deploy-to-openshift.sh` script will install the Jolokia-enabled WildFly application server into your OpenShift's openshift-infra project by default. If you want to install it in another project, simply pass the name of the project to the deploy script. If you want to deploy the example in a new project, create the project first, then pass the name of the new project to the deploy script, like this:
+[source,shell]
+----
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift/jolokia-wildfly-example
+oc login
+oc new-project hawkular-example
+./deploy-to-openshift.sh hawkular-example
+----
+====
+
+The deploy script will do the following:
+
+* Installs the Jolokia-enabled WildFly application server in a pod.
+* Installs a config map on the project to inform the agent what metrics are to be collected from the pod.
+* Installs a "hawkular-openshift-agent" annotation on the pod so it refers to the config map thus turning on metric collection for the pod.
+
+Once the deploy script finishes, within moments the agent will begin collecting metrics and storing them to the Hawkular Metrics server. You can go to the OpenShift console and edit the config map to try things like adding new metric definitions, adding tags to the metrics, and changing the collection interval.
+
 == Configuring External Endpoints To Monitor
 
 Hawkular OpenShift Agent is being developed primarily for running within an OpenShift environment. However, strictly speaking, it does not need to run in or monitor OpenShift. You can run Hawkular OpenShift Agent within your own VM, container, or bare metal and configure it to collect metrics from external endpoints you define in the main config.yaml configuration file.
@@ -360,7 +392,7 @@ A full Prometheus endpoint configuration can look like this:
 Some things to note about configuring your Prometheus endpoints:
 
 * Prometheus endpoints can serve metric data in either text or binary form. The agent automatically supports both - there is no special configuration needed. The agent will detect what form the data is in when the endpoint returns it and parses the data accordingly.
-* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a configmap), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
+* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a config map), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
 * The agent supports either http or https endpoints. If the Prometheus endpoint is over the https protocol, you must configure
 the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Indentity section of the agent's configuration file:
 [source,yaml]
@@ -401,7 +433,7 @@ A full Jolokia endpoint configuration can look like this:
 
 Some things to note about configuring your Jolokia endpoints:
 
-* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a configmap), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
+* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a config map), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
 * The agent supports either http or https endpoints. If the Jolokia endpoint is over the https protocol, you must configure
 the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Indentity section of the agent's configuration file:
 [source,yaml]
@@ -590,7 +622,7 @@ endpoints:
       my-other-metric-tag: the-metric-tag-value
 ----
 
-Tag values can be defined with token expressions in the form of `${var}` or `$var` where _var_ is either an agent environment variable name (only supported in global tags) or, if the tag definition is found in an OpenShift configmap entry, one of the following:
+Tag values can be defined with token expressions in the form of `${var}` or `$var` where _var_ is either an agent environment variable name (only supported in global tags) or, if the tag definition is found in an OpenShift config map entry, one of the following:
 
 [cols="1,1a"]
 |===

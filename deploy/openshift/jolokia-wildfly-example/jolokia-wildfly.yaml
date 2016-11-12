@@ -1,0 +1,28 @@
+id: jolokia-wildfly
+kind: Template
+apiVersion: v1
+name: jolokia-wildfly
+metadata:
+  name: jolokia-wildfly
+objects:
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: jolokia-wildfly
+    labels:
+      name: jolokia-wildfly
+  spec:
+    selector:
+      name: jolokia-wildfly
+    replicas: 1
+    template:
+      version: v1
+      metadata:
+        labels:
+          name: jolokia-wildfly
+        annotations:
+          hawkular-openshift-agent: jolokia-wildfly
+      spec:
+        containers:
+        - image: jmazzitelli/jolokia-wildfly
+          name: jolokia-wildfly
