@@ -105,7 +105,7 @@ When you need to log into the OpenShift environment, the default credentials to 
 
 ===== Prepare the Operating System
 
-There needs to be an entry in `/etc/hosts` that maps the hostname `hawkular-metrics.example.com` to 127.0.0.1. So make sure your `/etc/hosts` has a line that looks something like this:
+There needs to be an entry in `/etc/hosts` that maps the hostname `hawkular-metrics.example.com`. The IP can be the local loopback address of 127.0.0.1, or you can make it the same IP that you will bind the OpenShift master to (i.e. what you set OPENSHIFT_IP_ADDRESS to in the env-openshift.sh script, see below). So make sure your `/etc/hosts` has a line that looks something like this:
 
 ----
 127.0.0.1   localhost hawkular-metrics.example.com
