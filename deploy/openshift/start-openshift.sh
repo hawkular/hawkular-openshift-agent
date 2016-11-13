@@ -21,7 +21,7 @@ echo Will start OpenShift that is located here: ${OPENSHIFT_BINARY_DIR}
 echo Finding the IP for hawkular-metrics.example.com
 gethostip -d hawkular-metrics.example.com
 if [ "$?" != "0" ]; then
-   echo Put a 127.0.0.1 entry for hawkular-metrics.example.com in /etc/hosts 
+   echo Map ${OPENSHIFT_IP_ADDRESS} to hawkular-metrics.example.com in /etc/hosts
    exit 1
 fi
 
