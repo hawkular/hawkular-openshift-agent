@@ -61,6 +61,9 @@ type ConfigMapEntry struct {
 
 // GetUrl returns a URL for the endpoint given a host string that is needed to complete the URL
 func (e K8SEndpoint) GetUrl(host string) (u *url.URL, err error) {
+	if host == "" {
+		return nil, fmt.Errorf("Endpoint not assigned an IP address yet")
+	}
 	leadingSlash := "/"
 	if e.Path[0] == '/' {
 		leadingSlash = ""
