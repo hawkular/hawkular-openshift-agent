@@ -71,7 +71,7 @@ make clean build
 
 if [ "$?" = "0" ]; then
   echo OpenShift Origin build is complete!
-  echo You can use the start-openshift.sh and afterstart-openshift.sh scripts to configure and start it.
+  echo You can use the start-openshift.sh and stop-openshift.sh scripts to start and stop it.
 
   grep 'OPTIONS=.*--insecure-registry' /etc/sysconfig/docker > /dev/null 2>&1
   if [ "$?" != "0" ]; then
