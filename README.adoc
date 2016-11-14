@@ -8,6 +8,8 @@ toc::[]
 
 Hawkular OpenShift Agent is a Hawkular feed implemented in the Go Programming Language. Its main purpose is to monitor a node within an OpenShift environment, collecting metrics from Prometheus and/or Jolokia endpoints deployed in one or more pods within the node. It can also be used to collect metrics from endpoints outside of OpenShift. The agent can be deployed inside the OpenShift node it is monitoring, or outside of OpenShift completely.
 
+Watch link:https://www.youtube.com/watch?v=jvOPlz7lzyM[this quick 10-minute demo] to see the agent in action.
+
 Note that the agent does not collect or store inventory at this time - this is strictly a metric collection and storage agent that integrates with Hawkular Metrics.
 
 === License and Copyright
