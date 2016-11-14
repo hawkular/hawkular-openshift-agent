@@ -59,7 +59,7 @@ echo Waiting for OpenShift console to be available at ${_WAIT_FOR_THIS_URL}
 until $(curl --output /dev/null --silent --head --insecure --fail ${_WAIT_FOR_THIS_URL}); do
   sleep 5
 done
-sleep 5
+sleep 30
 echo OpenShift ready - completing the setup.
 
 # Now that OpenShift is started, we need to finish the OpenShift setup via afterstart script
