@@ -32,7 +32,17 @@ docker: build
 	@cp -r deploy/docker/* _output/docker
 	@cp hawkular-openshift-agent _output/docker	
 	sudo docker build -t ${DOCKER_TAG} _output/docker
- 
+
+openshift-deploy: openshift-undeploy
+	@echo Deploying Components to OpenShift
+	oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
+	oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n openshift-infra
+	oc process -f deploy/openshift/hawkular-openshift-agent.yaml | oc create -n openshift-infra -f -
+
+openshift-undeploy:
+	@echo Undeploying the Agent from OpenShift
+	oc delete all,secrets,sa,templates,configmaps --selector=metrics-infra=agent -n openshift-infra
+
 install:
 	@echo Installing...
 	${GO_BUILD_ENVVARS} go install \
