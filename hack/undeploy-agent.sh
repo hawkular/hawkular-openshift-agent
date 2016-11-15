@@ -43,10 +43,10 @@ echo Will undeploy the agent from project ${OPENSHIFT_PROJECT}
 ${OPENSHIFT_OC} project ${OPENSHIFT_PROJECT}
 
 # Undeploy the agent
-${OPENSHIFT_OC} process -f hawkular-openshift-agent.yaml | ${OPENSHIFT_OC} delete -f -
+${OPENSHIFT_OC} process -f ../deploy/openshift/hawkular-openshift-agent.yaml | ${OPENSHIFT_OC} delete -f -
 
 # Delete the configmap containing the agent global configuration
-${OPENSHIFT_OC} delete -f hawkular-openshift-agent-configmap.yaml
+${OPENSHIFT_OC} delete -f ../deploy/openshift/hawkular-openshift-agent-configmap.yaml
 
 # Delete the agent service account
 ${OPENSHIFT_OC} delete serviceaccount hawkular-agent
