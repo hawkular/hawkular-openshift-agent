@@ -4,17 +4,21 @@ apiVersion: v1
 name: Hawkular OpenShift Agent Template
 metadata:
   name: hawkular-openshift-agent
+  metrics-infra: agent
 objects:
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
     name: hawkular-agent
+    labels:
+      metrics-infra: agent
 - apiVersion: v1
   kind: ReplicationController
   metadata:
     name: hawkular-openshift-agent
     labels:
       name: hawkular-openshift-agent
+      metrics-infra: agent
   spec:
     selector:
       name: hawkular-openshift-agent
@@ -24,6 +28,7 @@ objects:
       metadata:
         labels:
           name: hawkular-openshift-agent
+          metrics-infra: agent
       spec:
         serviceAccount: hawkular-agent
         containers:

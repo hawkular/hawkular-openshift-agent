@@ -87,81 +87,20 @@ make test
 
 === Running Inside OpenShift
 
-==== Building, Installing, and Running OpenShift
+==== Setting up OpenShift
+The following section assumes that the user has link:https://github.com/openshift/origin[OpenShift Origin] installed with link:https://github.com/openshift/origin-metrics[metrics] enabled.
 
-If you already have a running OpenShift environment where you want to deploy and run the agent you can skip this section and go directly to link:#building-the-docker-image[the next section].
+The link:https://docs.openshift.org/latest/welcome/index.html[OpenShift Origin Documentation] will outline all the steps required. Please make sure to follow the link:https://docs.openshift.org/latest/install_config/cluster_metrics.html[steps involved to deploying metrics].
 
-These instructions help you get a local copy of OpenShift Origin installed and running so you can then deploy the Hawkular OpenShift Agent inside of it.
+If you wish to forgo installing and configuring OpenShift with metrics yourself, the `oc cluster up` command can be used to get an instance of OpenShift Origin with metrics enabled:
 
-All instructions in this section assume your console's current working directory is the location where the scripts are found. The scripts are found in the link:deploy/openshift[deploy/openshift] directory. So go there now:
-
+[source,shell]
 ----
-cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift
-----
-
-[TIP]
-It is highly recommended that you read the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin instructions] to become familiar with what is needed to build from source and run. You will still need to perform the additional instructions listed below, however.
-
-[NOTE]
-When you need to log into the OpenShift environment, the default credentials to use are "admin" for username and "admin" for password.
-
-===== Prepare the Operating System
-
-There needs to be an entry in `/etc/hosts` that maps the hostname `hawkular-metrics.example.com`. The IP can be the local loopback address of 127.0.0.1, or you can make it the same IP that you will bind the OpenShift master to (i.e. what you set OPENSHIFT_IP_ADDRESS to in the env-openshift.sh script, see below). So make sure your `/etc/hosts` has a line that looks something like this:
-
-----
-127.0.0.1   localhost hawkular-metrics.example.com
-----
-
-You also must make sure your Docker daemon is running. If you are running Docker as a service via systemd then you must add the `--insecure-registry` argument with an appropriate value to its options in `/etc/sysconfig/docker` - you usually will want to use `172.30.0.0/16` as the value. For example, `/etc/sysconfig/docker` should have a line that will look something like this:
-
-----
-OPTIONS='--selinux-enabled --log-driver=journald --insecure-registry 172.30.0.0/16'
-----
-
-Once you do that, restart the Docker service. If you are not running Docker as a service, make sure that argument is passed to your running Docker daemon. See the link:https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc[OpenShift Origin documentation] for more details.
-
-===== Prepare the Build Environment
-
-The file `env-openshift.sh` sets some variables that are used by the scripts to download, build, configure, start, and stop OpenShift Origin. Edit this file so that the values match what you want for your environment.
-
-----
-vi ./env-openshift.sh
-----
-
-You also must be logged in as a user with sudo access. You will not be able to build, start, or stop OpenShift without sudo access. When you run the scripts, you will be prompted for the sudo password when root access is required.
-
-===== Build OpenShift Origin from Source
-
-Download the source (via git clone) and build the OpenShift Origin binaries by simply running the `build-openshift.sh` script. 
-
-----
-./build-openshift.sh
-----
-
-===== Installing Origin Metrics and Running OpenShift Origin
-
-In order for Hawkular OpenShift Agent to store its metric data, you need a Hawkular Metrics server. Origin Metrics provides this Hawkular Metrics server and is deployed inside OpenShift Origin. Because Origin Metrics does not come with OpenShift Origin when building from source, you have to use the scripts below to install Origin Metrics, start OpenShift Origin, and stop it.
-
-You start OpenShift Origin by running:
-
-----
-./start-openshift.sh
+oc cluster up --metrics
 ----
 
 [NOTE]
-Once OpenShift Origin is fully started and the console at `http://${OPENSHIFT_IP_ADDRESS}:8443` is ready, more setup is needed but is completed automatically for you (via the `afterstart-openshift.sh` script).
-
-[TIP]
-After the `start-openshift.sh` script completes, you will have soft links that point to the OpenShift master "ca.crt" file as well as to the directory where the OpenShift Origin binaries are located. These are provided as a convienence. They will be removed when you shut down via the `stop-openshift.sh` script.
-
-[TIP]
-====
-When you no longer want to use your running OpenShift Origin server, run the following command to fully and completely stop and cleanup your OpenShift Origin server:
-----
-./stop-openshift.sh
-----
-====
+In order to install the agent into OpenShift you will need to have admin priviledges for the OpenShift cluster.
 
 ==== Building the Docker Image
 
@@ -175,39 +114,40 @@ make docker
 
 ==== Deploying the Agent Inside OpenShift
 
+[NOTE]
+The following section assume that the `oc` command is available in the users path and that the user is logged in as a user with cluster admin privileges.
+
 [TIP]
 ====
-After you build the agent's docker image, you can perform the manual steps below to deploy it,
-or you can run the deploy script which essentially does the manual steps for you.
+If you do not want to manually deploy the agent into OpenShift, the steps are automated in the Makefile. The following will undeploy an old installation of the agent, if available, and deploy a new one:
 ----
-./deploy-agent.sh
+make deploy-openshift
 ----
 ====
 
-link:https://github.com/openshift/origin-metrics[Origin Metrics] must already be installed within an OpenShift project, normally the project named `openshift-infra`. You need to switch to that project because you must install the agent in that specific project. You then create the agent service account, grant the agent the necessary security permissions, create the agent's config map, and then deploy the agent. You will find the yaml files needed to create these in the link:deploy/openshift[deploy/openshift] directory.
+To deploy the agent, you will need to follow the following commands:
 
 [source,shell]
 ----
-cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift
-oc login
-oc project openshift-infra
-oc create -f - <<API
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: hawkular-agent
-API
 oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
-oc create -f hawkular-openshift-agent-configmap.yaml
-oc process -f hawkular-openshift-agent.yaml | oc create -f - 
+oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n openshift-infra
+oc process -f deploy/openshift/hawkular-openshift-agent.yaml | oc create -n openshift-infra -f -
 ----
 
 ==== Undeploying the Agent
 
-If you want to remove the agent from your OpenShift environment, you can use the undeploy script:
+If you want to remove the agent from your OpenShift environment, you can do so by running the following command:
 
+[source,shell]
 ----
-./undeploy-agent.sh
+oc delete all,secrets,sa,templates,configmaps --selector=metrics-infra=agent -n openshift-infra
+----
+
+Alternatively, the following will also perform the same task from the Makefile:
+
+[source,shell]
+----
+make undeploy-openshift
 ----
 
 === Running Outside OpenShift

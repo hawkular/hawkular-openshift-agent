@@ -4,6 +4,8 @@ apiVersion: v1
 name: Hawkular OpenShift Agent Configuration
 metadata:
   name: hawkular-openshift-agent-configuration
+  labels:
+    metrics-infra: agent
 data:
   config.yaml: |
     collector:
