@@ -264,11 +264,11 @@ oc annotate pods app-pod hawkular-openshift-agent-
 
 There is a example Docker image you can deploy in your OpenShift environment to see this all work together. The example Docker image will provide you with a WildFly application server that has a Jolokia endpoint installed. You can configure the agent to collect metrics from that Jolokia-enabld WildFly application server such as the "ThreadCount" metric from the MBean "java.lang:type=Threading" and the "used" metric from the composite "HeapMemoryUsage" attribute from the MBean "java.lang:type=Memory".
 
-Assuming you already have your OpenShift environment up and running and you have the Hawkular OpenShift Agent deployed within that OpenShift environment, you can use the link:deploy/openshift/jolokia-wildfly-example/deploy-to-openshift.sh[example deploy-to-openshift.sh] script to deploy this Jolokia-enabled WildFly application server into your OpenShift environment.
+Assuming you already have your OpenShift environment up and running and you have the Hawkular OpenShift Agent deployed within that OpenShift environment, you can use the link:hack/jolokia-wildfly-example/deploy-to-openshift.sh[example deploy-to-openshift.sh] script to deploy this Jolokia-enabled WildFly application server into your OpenShift environment.
 
 [source,shell]
 ----
-cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift/jolokia-wildfly-example
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/hack/jolokia-wildfly-example
 ./deploy-to-openshift.sh
 ----
 
@@ -277,7 +277,7 @@ cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift/j
 The `deploy-to-openshift.sh` script will install the Jolokia-enabled WildFly application server into your OpenShift's openshift-infra project by default. If you want to install it in another project, simply pass the name of the project to the deploy script. If you want to deploy the example in a new project, create the project first, then pass the name of the new project to the deploy script, like this:
 [source,shell]
 ----
-cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/deploy/openshift/jolokia-wildfly-example
+cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent/hack/jolokia-wildfly-example
 oc login
 oc new-project hawkular-example
 ./deploy-to-openshift.sh hawkular-example
