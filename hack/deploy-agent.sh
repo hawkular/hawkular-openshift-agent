@@ -54,7 +54,7 @@ API
 ${OPENSHIFT_OC} adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
 
 # Create the configmap containing the agent global configuration
-${OPENSHIFT_OC} create -f hawkular-openshift-agent-configmap.yaml
+${OPENSHIFT_OC} create -f ../deploy/openshift/hawkular-openshift-agent-configmap.yaml
 
 # Deploy the agent
-${OPENSHIFT_OC} process -f hawkular-openshift-agent.yaml | ${OPENSHIFT_OC} create -f -
+${OPENSHIFT_OC} process -f ../deploy/openshift/hawkular-openshift-agent.yaml | ${OPENSHIFT_OC} create -f -
