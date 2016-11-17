@@ -2,27 +2,30 @@
 
 These files are used to build, start, and stop your own OpenShift environment from source:
 
-* `env-openshift.sh`
-* `build-openshift.sh`
-* `start-openshift.sh`
-** `afterstart-openshift.sh` (you don't run this, it will be called automatically by `start-openshift.sh`)
-* `stop-openshift.sh`
+[cols="1,1"]
+|===
+|Script Name|Description
 
-1) Edit `env-openshift.sh` so the variables are set to the values appropriate for your local environment.
-
-2) To download the latest OpenShift Origin source code and build it, run `build-openshift.sh`
-
-3) To start your OpenShift Origin that you built from source, run `start-openshift.sh`
-
-4) To stop your OpenShift Origin, run `stop-openshift.sh`
+|`env-openshift.sh`|Defines the OpenShift environment. Edit this so the variables are set to the appropriate values.
+|`build-openshift.sh`|Downloads the OpenShift Origin source code and builds it.
+|`start-openshift.sh`|Starts the OpenShift Origin server that was built from source.
+|`stop-openshift.sh`|Stops the OpenShift Origin server thtat was built from source.
+|`cluster-openshift.sh`|Used instead of the above start/stop scripts. Pass "up"/"down" to start/stop OpenShift.
+|`afterstart-openshift.sh`|You don't run this; it is used automatically by `start-openshift.sh`.
+|===
 
 == Deploy the Agent
 
 These files are used to deploy and undeploy the agent in a running OpenShift environment:
 
-* `deploy-agent.sh`
-* `undeploy-agent.sh`
+|===
+|Script Name|Description
 
-** The above scripts use these configuration files:
-** `../deploy/openshift/hawkular-openshift-agent-configmap.yaml`
-** `../deploy/openshift/hawkular-openshift-agent.yaml`
+| `deploy-agent.sh`|Deploys the agent into a running OpenShift environment.
+| `undeploy-agent.sh`|Undeploys the agent from a running OpenShift environment.
+|===
+
+The above scripts use these configuration files:
+
+* link:../deploy/openshift/hawkular-openshift-agent-configmap.yaml[]
+* link:../deploy/openshift/hawkular-openshift-agent.yaml[]
