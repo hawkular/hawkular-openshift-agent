@@ -19,6 +19,6 @@ cd ${OPENSHIFT_BINARY_DIR}
 
 # Shut things down
 sudo pkill -x openshift
-sudo docker ps | awk 'index($NF,"k8s_")==1 { print $1 }' | xargs -l -r sudo docker stop
+${DOCKER_SUDO} docker ps | awk 'index($NF,"k8s_")==1 { print $1 }' | xargs -l -r ${DOCKER_SUDO} docker stop
 mount | grep "openshift.local.volumes" | awk '{ print $3}' | xargs -l -r sudo umount
 sudo rm -rf ${OPENSHIFT_BINARY_DIR}/openshift.local.*

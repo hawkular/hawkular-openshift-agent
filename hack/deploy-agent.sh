@@ -21,11 +21,11 @@ OPENSHIFT_PROJECT=${1:-openshift-infra}
 # Find the oc executable
 which oc > /dev/null 2>&1
 if [ "$?" = "0" ]; then
-  OPENSHIFT_OC=`which oc`
+  OPENSHIFT_OC="sudo $(which oc)"
   echo oc installed: ${OPENSHIFT_OC}
 else
   source ./env-openshift.sh
-  OPENSHIFT_OC=${OPENSHIFT_BINARY_DIR}/oc
+  OPENSHIFT_OC=${OPENSHIFT_EXE_OC}
   echo Using oc from the source build: ${OPENSHIFT_OC}
   ${OPENSHIFT_OC} version > /dev/null 2>&1
   if [ "$?" != "0" ]; then

@@ -42,7 +42,7 @@ ln -s ${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/ca.crt
 cd ${OPENSHIFT_BINARY_DIR}
 
 # Tell OpenShift to bind to an IP
-sudo ${OPENSHIFT_BINARY_DIR}/openshift start --write-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config --hostname=${OPENSHIFT_IP_ADDRESS} --public-master=${OPENSHIFT_IP_ADDRESS} --master=${OPENSHIFT_IP_ADDRESS}
+${OPENSHIFT_EXE_OPENSHIFT} start --write-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config --hostname=${OPENSHIFT_IP_ADDRESS} --public-master=${OPENSHIFT_IP_ADDRESS} --master=${OPENSHIFT_IP_ADDRESS}
 echo Binding OpenShift to: ${OPENSHIFT_IP_ADDRESS}
 
 # Tell OpenShift what the Hawkular Metrics URL should be
@@ -51,7 +51,7 @@ echo OpenShift will use hawkular-metrics.example.com for Hawkular Metrics URL
 
 # Start OpenShift
 set -m
-sudo ${OPENSHIFT_BINARY_DIR}/openshift start --node-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/node-${OPENSHIFT_IP_ADDRESS}/node-config.yaml --master-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/master-config.yaml &
+${OPENSHIFT_EXE_OPENSHIFT} start --node-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/node-${OPENSHIFT_IP_ADDRESS}/node-config.yaml --master-config=${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/master-config.yaml &
 
 # Wait for OpenShift to come up
 _WAIT_FOR_THIS_URL=https://${OPENSHIFT_IP_ADDRESS}:8443/console

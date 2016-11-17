@@ -19,7 +19,7 @@ cd ${OPENSHIFT_BINARY_DIR}
 if [ "$1" = "up" ];then
 
   echo Will start the OpenShift cluster at ${OPENSHIFT_IP_ADDRESS}
-  sudo ${OPENSHIFT_BINARY_DIR}/oc cluster up --metrics --public-hostname=${OPENSHIFT_IP_ADDRESS}
+  ${OPENSHIFT_EXE_OC} cluster up --metrics --public-hostname=${OPENSHIFT_IP_ADDRESS}
 
   echo 'Do you want the admin user to be assigned the cluster-admin role?'
   echo 'NOTE: This could expose your machine to root access!'
@@ -28,8 +28,8 @@ if [ "$1" = "up" ];then
     case $yn in
       Yes )
         echo Will assign the cluster-admin role to the admin user.
-        sudo ${OPENSHIFT_BINARY_DIR}/oc login -u system:admin
-        sudo ${OPENSHIFT_BINARY_DIR}/oc adm policy add-cluster-role-to-user cluster-admin admin
+        ${OPENSHIFT_EXE_OC} login -u system:admin
+        ${OPENSHIFT_EXE_OC} adm policy add-cluster-role-to-user cluster-admin admin
         break;;
       No )
         echo Admin user will not be assigned the cluster-admin role.
@@ -40,14 +40,14 @@ if [ "$1" = "up" ];then
 elif [ "$1" = "down" ];then
 
   echo Will shutdown the OpenShift cluster
-  sudo ${OPENSHIFT_BINARY_DIR}/oc cluster down
+  ${OPENSHIFT_EXE_OC} cluster down
   mount | grep "openshift.local.volumes" | awk '{ print $3}' | xargs -l -r sudo umount
   sudo rm -rf /var/lib/origin/* && sudo rmdir /var/lib/origin
 
 elif [ "$1" = "status" ];then
 
-  sudo ${OPENSHIFT_BINARY_DIR}/oc login
-  sudo ${OPENSHIFT_BINARY_DIR}/oc cluster status
+  ${OPENSHIFT_EXE_OC} login
+  ${OPENSHIFT_EXE_OC} cluster status
 
 else
   echo 'Required argument must be either: up, down, or status'
