@@ -4,8 +4,8 @@
 # build-openshift.sh
 #
 # This will download the OpenShift Origin source code and build it.
-# You can start it via start-openshift.sh and then afterstart-openshift.sh.
-# You can stop it via stop-openshift.sh.
+# You can start it via start-openshift.sh or "cluster-openshift.sh up"
+# You can stop it via stop-openshift.sh or "cluster-openshift.sh down"
 ##############################################################################
 
 # Before we do anything, make sure all software prerequisites are available.
@@ -48,30 +48,38 @@ source ./env-openshift.sh
 
 echo Will build OpenShift here: ${OPENSHIFT_GITHUB_SOURCE_DIR}
 
-# Create the location where the source code will live.
+if [ ! -d "${OPENSHIFT_GITHUB_SOURCE_DIR}" ]; then
+  echo The OpenShift Origin source code repository has not been cloned yet - doing that now.
 
-PARENT_DIR=`dirname ${OPENSHIFT_GITHUB_SOURCE_DIR}`
-mkdir -p $PARENT_DIR
+  # Create the location where the source code will live.
 
-if [ ! -d "$PARENT_DIR" ]; then
-  echo Aborting. Cannot create the parent source directory: $PARENT_DIR
-  exit 1
+  PARENT_DIR=`dirname ${OPENSHIFT_GITHUB_SOURCE_DIR}`
+  mkdir -p ${PARENT_DIR}
+
+  if [ ! -d "${PARENT_DIR}" ]; then
+    echo Aborting. Cannot create the parent source directory: ${PARENT_DIR}
+    exit 1
+  fi
+
+  # Clone the OpenShift Origin source code repository via git.
+
+  cd ${PARENT_DIR}
+  git clone git@github.com:openshift/origin.git
+else
+  echo The OpenShift Origin source code repository exists - it will be updated now.
 fi
-
-# Clone the OpenShift Origin source code repository via git.
-
-cd $PARENT_DIR
-git clone git@github.com:openshift/origin.git
 
 # Build OpenShift Origin.
 
 cd ${OPENSHIFT_GITHUB_SOURCE_DIR}
+git pull
+
 export GOPATH=${OPENSHIFT_GOPATH}
 make clean build
 
 if [ "$?" = "0" ]; then
   echo OpenShift Origin build is complete!
-  echo You can use the start-openshift.sh and stop-openshift.sh scripts to start and stop it.
+  echo You can use the start-openshift.sh/stop-openshift.sh or cluster-openshift.sh scripts to start and stop it.
 
   grep 'OPTIONS=.*--insecure-registry' /etc/sysconfig/docker > /dev/null 2>&1
   if [ "$?" != "0" ]; then
