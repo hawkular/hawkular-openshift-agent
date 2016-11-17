@@ -21,6 +21,22 @@ if [ "$1" = "up" ];then
   echo Will start the OpenShift cluster at ${OPENSHIFT_IP_ADDRESS}
   sudo ${OPENSHIFT_BINARY_DIR}/oc cluster up --metrics --public-hostname=${OPENSHIFT_IP_ADDRESS}
 
+  echo 'Do you want the admin user to be assigned the cluster-admin role?'
+  echo 'NOTE: This could expose your machine to root access!'
+  echo 'Select "1" for Yes and "2" for No:'
+  select yn in "Yes" "No"; do
+    case $yn in
+      Yes )
+        echo Will assign the cluster-admin role to the admin user.
+        sudo ${OPENSHIFT_BINARY_DIR}/oc login -u system:admin
+        sudo ${OPENSHIFT_BINARY_DIR}/oc adm policy add-cluster-role-to-user cluster-admin admin
+        break;;
+      No )
+        echo Admin user will not be assigned the cluster-admin role.
+        break;;
+    esac
+  done
+
 elif [ "$1" = "down" ];then
 
   echo Will shutdown the OpenShift cluster
