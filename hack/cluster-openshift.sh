@@ -18,6 +18,10 @@ cd ${OPENSHIFT_BINARY_DIR}
 
 if [ "$1" = "up" ];then
 
+  # The OpenShift docs say to disable firewalld for now. Just in case it is running, stop it now
+  sudo systemctl stop firewalld
+  echo Turned off firewalld
+
   echo Will start the OpenShift cluster at ${OPENSHIFT_IP_ADDRESS}
   ${OPENSHIFT_EXE_OC} cluster up --metrics --public-hostname=${OPENSHIFT_IP_ADDRESS}
 
