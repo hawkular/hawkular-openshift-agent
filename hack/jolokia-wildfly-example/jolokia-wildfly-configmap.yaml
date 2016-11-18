@@ -17,3 +17,6 @@ data:
       - name: java.lang:type=Memory#HeapMemoryUsage#used
         type: gauge
         id:   VM Heap Memory Used
+      - name: java.lang:type=Memory#HeapMemoryUsage#max
+        type: gauge
+        id:   VM Heap Memory Max
