@@ -225,12 +225,13 @@ func (d *Discovery) watchPods() {
 
 			log.Tracef("PodInventory has been updated: %v", d.Inventory.Pods)
 		}
-		log.Debugf("No longer watching for pod changes in node [%v]", d.Inventory.Node.Name)
+		glog.Infof("Finished watching for pod changes in node [%v]", d.Inventory.Node.Name)
 	}()
 }
 
 func (d *Discovery) unwatchPods() {
 	if d.PodWatcher != nil {
+		glog.Infof("Stopping the pod watcher for node [%v]", d.Inventory.Node.Name)
 		d.PodWatcher.Stop()
 		d.PodWatcher = nil
 	}
@@ -346,13 +347,14 @@ func (d *Discovery) watchConfigMap(namespace string) {
 				}
 			}
 		}
-		log.Debugf("No longer watching for configmap changes in namespace [%v]", namespace)
+		glog.Infof("Finished watching for configmap changes in namespace [%v]", namespace)
 	}()
 }
 
 func (d *Discovery) unwatchConfigMap(namespace string) {
 	doomedWatcher, ok := d.ConfigMapWatchers[namespace]
 	if ok == true {
+		glog.Infof("Stopping the configmap watcher for namespace [%v]", namespace)
 		doomedWatcher.Stop()
 		delete(d.ConfigMapWatchers, namespace)
 	}
