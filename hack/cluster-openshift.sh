@@ -50,6 +50,7 @@ elif [ "$1" = "down" ];then
 
 elif [ "$1" = "status" ];then
 
+  ${OPENSHIFT_EXE_OC} version
   ${OPENSHIFT_EXE_OC} login
   ${OPENSHIFT_EXE_OC} cluster status
 
