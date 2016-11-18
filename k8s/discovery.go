@@ -225,6 +225,7 @@ func (d *Discovery) watchPods() {
 
 			log.Tracef("PodInventory has been updated: %v", d.Inventory.Pods)
 		}
+		log.Debugf("No longer watching for pod changes in node [%v]", d.Inventory.Node.Name)
 	}()
 }
 
@@ -345,6 +346,7 @@ func (d *Discovery) watchConfigMap(namespace string) {
 				}
 			}
 		}
+		log.Debugf("No longer watching for configmap changes in namespace [%v]", namespace)
 	}()
 }
 
