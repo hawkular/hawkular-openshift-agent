@@ -18,6 +18,8 @@
 package k8s
 
 import (
+	"sync"
+
 	"github.com/golang/glog"
 	core "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.4/pkg/api"
@@ -37,11 +39,63 @@ const (
 	HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME = "hawkular-openshift-agent"
 )
 
+var watcherTimeout int64 = 3600 // number of seconds all watchers will timeout and refresh
+
+// watchProcessor has one job - keep the watcher up and running. OpenShift watchers always have a timeout,
+// so they will always periodically shutdown. The agent, however, always wants to watch, so it needs these
+// watchers. So watchProcessor will go into an infinite loop - when a watcher shuts down,
+// the watchProcessor immediately creates a new watcher and goes back to processing events. Only when
+// the watchProcessor is told to abort will it exit that loop and stop watching.
+type watchProcessor struct {
+	createWatchFunc func() watch.Interface  // creates the watch object
+	processFunc     func(w watch.Interface) // processes all watch events that come from the watch object
+	abort           bool                    // true when the processing should stop
+	watcher         watch.Interface         // if started, this is the watcher whose events are being processed
+	lock            sync.Mutex
+}
+
+func newWatchProcessor(f1 func() watch.Interface, f2 func(w watch.Interface)) *watchProcessor {
+	return &watchProcessor{
+		createWatchFunc: f1,
+		processFunc:     f2,
+		abort:           false,
+		lock:            sync.Mutex{},
+	}
+}
+
+func (w *watchProcessor) start() {
+	go func() {
+		for !w.shouldStop() {
+			if w.watcher != nil {
+				w.watcher.Stop()
+			}
+			w.watcher = w.createWatchFunc()
+			w.processFunc(w.watcher)
+		}
+	}()
+}
+
+func (w *watchProcessor) stop() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.abort = true
+	if w.watcher != nil {
+		w.watcher.Stop()
+		w.watcher = nil
+	}
+}
+
+func (w *watchProcessor) shouldStop() bool {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	return w.abort
+}
+
 type Discovery struct {
 	AgentConfig       *config.Config
 	Client            *core.CoreClient
-	PodWatcher        watch.Interface
-	ConfigMapWatchers map[string]watch.Interface
+	PodWatcher        *watchProcessor
+	ConfigMapWatchers map[string]*watchProcessor
 	NodeEventChannel  chan *NodeEvent
 	Inventory         *Inventory
 }
@@ -50,7 +104,7 @@ func NewDiscovery(conf *config.Config, client *core.CoreClient, node Node) *Disc
 	d := Discovery{
 		AgentConfig:       conf,
 		Client:            client,
-		ConfigMapWatchers: make(map[string]watch.Interface),
+		ConfigMapWatchers: make(map[string]*watchProcessor),
 		Inventory:         NewInventory(node),
 	}
 	return &d
@@ -133,22 +187,25 @@ func (d *Discovery) sendNodeEventDueToChangedConfigMap(namespace string, name st
 }
 
 func (d *Discovery) watchPods() {
-	// we only want to listen to pods on our own node
-	fieldSelector := fields.OneTermEqualSelector("spec.nodeName", d.Inventory.Node.Name)
+	createFunc := func() watch.Interface {
+		// we only want to listen to pods on our own node
+		fieldSelector := fields.OneTermEqualSelector("spec.nodeName", d.Inventory.Node.Name)
 
-	listOptions := api.ListOptions{
-		Watch:         true,
-		FieldSelector: fieldSelector,
+		listOptions := api.ListOptions{
+			Watch:          true,
+			FieldSelector:  fieldSelector,
+			TimeoutSeconds: &watcherTimeout,
+		}
+
+		watcher, err := d.Client.Pods(v1.NamespaceAll).Watch(listOptions)
+		if err != nil {
+			glog.Fatal(err)
+		}
+
+		return watcher
 	}
 
-	watcher, err := d.Client.Pods(v1.NamespaceAll).Watch(listOptions)
-	if err != nil {
-		glog.Fatal(err)
-	}
-
-	d.PodWatcher = watcher
-
-	go func() {
+	processFunc := func(watcher watch.Interface) {
 		for event := range watcher.ResultChan() {
 			podFromEvent := event.Object.(*v1.Pod)
 			namespaceFromEvent, err := d.Client.Namespaces().Get(podFromEvent.GetNamespace())
@@ -225,14 +282,17 @@ func (d *Discovery) watchPods() {
 
 			log.Tracef("PodInventory has been updated: %v", d.Inventory.Pods)
 		}
-		glog.Infof("Finished watching for pod changes in node [%v]", d.Inventory.Node.Name)
-	}()
+		log.Debugf("Watcher has disconnected (was watching for pod changes in node [%v])", d.Inventory.Node.Name)
+	}
+
+	d.PodWatcher = newWatchProcessor(createFunc, processFunc)
+	d.PodWatcher.start()
 }
 
 func (d *Discovery) unwatchPods() {
 	if d.PodWatcher != nil {
 		glog.Infof("Stopping the pod watcher for node [%v]", d.Inventory.Node.Name)
-		d.PodWatcher.Stop()
+		d.PodWatcher.stop()
 		d.PodWatcher = nil
 	}
 }
@@ -242,22 +302,25 @@ func (d *Discovery) watchConfigMap(namespace string) {
 		return // we are already watching this namespace's configmap
 	}
 
-	// pods are free to use any name for their ConfigMap - so we need to get all of them
-	fieldSelector := fields.Everything()
+	createFunc := func() watch.Interface {
+		// pods are free to use any name for their ConfigMap - so we need to get all of them
+		fieldSelector := fields.Everything()
 
-	listOptions := api.ListOptions{
-		Watch:         true,
-		FieldSelector: fieldSelector,
+		listOptions := api.ListOptions{
+			Watch:          true,
+			FieldSelector:  fieldSelector,
+			TimeoutSeconds: &watcherTimeout,
+		}
+
+		watcher, err := d.Client.ConfigMaps(namespace).Watch(listOptions)
+		if err != nil {
+			glog.Fatal(err)
+		}
+
+		return watcher
 	}
 
-	watcher, err := d.Client.ConfigMaps(namespace).Watch(listOptions)
-	if err != nil {
-		glog.Fatal(err)
-	}
-
-	d.ConfigMapWatchers[namespace] = watcher
-
-	go func() {
+	processFunc := func(watcher watch.Interface) {
 		for event := range watcher.ResultChan() {
 			configMapFromEvent := event.Object.(*v1.ConfigMap)
 			configMapName := configMapFromEvent.Name
@@ -347,15 +410,18 @@ func (d *Discovery) watchConfigMap(namespace string) {
 				}
 			}
 		}
-		glog.Infof("Finished watching for configmap changes in namespace [%v]", namespace)
-	}()
+		log.Debugf("Watcher has disconnected (was watching for configmap changes in namespace [%v])", namespace)
+	}
+
+	d.ConfigMapWatchers[namespace] = newWatchProcessor(createFunc, processFunc)
+	d.ConfigMapWatchers[namespace].start()
 }
 
 func (d *Discovery) unwatchConfigMap(namespace string) {
 	doomedWatcher, ok := d.ConfigMapWatchers[namespace]
 	if ok == true {
 		glog.Infof("Stopping the configmap watcher for namespace [%v]", namespace)
-		doomedWatcher.Stop()
+		doomedWatcher.stop()
 		delete(d.ConfigMapWatchers, namespace)
 	}
 
