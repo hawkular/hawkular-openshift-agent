@@ -1,0 +1,29 @@
+id: prometheus-example
+kind: Template
+apiVersion: v1
+name: prometheus-python-example
+metadata:
+  name: prometheus-python-example
+objects:
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: prometheus-python-example
+    labels:
+      name: prometheus-python-example
+  spec:
+    selector:
+      name: prometheus-python-example
+    replicas: 1
+    template:
+      version: v1
+      metadata:
+        labels:
+          name: prometheus-python-example
+        annotations:
+          hawkular-openshift-agent: prometheus-python-example
+      spec:
+        containers:
+        - image: mwringe/example-prometheus:test
+          name: prometheus-python-example
+
