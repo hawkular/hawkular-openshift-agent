@@ -24,7 +24,6 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
-	"github.com/hawkular/hawkular-openshift-agent/collector/impl"
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/log"
@@ -211,25 +210,12 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			"POD:labels":         joinMap(ne.Pod.Labels),
 		}
 
-		var theCollector collector.MetricsCollector
-		switch cmeEndpoint.Type {
-		case collector.ENDPOINT_TYPE_PROMETHEUS:
-			{
-				theCollector = impl.NewPrometheusMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv)
-			}
-		case collector.ENDPOINT_TYPE_JOLOKIA:
-			{
-				theCollector = impl.NewJolokiaMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv)
-			}
-		default:
-			{
-				glog.Warningf("Will not start collecting for endpoint in pod [%v] - unknown endpoint type [%v]",
-					ne.Pod.GetIdentifier(), cmeEndpoint.Type)
-				return
-			}
+		if c, err := manager.CreateMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv); err != nil {
+			glog.Warningf("Will not start collecting for endpoint in pod [%v]. err=%v", ne.Pod.GetIdentifier(), err)
+			continue
+		} else {
+			nec.MetricsCollectorManager.StartCollecting(c)
 		}
-
-		nec.MetricsCollectorManager.StartCollecting(theCollector)
 
 		// keep track of each pod's collector IDs in case we need to stop them later on
 		ids, ok := nec.CollectorIds[ne.Pod.GetIdentifier()]
