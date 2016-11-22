@@ -26,7 +26,6 @@ import (
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
-	"github.com/hawkular/hawkular-openshift-agent/collector/impl"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
@@ -57,25 +56,12 @@ func NewMetricsCollectorManager(conf *config.Config, metricsChan chan []hmetrics
 func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collector.Endpoint) {
 	if endpoints != nil {
 		for _, e := range endpoints {
-			var theCollector collector.MetricsCollector
 			id := e.URL
-			switch e.Type {
-			case collector.ENDPOINT_TYPE_PROMETHEUS:
-				{
-					theCollector = impl.NewPrometheusMetricsCollector(id, mcm.Config.Identity, e, nil)
-				}
-			case collector.ENDPOINT_TYPE_JOLOKIA:
-				{
-					theCollector = impl.NewJolokiaMetricsCollector(id, mcm.Config.Identity, e, nil)
-				}
-			default:
-				{
-					glog.Warningf("Will not start collecting for endpoint [%v] - unknown endpoint type [%v]", e.URL, e.Type)
-					return
-				}
+			if c, err := CreateMetricsCollector(id, mcm.Config.Identity, e, nil); err != nil {
+				glog.Warningf("Will not start collecting for endpoint [%v]. err=%v", id, err)
+			} else {
+				mcm.StartCollecting(c)
 			}
-
-			mcm.StartCollecting(theCollector)
 		}
 	}
 	return
