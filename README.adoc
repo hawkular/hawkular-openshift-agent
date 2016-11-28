@@ -121,7 +121,7 @@ The following sections assume that the `oc` command is available in the user's p
 ====
 If you do not want to manually deploy the agent into OpenShift, the steps are automated in the Makefile. The following will undeploy an old installation of the agent, if available, and deploy a new one:
 ----
-make deploy-openshift
+make openshift-deploy
 ----
 ====
 
@@ -147,7 +147,7 @@ Alternatively, the following will also perform the same task from the Makefile:
 
 [source,shell]
 ----
-make undeploy-openshift
+make openshift-undeploy
 ----
 
 === Running Outside OpenShift
