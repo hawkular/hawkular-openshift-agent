@@ -10,7 +10,7 @@ data:
   config.yaml: |
     collector:
       minimum_collection_interval_secs: 10
-      metric_id_prefix: ${POD:name}/${POD:uid}/
+      metric_id_prefix: pod/${POD:uid}/custom/
       tags:
         namespace_id: ${POD:namespace_uid}
         namespace_name: ${POD:namespace_name}
@@ -19,5 +19,8 @@ data:
         pod_name: ${POD:name}
         pod_namespace: ${POD:namespace_name}
         hostname: ${POD:hostname}
-        subdomain: ${POD:subdomain}
+        host_id: ${POD:hostname}
         labels: ${POD:labels}
+        type: pod
+        collector: hawkular_openshift_agent
+        custom_metric: true
