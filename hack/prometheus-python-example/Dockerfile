@@ -2,14 +2,17 @@ FROM centos:centos7
 
 EXPOSE 8181
 
-ADD epel-release-7-8.noarch.rpm /opt
-RUN rpm -iUvh /opt/epel-release-7-8.noarch.rpm && \
-    yum install -y -q go git wget make python-pip && \
+RUN yum -y -q install epel-release go git wget make && \
+    yum -y -q install python-pip && \
     yum clean all && \
     pip install prometheus_client
 
 RUN mkdir -p /opt/example
 
 COPY prometheus-python.py /opt/example
+
+# Set a default user, any value will work here.
+# Otherwise the default is root and can fail in certain OpenShift installations
+USER 12345
 
 ENTRYPOINT ["/opt/example/prometheus-python.py"]

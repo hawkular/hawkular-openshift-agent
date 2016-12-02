@@ -4,6 +4,12 @@ apiVersion: v1
 name: prometheus-python-example
 metadata:
   name: prometheus-python-example
+  labels:
+    hawkular-openshift-agent-example: prometheus-python
+parameters:
+- description: The version of the image to use
+  name: IMAGE_VERSION
+  value: dev
 objects:
 - apiVersion: v1
   kind: ReplicationController
@@ -11,6 +17,7 @@ objects:
     name: prometheus-python-example
     labels:
       name: prometheus-python-example
+      hawkular-openshift-agent-example: prometheus-python
   spec:
     selector:
       name: prometheus-python-example
@@ -20,10 +27,38 @@ objects:
       metadata:
         labels:
           name: prometheus-python-example
+          hawkular-openshift-agent-example: prometheus-python
         annotations:
           hawkular-openshift-agent: prometheus-python-example
       spec:
         containers:
-        - image: mwringe/example-prometheus:test
+        - image: hawkular/openshift-agent-example-prometheus-python:${IMAGE_VERSION}
           name: prometheus-python-example
-
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: prometheus-python-example
+    labels:
+      name: prometheus-python-example
+      hawkular-openshift-agent-example: prometheus-python
+  data:
+    hawkular-openshift-agent: |
+      collection_interval_secs: 10
+      endpoints:
+      - type: prometheus
+        protocol: "http"
+        port: 8181
+        path: /
+        metrics:
+        - name: process_virtual_memory_bytes
+          type: gauge
+        - name: process_resident_memory_bytes
+          type: gauge
+        - name: process_start_time_seconds
+          type: gauge
+        - name: process_cpu_seconds_total
+          type: counter
+        - name: process_open_fds
+          type: gauge
+        - name: process_max_fds
+          type: gauge
