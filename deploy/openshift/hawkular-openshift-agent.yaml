@@ -5,6 +5,10 @@ name: Hawkular OpenShift Agent Template
 metadata:
   name: hawkular-openshift-agent
   metrics-infra: agent
+parameters:
+- description: The version of the image to use
+  name: IMAGE_VERSION
+  value: dev
 objects:
 - apiVersion: v1
   kind: ServiceAccount
@@ -32,8 +36,7 @@ objects:
       spec:
         serviceAccount: hawkular-agent
         containers:
-        - image: hawkular/hawkular-openshift-agent:latest
-          imagePullPolicy: Never
+        - image: hawkular/hawkular-openshift-agent:${IMAGE_VERSION}
           name: hawkular-openshift-agent
           command:
             - "/opt/hawkular/hawkular-openshift-agent"

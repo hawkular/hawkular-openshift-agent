@@ -9,7 +9,7 @@ GO_BUILD_ENVVARS = \
 	CGO_ENABLED=0 \
 
 DOCKER_NAME = hawkular/hawkular-openshift-agent
-DOCKER_VERSION = latest
+DOCKER_VERSION = dev
 DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
 
 all: build
