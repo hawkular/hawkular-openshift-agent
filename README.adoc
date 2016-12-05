@@ -12,6 +12,10 @@ Watch link:https://www.youtube.com/watch?v=jvOPlz7lzyM[this quick 10-minute demo
 
 Note that the agent does not collect or store inventory at this time - this is strictly a metric collection and storage agent that integrates with Hawkular Metrics.
 
+=== Docker Image
+
+Hawkular OpenShift Agent is published as a docker image on https://hub.docker.com/r/hawkular/hawkular-openshift-agent[Docker hub at hawkular/hawkular-openshift-agent]
+
 === License and Copyright
 
 ....
