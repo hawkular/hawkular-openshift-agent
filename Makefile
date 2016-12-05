@@ -1,4 +1,4 @@
-VERSION = 0.0.1
+VERSION = 0.1.0
 COMMIT_HASH = $(shell git rev-parse HEAD)
 
 VERBOSE_MODE ?= 4
