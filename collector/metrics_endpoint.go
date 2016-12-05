@@ -93,6 +93,10 @@ func (e *Endpoint) ValidateEndpoint() error {
 
 	if e.Type == "" {
 		return fmt.Errorf("Endpoint [%v] is missing a valid type", e.URL)
+	} else {
+		if e.Type != ENDPOINT_TYPE_JOLOKIA && e.Type != ENDPOINT_TYPE_PROMETHEUS {
+			return fmt.Errorf("Endpoint [%v] has invalid type [%v]", e.URL, e.Type)
+		}
 	}
 
 	for i, m := range e.Metrics {
@@ -101,7 +105,14 @@ func (e *Endpoint) ValidateEndpoint() error {
 		}
 
 		if m.Type == "" {
-			return fmt.Errorf("Endpoint [%v] metric [%s] is missing its type", e.URL, m.Name)
+			// no need to define metric type if prometheus endpoint since it will tell us the type
+			if e.Type != ENDPOINT_TYPE_PROMETHEUS {
+				return fmt.Errorf("Endpoint [%v] metric [%v] is missing its type", e.URL, m.Name)
+			}
+		} else {
+			if m.Type != metrics.Gauge && m.Type != metrics.Counter {
+				return fmt.Errorf("Endpoint [%v] metric [%v] has invalid type [%v]", e.URL, m.Name, m.Type)
+			}
 		}
 
 		// if there is no metric ID given, just use the metric name itself
