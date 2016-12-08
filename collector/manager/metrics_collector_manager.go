@@ -182,8 +182,18 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(liveMetrics []hmetr
 			}
 		}
 
+		// the metric tags will consist of the custom tags as well as the fixed tags
 		metricTags := metric.Tags.ExpandTokens(false, additionalEnv)
+		units, err := collector.GetMetricUnits(metric.Units)
+		if err == nil {
+			if units.Symbol != "" {
+				metricTags["units"] = units.Symbol
+			}
+		} else {
+			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. No units will be assigned. err=%v", metric.ID, endpoint.String(), err)
+		}
 
+		// put all the tags together for the full list of tags to be applied to this metric definition
 		allMetricTags := tags.Tags{}
 		allMetricTags.AppendTags(globalTags)   // global tags are overridden by...
 		allMetricTags.AppendTags(endpointTags) // endpoint tags which are overridden by...

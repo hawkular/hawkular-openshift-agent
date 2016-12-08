@@ -41,10 +41,11 @@ const (
 // Tags specified here will be attached to the metric when stored to Hawkular Metrics.
 // USED FOR YAML
 type MonitoredMetric struct {
-	ID   string ",omitempty"
-	Name string
-	Type metrics.MetricType
-	Tags tags.Tags ",omitempty"
+	ID    string ",omitempty"
+	Name  string
+	Type  metrics.MetricType
+	Units string    ",omitempty"
+	Tags  tags.Tags ",omitempty"
 }
 
 // Endpoint provides information about how to connect to a particular endpoint in order
@@ -64,7 +65,7 @@ type Endpoint struct {
 }
 
 func (m *MonitoredMetric) String() string {
-	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], tags=[%v]", m.ID, m.Name, m.Type, m.Tags)
+	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], units=[%v], tags=[%v]", m.ID, m.Name, m.Type, m.Units, m.Tags)
 }
 
 func (e *Endpoint) String() string {
@@ -113,6 +114,10 @@ func (e *Endpoint) ValidateEndpoint() error {
 			if m.Type != metrics.Gauge && m.Type != metrics.Counter {
 				return fmt.Errorf("Endpoint [%v] metric [%v] has invalid type [%v]", e.URL, m.Name, m.Type)
 			}
+		}
+
+		if _, err := GetMetricUnits(m.Units); err != nil {
+			return fmt.Errorf("Endpoint [%v] metric [%v] has invalid units [%v]", e.URL, m.Name, m.Units)
 		}
 
 		// if there is no metric ID given, just use the metric name itself
