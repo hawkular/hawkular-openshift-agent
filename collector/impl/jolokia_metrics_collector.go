@@ -145,3 +145,9 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 	return
 }
+
+// CollectMetricDetails implements a method from MetricsCollector interface
+func (jc *JolokiaMetricsCollector) CollectMetricDetails() ([]collector.MetricDetails, error) {
+	// TODO: can we get information like metric type and description from JMX?
+	return make([]collector.MetricDetails, 0), nil
+}

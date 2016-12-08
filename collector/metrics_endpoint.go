@@ -41,11 +41,12 @@ const (
 // Tags specified here will be attached to the metric when stored to Hawkular Metrics.
 // USED FOR YAML
 type MonitoredMetric struct {
-	ID    string ",omitempty"
-	Name  string
-	Type  metrics.MetricType
-	Units string    ",omitempty"
-	Tags  tags.Tags ",omitempty"
+	ID          string ",omitempty"
+	Name        string
+	Type        metrics.MetricType
+	Units       string    ",omitempty"
+	Description string    ",omitempty"
+	Tags        tags.Tags ",omitempty"
 }
 
 // Endpoint provides information about how to connect to a particular endpoint in order
