@@ -207,3 +207,77 @@ func (pc *PrometheusMetricsCollector) prepareTagsMap(promLabels []*prom.LabelPai
 
 	return
 }
+
+// CollectMetricDetails implements a method from MetricsCollector interface
+func (pc *PrometheusMetricsCollector) CollectMetricDetails() (metricDetails []collector.MetricDetails, err error) {
+
+	client, err := http.GetHttpClient(pc.Identity)
+	if err != nil {
+		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.URL, err)
+		return
+	}
+
+	url := pc.Endpoint.URL
+
+	if len(pc.Endpoint.Metrics) == 0 {
+		log.Debugf("There are no metrics defined for Prometheus endpoint [%v]", url)
+		metricDetails = make([]collector.MetricDetails, 0)
+		return
+	}
+
+	log.Debugf("Told to collect details on [%v] Prometheus metrics from [%v]", len(pc.Endpoint.Metrics), url)
+
+	metricFamilies, err := prometheus.Scrape(url, &pc.Endpoint.Credentials, client)
+	if err != nil {
+		err = fmt.Errorf("Failed to collect details on Prometheus metrics from [%v]. err=%v", pc.Endpoint.URL, err)
+		return
+	}
+
+	metricDetails = make([]collector.MetricDetails, 0)
+
+	for _, metricFamily := range metricFamilies {
+
+		// by default the metric Id is the metric name
+		metricId := metricFamily.GetName()
+
+		// If the endpoint was given a list of metrics to collect but the current metric isn't in the list, skip it.
+		// If the metric was in the list, use its ID.
+		if len(pc.metricNameIdMap) > 0 {
+			var ok bool
+			metricId, ok = pc.metricNameIdMap[metricFamily.GetName()]
+			if !ok {
+				continue
+			}
+		}
+
+		singleMetricDetails := collector.MetricDetails{}
+
+		switch metricFamily.GetType() {
+		case prom.MetricType_GAUGE:
+			{
+				singleMetricDetails.MetricType = hmetrics.Gauge
+			}
+		case prom.MetricType_COUNTER:
+			{
+				singleMetricDetails.MetricType = hmetrics.Counter
+			}
+		case prom.MetricType_SUMMARY,
+			prom.MetricType_HISTOGRAM,
+			prom.MetricType_UNTYPED:
+			fallthrough
+		default:
+			{
+				log.Tracef("Skipping unsupported Prometheus metric [%v] of type [%v]", metricFamily.GetName(), metricFamily.GetType())
+				continue
+			}
+		}
+
+		singleMetricDetails.ID = metricId
+		singleMetricDetails.Description = metricFamily.GetHelp()
+
+		metricDetails = append(metricDetails, singleMetricDetails)
+	}
+
+	return
+
+}

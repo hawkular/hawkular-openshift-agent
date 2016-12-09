@@ -71,8 +71,8 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 // StartCollecting will collect metrics every "collection interval" seconds in a go routine.
 // If a metrics collector with the same ID is already collecting metrics, it will be stopped
 // and the given new collector will take its place.
-func (mcm *MetricsCollectorManager) StartCollecting(collector collector.MetricsCollector) {
-	id := collector.GetId()
+func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.MetricsCollector) {
+	id := theCollector.GetId()
 
 	// if there was an old ticker still running for this collector, stop it
 	mcm.StopCollecting(id)
@@ -81,7 +81,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(collector collector.MetricsC
 	mcm.TickersLock.Lock()
 	defer mcm.TickersLock.Unlock()
 
-	interval := collector.GetEndpoint().Collection_Interval_Secs
+	interval := theCollector.GetEndpoint().Collection_Interval_Secs
 	if interval < mcm.Config.Collector.Minimum_Collection_Interval_Secs {
 		glog.Warningf("Collection interval for [%v] is [%v] which is lower than the minimum allowed [%v]. Setting it to the minimum allowed.",
 			id, interval, mcm.Config.Collector.Minimum_Collection_Interval_Secs)
@@ -94,22 +94,23 @@ func (mcm *MetricsCollectorManager) StartCollecting(collector collector.MetricsC
 	go func() {
 
 		// we need these to expand tokens in the IDs
-		mappingFunc := expand.MappingFunc(false, collector.GetAdditionalEnvironment())
-		mappingFuncWithEnv := expand.MappingFunc(true, collector.GetAdditionalEnvironment())
+		mappingFunc := expand.MappingFunc(false, theCollector.GetAdditionalEnvironment())
+		mappingFuncWithEnv := expand.MappingFunc(true, theCollector.GetAdditionalEnvironment())
 
-		needToDeclareDefs := true
+		// declare the metric definitions - creating new ones and updating existing ones
+		metricDetails, err := theCollector.CollectMetricDetails()
+		if err != nil {
+			glog.Warning("Failed to obtain metric details - metric definitions may be incomplete. err=%v", err)
+			metricDetails = make([]collector.MetricDetails, 0)
+		}
+		mcm.declareMetricDefinitions(metricDetails, theCollector.GetEndpoint(), theCollector.GetAdditionalEnvironment())
 
+		// now periodically collect the metric data
 		for _ = range ticker.C {
-			metrics, err := collector.CollectMetrics()
+			metrics, err := theCollector.CollectMetrics()
 			if err != nil {
 				glog.Warningf("Failed to collect metrics from [%v]. err=%v", id, err)
 			} else {
-				// declare the metric definitions if we have not done so yet
-				if needToDeclareDefs == true {
-					mcm.declareMetricDefinitions(metrics, collector.GetEndpoint(), collector.GetAdditionalEnvironment())
-					needToDeclareDefs = false
-				}
-
 				for i, m := range metrics {
 					metrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(m.ID, mappingFunc)
 				}
@@ -146,7 +147,7 @@ func (mcm *MetricsCollectorManager) StopCollectingAll() {
 	}
 }
 
-func (mcm *MetricsCollectorManager) declareMetricDefinitions(liveMetrics []hmetrics.MetricHeader, endpoint *collector.Endpoint, additionalEnv map[string]string) {
+func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []collector.MetricDetails, endpoint *collector.Endpoint, additionalEnv map[string]string) {
 
 	metricDefs := make([]hmetrics.MetricDefinition, len(endpoint.Metrics))
 
@@ -164,26 +165,36 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(liveMetrics []hmetr
 
 	for i, metric := range endpoint.Metrics {
 
-		// If the metric type was declared, we use it. Otherwise, we look at the live
-		// metrics to see if there is a type available and if so, use it. This is to
-		// support the fact that Prometheus indicates the type in the metric endpoint
+		// NOTE: If the metric type was declared, we use it. Otherwise, we look at
+		// metric details to see if there is a type available and if so, use it.
+		// This is to support the fact that Prometheus indicates the type in the metric endpoint
 		// so there is no need to ask the user to define it in a configuration file.
+		// The same is true with metric description as well.
 		metricType := metric.Type
-		if metricType == "" {
-			for _, liveMetric := range liveMetrics {
-				if liveMetric.ID == metric.ID {
-					metricType = liveMetric.Type
-					break
+		metricDescription := metric.Description
+
+		for _, metricDetail := range metricDetails {
+			if metricDetail.ID == metric.ID {
+				if metricType == "" {
+					metricType = metricDetail.MetricType
 				}
-			}
-			if metricType == "" {
-				metricType = hmetrics.Gauge
-				glog.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", metric.ID, endpoint.String(), metricType)
+				if metricDescription == "" {
+					metricDescription = metricDetail.Description
+				}
+				break
 			}
 		}
 
-		// the metric tags will consist of the custom tags as well as the fixed tags
+		if metricType == "" {
+			metricType = hmetrics.Gauge
+			glog.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", metric.ID, endpoint.String(), metricType)
+		}
+
+		// The metric tags will consist of the custom tags as well as the fixed tags.
+		// First start with the custom tags...
 		metricTags := metric.Tags.ExpandTokens(false, additionalEnv)
+
+		// Now add the fixed tag of "units".
 		units, err := collector.GetMetricUnits(metric.Units)
 		if err == nil {
 			if units.Symbol != "" {
@@ -191,6 +202,11 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(liveMetrics []hmetr
 			}
 		} else {
 			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. No units will be assigned. err=%v", metric.ID, endpoint.String(), err)
+		}
+
+		// Now add the fixed tag of "description". This is optional.
+		if metricDescription != "" {
+			metricTags["description"] = metricDescription
 		}
 
 		// put all the tags together for the full list of tags to be applied to this metric definition

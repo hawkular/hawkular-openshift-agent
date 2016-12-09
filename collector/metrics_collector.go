@@ -21,6 +21,12 @@ import (
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 )
 
+type MetricDetails struct {
+	ID          string
+	MetricType  hmetrics.MetricType
+	Description string
+}
+
 // MetricsCollector provides the method used to collect metrics for a given endpoint.
 // All endpoint types (e.g. Prometheus, Jolokia) must have a MetricsCollector implementation.
 type MetricsCollector interface {
@@ -36,4 +42,7 @@ type MetricsCollector interface {
 
 	// CollectMetrics connects to the remote endpoint and collects the metrics it finds there.
 	CollectMetrics() ([]hmetrics.MetricHeader, error)
+
+	// CollectMetricDetails connects to the remote endpoint and collects details about the metrics it finds there.
+	CollectMetricDetails() ([]MetricDetails, error)
 }
