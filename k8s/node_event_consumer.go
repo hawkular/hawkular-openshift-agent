@@ -179,9 +179,6 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			Tags:                     cmeEndpoint.Tags,
 		}
 
-		// if a pod has labels, add them to the endpoint tags so they go on all metrics
-		newEndpoint.Tags.AppendTags(ne.Pod.Labels)
-
 		// make sure the endpoint is configured correctly
 		if err := newEndpoint.ValidateEndpoint(); err != nil {
 			glog.Warningf("Will not start collecting for endpoint in pod [%v] - invalid endpoint. err=%v", ne.Pod.GetIdentifier(), err)
