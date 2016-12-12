@@ -151,18 +151,6 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 
 	metricDefs := make([]hmetrics.MetricDefinition, len(endpoint.Metrics))
 
-	// For each metric in the endpoint, create a metric def for it.
-	// Notice metric tags override endpoint tags which override global tags.
-	// Do NOT allow pods to use agent environment variables since agent env vars may contain
-	// sensitive data (such as passwords). Only the global agent config can define tags
-	// with env var tokens.
-	globalTags := mcm.Config.Collector.Tags.ExpandTokens(true, additionalEnv)
-	endpointTags := endpoint.Tags.ExpandTokens(false, additionalEnv)
-
-	// we need these to expand tokens in the IDs
-	mappingFunc := expand.MappingFunc(false, additionalEnv)
-	mappingFuncWithEnv := expand.MappingFunc(true, additionalEnv)
-
 	for i, metric := range endpoint.Metrics {
 
 		// NOTE: If the metric type was declared, we use it. Otherwise, we look at
@@ -172,7 +160,6 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 		// The same is true with metric description as well.
 		metricType := metric.Type
 		metricDescription := metric.Description
-
 		for _, metricDetail := range metricDetails {
 			if metricDetail.ID == metric.ID {
 				if metricType == "" {
@@ -184,36 +171,60 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 				break
 			}
 		}
-
 		if metricType == "" {
 			metricType = hmetrics.Gauge
 			glog.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", metric.ID, endpoint.String(), metricType)
 		}
 
-		// The metric tags will consist of the custom tags as well as the fixed tags.
-		// First start with the custom tags...
-		metricTags := metric.Tags.ExpandTokens(false, additionalEnv)
-
 		// Now add the fixed tag of "units".
 		units, err := collector.GetMetricUnits(metric.Units)
-		if err == nil {
-			if units.Symbol != "" {
-				metricTags["units"] = units.Symbol
-			}
-		} else {
-			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. No units will be assigned. err=%v", metric.ID, endpoint.String(), err)
+		if err != nil {
+			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to 'Unknown'. err=%v", metric.ID, endpoint.String(), err)
 		}
 
+		// Define additional envvars with pod specific data for use in replacing ${env} tokens in tags.
+		env := map[string]string{
+			"METRIC:name":     	metric.Name,
+			"METRIC:id":	   	metric.ID,
+			"METRIC:units":	    	units.Symbol,
+			"METRIC:description":	metricDescription,
+		}
+
+		for key,value := range additionalEnv {
+			env[key] = value
+		}
+
+	        // For each metric in the endpoint, create a metric def for it.
+		// Notice: global tags override endpoint tags which override metric tags
+		// Do NOT allow pods to use agent environment variables since agent env vars may contain
+		// sensitive data (such as passwords). Only the global agent config can define tags
+		// with env var tokens.
+		globalTags := mcm.Config.Collector.Tags.ExpandTokens(true, env)
+		endpointTags := endpoint.Tags.ExpandTokens(false, env)
+
+		// we need these to expand tokens in the IDs
+		mappingFunc := expand.MappingFunc(false, env)
+		mappingFuncWithEnv := expand.MappingFunc(true, env)
+
+		// The metric tags will consist of the custom tags as well as the fixed tags.
+		// First start with the custom tags...
+		metricTags := metric.Tags.ExpandTokens(false, env)
+
 		// Now add the fixed tag of "description". This is optional.
-		if metricDescription != "" {
-			metricTags["description"] = metricDescription
+		if metric.Description != "" {
+			metricTags["description"] = metricDescription;
+		}
+
+		// Now add the fixed tag of "units". This is optional.
+		if metric.Units != "" {
+			metricTags["units"] = units.Symbol
 		}
 
 		// put all the tags together for the full list of tags to be applied to this metric definition
 		allMetricTags := tags.Tags{}
-		allMetricTags.AppendTags(globalTags)   // global tags are overridden by...
-		allMetricTags.AppendTags(endpointTags) // endpoint tags which are overridden by...
-		allMetricTags.AppendTags(metricTags)   // metric tags.
+		allMetricTags.AppendTags(endpointTags) // endpoint tags are overridden by
+		allMetricTags.AppendTags(metricTags)   // metric tags which are overriden by
+		allMetricTags.AppendTags(globalTags)   // global tags
 
 		metricDefs[i] = hmetrics.MetricDefinition{
 			Tenant: endpoint.Tenant,
