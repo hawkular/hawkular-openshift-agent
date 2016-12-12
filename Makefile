@@ -26,12 +26,12 @@ build:  clean
 	${GO_BUILD_ENVVARS} go build \
 	   -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
 
-docker: build
+docker:
 	@echo Building Docker Image...
 	@mkdir -p _output/docker
 	@cp -r deploy/docker/* _output/docker
 	@cp hawkular-openshift-agent _output/docker	
-	sudo docker build -t ${DOCKER_TAG} _output/docker
+	docker build -t ${DOCKER_TAG} _output/docker
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift

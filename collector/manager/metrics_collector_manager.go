@@ -179,23 +179,23 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 		// Now add the fixed tag of "units".
 		units, err := collector.GetMetricUnits(metric.Units)
 		if err != nil {
-			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to 'Unknown'. err=%v", metric.ID, endpoint.String(), err)
+			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to [%v]. err=%v", metric.ID, endpoint.String(), units.Symbol, err)
 		}
 
 		// Define additional envvars with pod specific data for use in replacing ${env} tokens in tags.
 		env := map[string]string{
-			"METRIC:name":     	metric.Name,
-			"METRIC:id":	   	metric.ID,
-			"METRIC:units":	    	units.Symbol,
-			"METRIC:description":	metricDescription,
+			"METRIC:name":        metric.Name,
+			"METRIC:id":          metric.ID,
+			"METRIC:units":       units.Symbol,
+			"METRIC:description": metricDescription,
 		}
 
-		for key,value := range additionalEnv {
+		for key, value := range additionalEnv {
 			env[key] = value
 		}
 
-	        // For each metric in the endpoint, create a metric def for it.
-		// Notice: global tags override endpoint tags which override metric tags
+		// For each metric in the endpoint, create a metric def for it.
+		// Notice: global tags override metric tags which override endpoint tags.
 		// Do NOT allow pods to use agent environment variables since agent env vars may contain
 		// sensitive data (such as passwords). Only the global agent config can define tags
 		// with env var tokens.
@@ -211,12 +211,12 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 		metricTags := metric.Tags.ExpandTokens(false, env)
 
 		// Now add the fixed tag of "description". This is optional.
-		if metric.Description != "" {
-			metricTags["description"] = metricDescription;
+		if metricDescription != "" {
+			metricTags["description"] = metricDescription
 		}
 
 		// Now add the fixed tag of "units". This is optional.
-		if metric.Units != "" {
+		if units.Symbol != "" {
 			metricTags["units"] = units.Symbol
 		}
 
