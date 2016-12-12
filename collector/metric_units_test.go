@@ -42,10 +42,23 @@ func TestGetMetricUnits(t *testing.T) {
 	// make sure errors are generated properly
 	u, e = GetMetricUnits("millis")
 	if e == nil {
-		t.Errorf("Should have failed - not a standard metric. u=%v", u)
+		t.Errorf("Should have an error - not a standard metric. u=%v", u)
 	}
+	if u.Symbol != "Unknown" {
+		t.Errorf("Should have matched the 'Unknown' unit. u=%v", u)
+	}
+	if u.Custom != false {
+		t.Errorf("Should not have been custom. u=%v", u)
+	}
+
 	u, e = GetMetricUnits("foobars")
 	if e == nil {
-		t.Errorf("Should have failed - not a standard metric. u=%v", u)
+		t.Errorf("Should have an error - not a standard metric. u=%v", u)
+	}
+	if u.Symbol != "Unknown" {
+		t.Errorf("Should have matched the 'Unknown' unit. u=%v", u)
+	}
+	if u.Custom != false {
+		t.Errorf("Should not have been custom. u=%v", u)
 	}
 }

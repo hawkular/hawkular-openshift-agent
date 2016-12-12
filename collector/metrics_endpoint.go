@@ -117,10 +117,6 @@ func (e *Endpoint) ValidateEndpoint() error {
 			}
 		}
 
-		if _, err := GetMetricUnits(m.Units); err != nil {
-			return fmt.Errorf("Endpoint [%v] metric [%v] has invalid units [%v]", e.URL, m.Name, m.Units)
-		}
-
 		// if there is no metric ID given, just use the metric name itself
 		if m.ID == "" {
 			e.Metrics[i].ID = m.Name
