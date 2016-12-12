@@ -12,6 +12,8 @@ type MetricUnits struct {
 
 const customMetricUnitsPrefix = "custom:"
 
+const unknown = "Unknown"
+
 type standardMetricUnits []MetricUnits
 
 // standardMetricUnitsList is a list of standard metric units
@@ -105,5 +107,5 @@ func GetMetricUnits(u string) (MetricUnits, error) {
 			return x, nil
 		}
 	}
-	return MetricUnits{}, fmt.Errorf("invalid metric units: %v", u)
+	return MetricUnits{Symbol: unknown}, fmt.Errorf("invalid metric units: %v", u)
 }
