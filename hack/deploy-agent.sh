@@ -42,19 +42,11 @@ ${OPENSHIFT_OC} login
 echo Will deploy the agent in project ${OPENSHIFT_PROJECT}
 ${OPENSHIFT_OC} project ${OPENSHIFT_PROJECT}
 
-# Create the agent service account
-${OPENSHIFT_OC} create -f - <<API
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: hawkular-agent
-API
-
-# Grant security permisions to the agent
-${OPENSHIFT_OC} adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
-
 # Create the configmap containing the agent global configuration
 ${OPENSHIFT_OC} create -f ../deploy/openshift/hawkular-openshift-agent-configmap.yaml
 
 # Deploy the agent
 ${OPENSHIFT_OC} process -f ../deploy/openshift/hawkular-openshift-agent.yaml | ${OPENSHIFT_OC} create -f -
+
+# Grant security permisions to the agent
+${OPENSHIFT_OC} adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent

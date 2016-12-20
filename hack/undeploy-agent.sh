@@ -47,6 +47,3 @@ ${OPENSHIFT_OC} process -f ../deploy/openshift/hawkular-openshift-agent.yaml | $
 
 # Delete the configmap containing the agent global configuration
 ${OPENSHIFT_OC} delete -f ../deploy/openshift/hawkular-openshift-agent-configmap.yaml
-
-# Delete the agent service account
-${OPENSHIFT_OC} delete serviceaccount hawkular-agent
