@@ -184,29 +184,29 @@ K8S_TOKEN=`oc whoami -t` ${GOPATH}/bin/hawkular-openshift-agent -config config.y
 
 == Configuring OpenShift
 
-When Hawkular OpenShift Agent is monitoring resources running on an OpenShift node, it looks at custom annotations and config maps found in OpenShift to know what to monitor. In effect, the pods tell Hawkular OpenShift Agent what to monitor, and Hawkular OpenShift Agent does it. (Note that where "OpenShift" is mentioned, it is normally synonymous with "Kubernetes" because Hawkular OpenShift Agent is really interfacing with the underlying Kubernetes software that is running in OpenShift)
+When Hawkular OpenShift Agent is monitoring resources running on an OpenShift node, it looks at volumes and config maps to know what to monitor. In effect, the pods tell Hawkular OpenShift Agent what to monitor, and Hawkular OpenShift Agent does it. (Note that where "OpenShift" is mentioned, it is normally synonymous with "Kubernetes" because Hawkular OpenShift Agent is really interfacing with the underlying Kubernetes software that is running in OpenShift)
 
 One caveat must be mentioned up front. Hawkular OpenShift Agent will only monitor a single OpenShift node. If you want to monitor multiple OpenShift nodes, you must run one Hawkular OpenShift Agent process per node.
 
-There are two features in OpenShift that Hawkular OpenShift Agent takes advantage of when it comes to configuring what Hawkular OpenShift Agent should be monitoring - one is pod annotations and the second is project config maps.
+There are two features in OpenShift that Hawkular OpenShift Agent takes advantage of when it comes to configuring what Hawkular OpenShift Agent should be monitoring - one is pod volumes and the second is project config maps.
 
-=== Pod Annotations
+=== Pod Volumes
 
-Each pod running on the node has a set of annotations. An annotation is simply a name/value pair. Hawkular OpenShift Agent expects to see an annotation named "hawkular-openshift-agent" on a pod that is to be monitored. If this annotation is missing, it is assumed you do not want Hawkular OpenShift Agent to monitor that pod. The value of this annotation named "hawkular-openshift-agent" is the name of a config map within the pod's project. If the config map is not found in the pod's project, again Hawkular OpenShift Agent will not monitor the pod.
+Each pod running on the node has a set of volumes. A volume can refer to different types of entities with config maps being one such type that cab be referred to by a volume. Hawkular OpenShift Agent expects to see a volume named `hawkular-openshift-agent` on a pod that is to be monitored and it is expected to be referring to a config map. If this named volume is missing, it is assumed you do not want Hawkular OpenShift Agent to monitor that pod. The name of the volume's config map refers to a config map found within the pod's project. If the config map is not found in the pod's project, again Hawkular OpenShift Agent will not monitor the pod.
 
 === Project Config Map
 
 Pods are grouped in what are called "projects" in OpenShift (Kubernetes calls these "namespaces" - if you see "namespace" in the Hawkular OpenShift Agent configuration settings and log messages, realize it is talking about an OpenShift project). Each project has what is called a "config map". Similiar to annotations, config maps contain name/value pairs. The values can be as simple as short strings or as complex as complete YAML or JSON blobs. Because config maps are on projects, they are associated with multiple pods (the pods within the project).
 
-Hawkular OpenShift Agent takes advantage of a project's config maps by using them as places to put YAML configuration for each monitored pod that belongs to the project. Each pod configuration is found in one config map. The config map that Hawkular OpenShift Agent will look for must be named the same as the value found in a pod's "hawkular-openshift-agent" annotation.
+Hawkular OpenShift Agent takes advantage of a project's config maps by using them as places to put YAML configuration for each monitored pod that belongs to the project. Each pod configuration is found in one config map. The config map that Hawkular OpenShift Agent will look for must be named the same as the config map name found in a pod's "hawkular-openshift-agent" volume.
 
 === Config Map Entry Schema
 
 Each Hawkular OpenShift Agent config map must have one and only one entry which must be named "hawkular-openshift-agent". A config map entry is a YAML configuration. The Go representation of the YAML schema is found link:https://github.com/hawkular/hawkular-openshift-agent/blob/master/k8s/configmap_entry.go[here].
 
-So, in short, each OpenShift project (aka Kubernetes namespace) will have multiple config maps each with an entry named "hawkular-openshift-agent" where those entries contain YAML configuration containing information about what should be monitored on a pod. A named config map is referenced by a pod's annotation also called "hawkular-openshift-agent".
+So, in short, each OpenShift project (aka Kubernetes namespace) will have multiple config maps each with an entry named "hawkular-openshift-agent" where those entries contain YAML configuration containing information about what should be monitored on a pod. A named config map is referenced by a pod's volume also called "hawkular-openshift-agent".
 
-Hawkular OpenShift Agent examines each pod on the node and by cross-referencing the pod annotations with the project config maps, Hawkular OpenShift Agent knows what it should manage.
+Hawkular OpenShift Agent examines each pod on the node and by cross-referencing the pod volumes with the project config maps, Hawkular OpenShift Agent knows what it should manage.
 
 === Example
 
@@ -231,7 +231,7 @@ data:
       path: /metrics
 ----
 
-Notice the name given to this config map - "my-web-pod-config". This is the name of the config map, and it is this name that should appear as a value to the "hawkular-openshift-agent" annotation found on the "web-pod" pod. It identifies this config map to Hawkular OpenShift Agent as the one that should be used by that pod. Notice also that the name of the config map entry is fixed and must always be "hawkular-openshift-agent". Next, notice the config map entry here. This defines what are to be monitored. Here you see there is a single endpoint for this pod that will expose Prometheus metrics over http and port 8080 at /metrics. The IP address used will be that of the pod itself and thus need not be specified.
+Notice the name given to this config map - "my-web-pod-config". This is the name of the config map, and it is this name that should appear as a value to the "hawkular-openshift-agent" volume found on the "web-pod" pod. It identifies this config map to Hawkular OpenShift Agent as the one that should be used by that pod. Notice also that the name of the config map entry is fixed and must always be "hawkular-openshift-agent". Next, notice the config map entry here. This defines what are to be monitored. Here you see there is a single endpoint for this pod that will expose Prometheus metrics over http and port 8080 at /metrics. The IP address used will be that of the pod itself and thus need not be specified.
 
 To create this config map, save that YAML to a file and use "oc":
 
@@ -247,22 +247,22 @@ If you have already created a "my-web-pod-config" config map on your project, yo
 oc replace -f my-web-pod-config-map.yaml
 ----
 
-Now that the config map has been created on your project, you can now add the annotation to the pods that you want to be monitored with the information in that config map. Let's tell Hawkular OpenShift Agent to monitor pod "web-pod" using the configuration named "my-web-pod-config" found in the config map we just created above. We could do something similar for the app-pod (that is, create a config map named, say, "my-app-pod-config" and annotate the app-pod to point to that config map). This can be done with the "oc" command as well.
+Now that the config map has been created on your project, you can now add the volumes to the pods that you want to be monitored with the information in that config map. Let's tell Hawkular OpenShift Agent to monitor pod "web-pod" using the configuration named "my-web-pod-config" found in the config map we just created above. We could do something similar for the app-pod (that is, create a config map named, say, "my-app-pod-config" and create a volume on the app-pod to point to that config map). You do this by editing your pod configuration and redeploying your pod.
 
-[source,shell]
+[source,yaml]
 ----
-oc annotate --overwrite pods web-pod hawkular-openshift-agent=my-web-pod-config
-oc annotate --overwrite pods app-pod hawkular-openshift-agent=my-app-pod-config
+...
+spec:
+  volumes:
+    - name: hawkular-openshift-agent
+      configMap:
+        name: my-web-pod-config
+...
 ----
 
-Because we do not want to monitor the db-pod, we do not create that annotation on it. This tells Hawkular OpenShift Agent to ignore that pod.
+Because we do not want to monitor the db-pod, we do not create a volume for it. This tells Hawkular OpenShift Agent to ignore that pod.
 
-If you want Hawkular OpenShift Agent to stop monitoring a pod, it is as simple as removing the pod's "hawkular-openshift-agent" annotation:
-
-[source,shell]
-----
-oc annotate pods app-pod hawkular-openshift-agent-
-----
+If you want Hawkular OpenShift Agent to stop monitoring a pod, it is as simple as removing the pod's "hawkular-openshift-agent" volume but you will need to redeploy the pod. Alternatively, if you do not want to destroy and recreate your pod, you can edit your config map and remove all endpoints thus the agent will have nothing to monitor.
 
 === Try It!
 
@@ -615,6 +615,18 @@ Tag values can be defined with token expressions in the form of `${var}` or `$va
 
 |POD:labels
 |The Pod labels concatenated in a single string separated by commas, e.g. `label1:value1,label2:value2,...`
+
+|METRIC:name
+|The name of the metric on which this tag is found.
+
+|METRIC:id
+|The id of the metric on which this tag is found.
+
+|METRIC:units
+|The units of measurement for the metric data if applicable. This will be things like 'ms', 'GB', etc. This can be determined from the endpoint itself (if available) or defined within the YAML metric declaration.
+
+|METRIC:description
+|Describes the metric on which this tag is found. This can be determined from the endpoint itself (if available) or defined within the YAML metric declaration.
 |===
 
 For example:

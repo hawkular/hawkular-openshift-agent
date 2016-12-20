@@ -20,9 +20,11 @@ objects:
       metadata:
         labels:
           name: jolokia-wildfly
-        annotations:
-          hawkular-openshift-agent: jolokia-wildfly
       spec:
         containers:
         - image: jmazzitelli/jolokia-wildfly
           name: jolokia-wildfly
+        volumes:
+        - name: hawkular-openshift-agent
+          configMap:
+            name: jolokia-wildfly

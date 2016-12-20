@@ -28,12 +28,14 @@ objects:
         labels:
           name: prometheus-python-example
           hawkular-openshift-agent-example: prometheus-python
-        annotations:
-          hawkular-openshift-agent: prometheus-python-example
       spec:
         containers:
         - image: hawkular/openshift-agent-example-prometheus-python:${IMAGE_VERSION}
           name: prometheus-python-example
+        volumes:
+        - name: hawkular-openshift-agent
+          configMap:
+            name: prometheus-python-example
 - apiVersion: v1
   kind: ConfigMap
   metadata:
