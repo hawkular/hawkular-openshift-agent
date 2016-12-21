@@ -57,6 +57,7 @@ type MonitoredMetric struct {
 // USED FOR YAML (see agent config file)
 type Endpoint struct {
 	Type                     EndpointType
+	Enabled                  string
 	URL                      string
 	Credentials              security.Credentials
 	Collection_Interval_Secs int
@@ -69,6 +70,14 @@ func (m *MonitoredMetric) String() string {
 	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], units=[%v], tags=[%v]", m.ID, m.Name, m.Type, m.Units, m.Tags)
 }
 
+// IsEnabled returns true if this endpoint has been enabled; false otherwise.
+func (e *Endpoint) IsEnabled() bool {
+	if e.Enabled == "" || e.Enabled == "true" {
+		return true
+	}
+	return false
+}
+
 func (e *Endpoint) String() string {
 	if e == nil {
 		return ""
@@ -77,8 +86,8 @@ func (e *Endpoint) String() string {
 	for i, m := range e.Metrics {
 		metricStrings[i] = m.String()
 	}
-	return fmt.Sprintf("Endpoint: type=[%v], url=[%v], coll_int=[%v], tenant=[%v], tags=[%v], metrics=[%v]",
-		e.Type, e.URL, e.Collection_Interval_Secs, e.Tenant, e.Tags, metricStrings)
+	return fmt.Sprintf("Endpoint: type=[%v], enabled=[%v], url=[%v], coll_int=[%v], tenant=[%v], tags=[%v], metrics=[%v]",
+		e.Type, e.Enabled, e.URL, e.Collection_Interval_Secs, e.Tenant, e.Tags, metricStrings)
 }
 
 // ValidateEndpoint will check the endpoint configuration for correctness.
@@ -99,6 +108,10 @@ func (e *Endpoint) ValidateEndpoint() error {
 		if e.Type != ENDPOINT_TYPE_JOLOKIA && e.Type != ENDPOINT_TYPE_PROMETHEUS {
 			return fmt.Errorf("Endpoint [%v] has invalid type [%v]", e.URL, e.Type)
 		}
+	}
+
+	if e.Enabled != "" && e.Enabled != "true" && e.Enabled != "false" {
+		return fmt.Errorf("Endpoint [%v] has invalid enabled flag [%v] - must be 'true' or 'false'", e.URL, e.Enabled)
 	}
 
 	for i, m := range e.Metrics {
