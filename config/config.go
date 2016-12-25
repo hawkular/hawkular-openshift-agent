@@ -48,6 +48,7 @@ const (
 	ENV_K8S_POD_NAME      = "K8S_POD_NAME"
 	ENV_K8S_TOKEN         = "K8S_TOKEN"
 	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
+	ENV_K8S_TENANT        = "K8S_TENANT"
 )
 
 // Hawkular_Server defines where the Hawkular Server is. This is where metrics are stored.
@@ -79,6 +80,11 @@ type Collector struct {
 // running in OpenShift) or should identify any pod in the node to be monitored by the agent
 // (if the agent is not running in OpenShift). Pod_Namespace should be empty if you do not wish
 // for the agent to monitor anything in OpenShift.
+// If Tenant is supplied, all metrics collected from all pods will have this tenant.
+// You can specify ${x} tokens in the value for Tenant, such as ${some_env} or one of the POD
+// tokens such as ${POD:namespace_name} which means all metrics will be stored under a tenant
+// that is the same name of the pod namespace where the metric was collected.
+// If Tenant is not supplied, the default is the Tenant defined in the Hawkular_Server section.
 // USED FOR YAML
 type Kubernetes struct {
 	Master_URL    string ",omitempty"
@@ -86,6 +92,7 @@ type Kubernetes struct {
 	CA_Cert_File  string ",omitempty"
 	Pod_Namespace string ",omitempty"
 	Pod_Name      string ",omitempty"
+	Tenant        string ",omitempty"
 }
 
 // Config defines the agent's full YAML configuration.
@@ -119,6 +126,7 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.Pod_Name = getDefaultString(ENV_K8S_POD_NAME, "")
 	c.Kubernetes.Token = getDefaultString(ENV_K8S_TOKEN, "")
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
+	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
 
 	return
 }

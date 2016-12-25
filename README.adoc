@@ -521,6 +521,15 @@ kubernetes:
   ca_cert_file: VALUE
 ----
 |File that contains the certificate required to connect to the OpenShift master.
+
+|K8S_TENANT
+|
+[source,yaml]
+----
+kubernetes:
+  tenant: VALUE
+----
+|If defined, this will be the tenant where all pod metrics are stored. If not defined, the default is the tenant specified in the Hawkular_Server section. If defined, may include ${var} tokens where `var` is either an agent environment variable of one of the valid POD tag tokens such as `POD:namespace_name`.
 |===
 
 == Metric Tags

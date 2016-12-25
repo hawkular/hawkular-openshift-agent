@@ -31,10 +31,12 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_HS_TOKEN, os.Getenv(ENV_HS_TOKEN))
 	defer os.Setenv(ENV_K8S_POD_NAMESPACE, os.Getenv(ENV_K8S_POD_NAMESPACE))
 	defer os.Setenv(ENV_K8S_POD_NAME, os.Getenv(ENV_K8S_POD_NAME))
+	defer os.Setenv(ENV_K8S_TENANT, os.Getenv(ENV_K8S_TENANT))
 	os.Setenv(ENV_HS_URL, "http://TestEnvVar:9090")
 	os.Setenv(ENV_HS_TOKEN, "abc123")
 	os.Setenv(ENV_K8S_POD_NAMESPACE, "TestEnvVar pod namespace")
 	os.Setenv(ENV_K8S_POD_NAME, "TestEnvVar pod name")
+	os.Setenv(ENV_K8S_TENANT, "${POD:namespace_name}")
 
 	conf := NewConfig()
 
@@ -49,6 +51,9 @@ func TestEnvVar(t *testing.T) {
 	}
 	if conf.Kubernetes.Pod_Name != "TestEnvVar pod name" {
 		t.Error("Pod name is wrong")
+	}
+	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
+		t.Error("Tenant is wrong")
 	}
 }
 
@@ -78,6 +83,9 @@ func TestDefaults(t *testing.T) {
 	}
 	if conf.Kubernetes.Pod_Name != "" {
 		t.Error("Pod name is wrong")
+	}
+	if conf.Kubernetes.Tenant != "" {
+		t.Error("Tenant is wrong")
 	}
 	if len(conf.Endpoints) != 0 {
 		t.Error("There should be no endpoints by default")
@@ -181,6 +189,7 @@ func TestLoadSave(t *testing.T) {
 		Kubernetes: Kubernetes{
 			Pod_Namespace: "TestLoadSave namespace",
 			Pod_Name:      "TestLoadSave name",
+			Tenant:        "${POD:namespace_name}",
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -231,6 +240,9 @@ func TestLoadSave(t *testing.T) {
 	}
 	if conf.Kubernetes.Pod_Name != "TestLoadSave name" {
 		t.Error("Pod name is wrong")
+	}
+	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
+		t.Error("Tenant is wrong")
 	}
 	if conf.Endpoints[0].Collection_Interval_Secs != 123 {
 		t.Error("First endpoint is not correct")
