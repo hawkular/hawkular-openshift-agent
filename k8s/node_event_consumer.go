@@ -19,6 +19,7 @@ package k8s
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -27,6 +28,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/log"
+	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
 
 // NodeEventConsumer will process our node events that are emitted from our
@@ -166,13 +168,33 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			continue
 		}
 
+		// Define additional envvars with pod specific data for use in replacing ${env} tokens.
+		// These tokens are used in tags and in the Tenant field.
+		additionalEnv := map[string]string{
+			"POD:node_name":      ne.Pod.Node.Name,
+			"POD:node_uid":       ne.Pod.Node.UID,
+			"POD:namespace_name": ne.Pod.Namespace.Name,
+			"POD:namespace_uid":  ne.Pod.Namespace.UID,
+			"POD:name":           ne.Pod.Name,
+			"POD:ip":             ne.Pod.PodIP,
+			"POD:host_ip":        ne.Pod.HostIP,
+			"POD:uid":            ne.Pod.UID,
+			"POD:hostname":       ne.Pod.Hostname,
+			"POD:subdomain":      ne.Pod.Subdomain,
+			"POD:labels":         joinMap(ne.Pod.Labels),
+		}
+
+		endpointTenant := nec.Config.Hawkular_Server.Tenant
+		if nec.Config.Kubernetes.Tenant != "" {
+			mappingFunc := expand.MappingFunc(true, additionalEnv)
+			endpointTenant = os.Expand(nec.Config.Kubernetes.Tenant, mappingFunc)
+		}
+
 		// We need to convert the k8s endpoint to the generic endpoint struct.
-		// Note that the tenant for all metrics collected from this endpoint
-		// must be the same as the namespace of the pod where the endpoint is located
 		newEndpoint := &collector.Endpoint{
 			URL:                      url.String(),
 			Type:                     cmeEndpoint.Type,
-			Tenant:                   ne.Pod.Namespace.Name,
+			Tenant:                   endpointTenant,
 			Credentials:              cmeEndpoint.Credentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
 			Metrics:                  cmeEndpoint.Metrics,
@@ -190,21 +212,6 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		if err != nil {
 			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot get ID. err=%v", ne.Pod.GetIdentifier(), err)
 			continue
-		}
-
-		// Define additional envvars with pod specific data for use in replacing ${env} tokens in tags.
-		additionalEnv := map[string]string{
-			"POD:node_name":      ne.Pod.Node.Name,
-			"POD:node_uid":       ne.Pod.Node.UID,
-			"POD:namespace_name": ne.Pod.Namespace.Name,
-			"POD:namespace_uid":  ne.Pod.Namespace.UID,
-			"POD:name":           ne.Pod.Name,
-			"POD:ip":             ne.Pod.PodIP,
-			"POD:host_ip":        ne.Pod.HostIP,
-			"POD:uid":            ne.Pod.UID,
-			"POD:hostname":       ne.Pod.Hostname,
-			"POD:subdomain":      ne.Pod.Subdomain,
-			"POD:labels":         joinMap(ne.Pod.Labels),
 		}
 
 		if c, err := manager.CreateMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv); err != nil {

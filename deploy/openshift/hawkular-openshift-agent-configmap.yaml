@@ -8,6 +8,8 @@ metadata:
     metrics-infra: agent
 data:
   config.yaml: |
+    kubernetes:
+      tenant: ${POD:namespace_name}
     collector:
       minimum_collection_interval_secs: 10
       metric_id_prefix: pod/${POD:uid}/custom/
