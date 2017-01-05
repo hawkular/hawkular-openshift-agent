@@ -16,8 +16,8 @@ objects:
     name: hawkular-agent
     labels:
       metrics-infra: agent
-- apiVersion: v1
-  kind: ReplicationController
+- apiVersion: extensions/v1beta1
+  kind: DaemonSet
   metadata:
     name: hawkular-openshift-agent
     labels:
@@ -25,10 +25,9 @@ objects:
       metrics-infra: agent
   spec:
     selector:
-      name: hawkular-openshift-agent
-    replicas: 1
+      matchLabels:
+        name: hawkular-openshift-agent
     template:
-      version: v1
       metadata:
         labels:
           name: hawkular-openshift-agent
