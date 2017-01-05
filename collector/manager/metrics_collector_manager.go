@@ -72,7 +72,13 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 // If a metrics collector with the same ID is already collecting metrics, it will be stopped
 // and the given new collector will take its place.
 func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.MetricsCollector) {
+
 	id := theCollector.GetId()
+
+	if theCollector.GetEndpoint().IsEnabled() == false {
+		glog.Infof("Will not collect metrics from [%v] - it has been disabled.", id)
+		return
+	}
 
 	// if there was an old ticker still running for this collector, stop it
 	mcm.StopCollecting(id)

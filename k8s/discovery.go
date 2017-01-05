@@ -18,6 +18,7 @@
 package k8s
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/golang/glog"
@@ -32,8 +33,8 @@ import (
 )
 
 const (
-	// the annotation name whose value is the name of the ConfigMap that a pod wants to use for its hawkular configuration
-	HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME = "hawkular-openshift-agent"
+	// the volume name that is used to link to the ConfigMap that a pod wants to use for its hawkular configuration
+	HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME = "hawkular-openshift-agent"
 
 	// the name of the YAML entry in a namespace's ConfigMap that contains information on a single pod's endpoints to be monitored
 	HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME = "hawkular-openshift-agent"
@@ -129,20 +130,20 @@ func (d *Discovery) stop() {
 func (d *Discovery) sendNodeEventDueToChangedPod(pod *Pod, trigger Trigger) {
 	var cme *ConfigMapEntry
 
-	configMapName, hasAnno := pod.Annotations[HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME]
-	if hasAnno == true {
+	configMapName, hasVol := pod.ConfigMapVolumes[HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME]
+	if hasVol == true {
 		cm, ok := d.Inventory.ConfigMaps.GetEntry(pod.Namespace.Name, configMapName)
 		if ok == true {
 			cme = cm.Entry
-			log.Debugf("Changed pod [%v] with annotation [%v=%v] has a config map",
-				pod.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME, configMapName)
+			log.Debugf("Changed pod [%v] with volume [%v=%v] has a config map",
+				pod.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME, configMapName)
 		} else {
-			log.Debugf("Changed pod [%v] with annotation [%v=%v] does not have a config map",
-				pod.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME, configMapName)
+			log.Debugf("Changed pod [%v] with volume [%v=%v] does not have a config map",
+				pod.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME, configMapName)
 		}
 	} else {
-		log.Debugf("Changed pod [%v] does not have annotation [%v]",
-			pod.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME)
+		log.Debugf("Changed pod [%v] does not have volume [%v]",
+			pod.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME)
 	}
 
 	ne := NodeEvent{
@@ -164,11 +165,11 @@ func (d *Discovery) sendNodeEventDueToChangedConfigMap(namespace string, name st
 		var cme *ConfigMapEntry
 
 		if cm != nil {
-			configMapName, hasAnno := p.Annotations[HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME]
-			if hasAnno == true && configMapName == cm.Name {
+			configMapName, hasVol := p.ConfigMapVolumes[HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME]
+			if hasVol == true && configMapName == cm.Name {
 				cme = cm.Entry
-				log.Debugf("Configmap [%v] for namespace [%v] affects pod [%v] with annotation: [%v=%v]",
-					cm.Name, namespace, p.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_ANNOTATION_NAME, configMapName)
+				log.Debugf("Configmap [%v] for namespace [%v] affects pod [%v] with volume: [%v=%v]",
+					cm.Name, namespace, p.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME, configMapName)
 			} else {
 				log.Debugf("Configmap [%v] for namespace [%v] does not affect pod [%v]",
 					cm.Name, namespace, p.GetIdentifier())
@@ -189,7 +190,10 @@ func (d *Discovery) sendNodeEventDueToChangedConfigMap(namespace string, name st
 func (d *Discovery) watchPods() {
 	createFunc := func() watch.Interface {
 		// we only want to listen to pods on our own node
-		fieldSelector := fields.OneTermEqualSelector("spec.nodeName", d.Inventory.Node.Name)
+		fieldSelector, err := fields.ParseSelector(fmt.Sprintf("spec.nodeName==%v", d.Inventory.Node.Name))
+		if err != nil {
+			glog.Fatal(err)
+		}
 
 		listOptions := api.ListOptions{
 			Watch:          true,
@@ -216,20 +220,28 @@ func (d *Discovery) watchPods() {
 				namespaceUID = string(namespaceFromEvent.GetUID())
 			}
 
+			cmVols := make(map[string]string, 0)
+			for _, vol := range podFromEvent.Spec.Volumes {
+				if vol.ConfigMap != nil {
+					cmVols[vol.Name] = vol.ConfigMap.Name
+				}
+			}
+
 			pod := &Pod{
 				Node: d.Inventory.Node,
 				Namespace: Namespace{
 					Name: podFromEvent.GetNamespace(),
 					UID:  namespaceUID,
 				},
-				Name:        podFromEvent.GetName(),
-				UID:         string(podFromEvent.GetUID()),
-				PodIP:       podFromEvent.Status.PodIP,
-				HostIP:      podFromEvent.Status.HostIP,
-				Hostname:    podFromEvent.Spec.Hostname,
-				Subdomain:   podFromEvent.Spec.Subdomain,
-				Labels:      podFromEvent.GetLabels(),
-				Annotations: podFromEvent.GetAnnotations(),
+				Name:             podFromEvent.GetName(),
+				UID:              string(podFromEvent.GetUID()),
+				PodIP:            podFromEvent.Status.PodIP,
+				HostIP:           podFromEvent.Status.HostIP,
+				Hostname:         podFromEvent.Spec.Hostname,
+				Subdomain:        podFromEvent.Spec.Subdomain,
+				Labels:           podFromEvent.GetLabels(),
+				Annotations:      podFromEvent.GetAnnotations(),
+				ConfigMapVolumes: cmVols,
 			}
 
 			switch event.Type {

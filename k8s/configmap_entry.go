@@ -44,6 +44,7 @@ const (
 // USED FOR YAML
 type K8SEndpoint struct {
 	Type                     collector.EndpointType
+	Enabled                  string
 	Protocol                 K8SEndpointProtocol
 	Port                     int
 	Path                     string
@@ -57,6 +58,17 @@ type K8SEndpoint struct {
 // USED FOR YAML
 type ConfigMapEntry struct {
 	Endpoints []K8SEndpoint
+}
+
+// IsEnabled returns true if this endpoint has been enabled; false otherwise.
+func (e K8SEndpoint) IsEnabled() bool {
+	if e.Enabled == "" || e.Enabled == "true" {
+		return true
+	}
+	if e.Enabled != "false" {
+		glog.Warningf("Enabled flag must be 'true' or 'false' but was '%v'. This endpoint is considered disabled.", e.Enabled)
+	}
+	return false
 }
 
 // GetUrl returns a URL for the endpoint given a host string that is needed to complete the URL
@@ -97,7 +109,9 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 		glog.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
 	}
 
-	// yaml unmarshalling leaves empty tags as nil - we want empty but non-nil
+	// YAML unmarshalling leaves empty tags as nil - we want empty but non-nil.
+	// We also want to set the Enabled flag to true if not specified
+	// (which is the opposite of bool's empty value and why we use string and not bool).
 	for i, e := range cme.Endpoints {
 		if e.Tags == nil {
 			cme.Endpoints[i].Tags = tags.Tags{}
@@ -106,6 +120,14 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 			if m.Tags == nil {
 				cme.Endpoints[i].Metrics[j].Tags = tags.Tags{}
 			}
+		}
+
+		if e.Enabled == "" {
+			cme.Endpoints[i].Enabled = "true"
+		} else if e.Enabled != "true" && e.Enabled != "false" {
+			err = fmt.Errorf("Enabled flag must be 'true' or 'false': %v", e.Enabled)
+			glog.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
+			cme.Endpoints[i].Enabled = "false"
 		}
 	}
 	return

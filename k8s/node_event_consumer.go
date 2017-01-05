@@ -168,6 +168,11 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			continue
 		}
 
+		if cmeEndpoint.IsEnabled() == false {
+			glog.Infof("Will not start collecting for endpoint [%v] in pod [%v] - it has been disabled.", url, ne.Pod.GetIdentifier())
+			continue
+		}
+
 		// Define additional envvars with pod specific data for use in replacing ${env} tokens.
 		// These tokens are used in tags and in the Tenant field.
 		additionalEnv := map[string]string{
@@ -194,6 +199,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		newEndpoint := &collector.Endpoint{
 			URL:                      url.String(),
 			Type:                     cmeEndpoint.Type,
+			Enabled:                  cmeEndpoint.Enabled,
 			Tenant:                   endpointTenant,
 			Credentials:              cmeEndpoint.Credentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,

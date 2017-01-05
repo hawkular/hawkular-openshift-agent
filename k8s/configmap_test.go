@@ -30,6 +30,7 @@ func TestConfigMapEntryYamlNilTags(t *testing.T) {
 	yaml1 := `
 endpoints:
 - type: prometheus
+  enabled: true
   protocol: https
   port: 8888
   path: /the/path
@@ -46,6 +47,12 @@ endpoints:
 
 	if cme.Endpoints[0].Type != collector.ENDPOINT_TYPE_PROMETHEUS {
 		t.Fatalf("Endpoint.Type is wrong")
+	}
+	if cme.Endpoints[0].Enabled != "true" {
+		t.Fatalf("Endpoint.Enabled should be true")
+	}
+	if cme.Endpoints[0].IsEnabled() != true {
+		t.Fatalf("Endpoint.IsEnabled should be true")
 	}
 	if cme.Endpoints[0].Tags == nil {
 		t.Fatalf("Endpoint tags should not be nil")
@@ -82,10 +89,11 @@ func TestYamlText(t *testing.T) {
 	cme := NewConfigMapEntry()
 	cme.Endpoints = append(cme.Endpoints, K8SEndpoint{
 		Collection_Interval_Secs: 123,
-		Type:     collector.ENDPOINT_TYPE_PROMETHEUS,
-		Protocol: K8S_ENDPOINT_PROTOCOL_HTTP,
-		Port:     1111,
-		Path:     "/1111",
+		Enabled:                  "false",
+		Type:                     collector.ENDPOINT_TYPE_PROMETHEUS,
+		Protocol:                 K8S_ENDPOINT_PROTOCOL_HTTP,
+		Port:                     1111,
+		Path:                     "/1111",
 		Metrics: []collector.MonitoredMetric{
 			collector.MonitoredMetric{
 				ID:   "metric1id",
@@ -109,6 +117,10 @@ func TestYamlText(t *testing.T) {
 		Path:     "/2222",
 		Collection_Interval_Secs: 123,
 	})
+
+	if cme.Endpoints[0].IsEnabled() != false {
+		t.Fatalf("Should have been disabled: %v", cme)
+	}
 
 	// I just want to see what happens if you don't specify the metrics slice in the second endpoint
 	if len(cme.Endpoints[0].Metrics) != 2 {
@@ -158,6 +170,12 @@ endpoints:
 
 	if cme.Endpoints[0].Type != collector.ENDPOINT_TYPE_PROMETHEUS {
 		t.Fatalf("Endpoint.Type is wrong")
+	}
+	if cme.Endpoints[0].Enabled != "true" {
+		t.Fatalf("Endpoint.Enabled is wrong - its default should be true")
+	}
+	if cme.Endpoints[0].IsEnabled() != true {
+		t.Fatalf("Endpoint.IsEnabled is wrong - its default should be true")
 	}
 	if cme.Endpoints[0].Protocol != K8S_ENDPOINT_PROTOCOL_HTTPS {
 		t.Fatalf("Endpoint.Protocol is wrong")
