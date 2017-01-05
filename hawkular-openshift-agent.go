@@ -28,6 +28,7 @@ import (
 
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
+	"github.com/hawkular/hawkular-openshift-agent/emitter"
 	"github.com/hawkular/hawkular-openshift-agent/k8s"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/storage"
@@ -82,6 +83,9 @@ func main() {
 	if err := validateConfig(); err != nil {
 		glog.Fatal(err)
 	}
+
+	// prepare our own metrics endpoint - the agent emits its own metrics so it can monitor itself
+	emitter.EmitMetrics(Configuration)
 
 	// prepare the storage manager and start storing metrics as they come in
 	storageManager, err := storage.NewMetricsStorageManager(Configuration)

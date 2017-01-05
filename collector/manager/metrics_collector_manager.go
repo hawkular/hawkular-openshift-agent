@@ -28,6 +28,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
+	"github.com/hawkular/hawkular-openshift-agent/emitter"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
@@ -121,6 +122,8 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 					metrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(m.ID, mappingFunc)
 				}
 				mcm.metricsChan <- metrics
+
+				emitter.Metrics.DataPointsCollected.Add(float64(len(metrics)))
 			}
 		}
 	}()

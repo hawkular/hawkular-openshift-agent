@@ -79,3 +79,6 @@ objects:
         - name: hawkular-openshift-agent-configuration
           configMap:
             name: hawkular-openshift-agent-configuration
+        - name: hawkular-openshift-agent
+          configMap:
+            name: hawkular-openshift-agent-configuration
