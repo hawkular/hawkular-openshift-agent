@@ -165,14 +165,27 @@ func (d *Discovery) sendNodeEventDueToChangedConfigMap(namespace string, name st
 		var cme *ConfigMapEntry
 
 		if cm != nil {
+			// the config map changed
 			configMapName, hasVol := p.ConfigMapVolumes[HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME]
 			if hasVol == true && configMapName == cm.Name {
 				cme = cm.Entry
-				log.Debugf("Configmap [%v] for namespace [%v] affects pod [%v] with volume: [%v=%v]",
+				log.Debugf("Changed configmap [%v] for namespace [%v] affects pod [%v] with volume: [%v=%v]",
 					cm.Name, namespace, p.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME, configMapName)
 			} else {
-				log.Debugf("Configmap [%v] for namespace [%v] does not affect pod [%v]",
+				log.Debugf("Changed configmap [%v] for namespace [%v] does not affect pod [%v]",
 					cm.Name, namespace, p.GetIdentifier())
+				return true
+			}
+		} else {
+			// the config map was deleted
+			configMapName, hasVol := p.ConfigMapVolumes[HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME]
+			if hasVol == true && configMapName == name {
+				log.Debugf("Deleted configmap [%v] for namespace [%v] affects pod [%v] with volume: [%v=%v]",
+					name, namespace, p.GetIdentifier(), HAWKULAR_OPENSHIFT_AGENT_VOLUME_NAME, configMapName)
+			} else {
+				log.Debugf("Deleted configmap [%v] for namespace [%v] does not affect pod [%v]",
+					name, namespace, p.GetIdentifier())
+				return true
 			}
 		}
 
