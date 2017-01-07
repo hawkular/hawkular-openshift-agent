@@ -49,6 +49,9 @@ const (
 	ENV_K8S_TOKEN         = "K8S_TOKEN"
 	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
 	ENV_K8S_TENANT        = "K8S_TENANT"
+
+	ENV_EMITTER_ENABLED = "EMITTER_ENABLED"
+	ENV_EMITTER_ADDRESS = "EMITTER_ADDRESS"
 )
 
 // Hawkular_Server defines where the Hawkular Server is. This is where metrics are stored.
@@ -95,11 +98,20 @@ type Kubernetes struct {
 	Tenant        string ",omitempty"
 }
 
+// Emitter defines the behavior of the metrics emitter which is responsible for
+// emitting the agent's own metric data.
+// USED FOR YAML
+type Emitter struct {
+	Enabled string ",omitempty"
+	Address string ",omitempty"
+}
+
 // Config defines the agent's full YAML configuration.
 // USED FOR YAML
 type Config struct {
 	Identity        security.Identity ",omitempty"
 	Hawkular_Server Hawkular_Server
+	Emitter         Emitter              ",omitempty"
 	Collector       Collector            ",omitempty"
 	Kubernetes      Kubernetes           ",omitempty"
 	Endpoints       []collector.Endpoint ",omitempty"
@@ -127,6 +139,9 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.Token = getDefaultString(ENV_K8S_TOKEN, "")
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
 	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
+
+	c.Emitter.Enabled = getDefaultString(ENV_EMITTER_ENABLED, "true")
+	c.Emitter.Address = getDefaultString(ENV_EMITTER_ADDRESS, "")
 
 	return
 }

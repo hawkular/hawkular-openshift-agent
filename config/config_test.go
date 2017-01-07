@@ -32,11 +32,13 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_K8S_POD_NAMESPACE, os.Getenv(ENV_K8S_POD_NAMESPACE))
 	defer os.Setenv(ENV_K8S_POD_NAME, os.Getenv(ENV_K8S_POD_NAME))
 	defer os.Setenv(ENV_K8S_TENANT, os.Getenv(ENV_K8S_TENANT))
+	defer os.Setenv(ENV_EMITTER_ENABLED, os.Getenv(ENV_EMITTER_ENABLED))
 	os.Setenv(ENV_HS_URL, "http://TestEnvVar:9090")
 	os.Setenv(ENV_HS_TOKEN, "abc123")
 	os.Setenv(ENV_K8S_POD_NAMESPACE, "TestEnvVar pod namespace")
 	os.Setenv(ENV_K8S_POD_NAME, "TestEnvVar pod name")
 	os.Setenv(ENV_K8S_TENANT, "${POD:namespace_name}")
+	os.Setenv(ENV_EMITTER_ENABLED, "false")
 
 	conf := NewConfig()
 
@@ -54,6 +56,9 @@ func TestEnvVar(t *testing.T) {
 	}
 	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
 		t.Error("Tenant is wrong")
+	}
+	if conf.Emitter.Enabled != "false" {
+		t.Error("Emitter Enabled is wrong")
 	}
 }
 
@@ -90,6 +95,12 @@ func TestDefaults(t *testing.T) {
 	if len(conf.Endpoints) != 0 {
 		t.Error("There should be no endpoints by default")
 	}
+	if conf.Emitter.Enabled != "true" {
+		t.Error("Emitter Enabled is wrong - default should be true")
+	}
+	if conf.Emitter.Address != "" {
+		t.Error("Emitter Address  is wrong")
+	}
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
@@ -103,6 +114,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 		Kubernetes: Kubernetes{
 			Pod_Namespace: "TestMarshalUnmarshal namespace",
 			Pod_Name:      "TestMarshalUnmarshal name",
+		},
+		Emitter: Emitter{
+			Enabled: "false",
+			Address: ":12345",
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -167,6 +182,13 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Endpoints[0].Metrics[0].Tags == nil || len(conf.Endpoints[0].Metrics[0].Tags) > 0 {
 		t.Error("Metric tags should be empty but not nil")
 	}
+
+	if conf.Emitter.Enabled != "false" {
+		t.Error("Emitter Enabled should be false")
+	}
+	if conf.Emitter.Address != ":12345" {
+		t.Error("Emitter Address is wrong")
+	}
 }
 
 func TestLoadSave(t *testing.T) {
@@ -190,6 +212,10 @@ func TestLoadSave(t *testing.T) {
 			Pod_Namespace: "TestLoadSave namespace",
 			Pod_Name:      "TestLoadSave name",
 			Tenant:        "${POD:namespace_name}",
+		},
+		Emitter: Emitter{
+			Enabled: "false",
+			Address: ":12345",
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -257,6 +283,12 @@ func TestLoadSave(t *testing.T) {
 		t.Error("Tag2 is not correct")
 	}
 
+	if conf.Emitter.Enabled != "false" {
+		t.Error("Emitter Enabled should be false")
+	}
+	if conf.Emitter.Address != ":12345" {
+		t.Error("Emitter Address is wrong")
+	}
 }
 
 func TestError(t *testing.T) {

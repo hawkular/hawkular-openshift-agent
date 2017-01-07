@@ -10,6 +10,10 @@ import:
 - package: github.com/prometheus/client_model
   subpackages:
   - go
+- package: github.com/prometheus/client_golang
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
 - package: github.com/prometheus/common
   subpackages:
   - expfmt

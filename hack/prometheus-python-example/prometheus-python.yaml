@@ -45,12 +45,12 @@ objects:
       hawkular-openshift-agent-example: prometheus-python
   data:
     hawkular-openshift-agent: |
-      collection_interval_secs: 10
       endpoints:
       - type: prometheus
         protocol: "http"
         port: 8181
         path: /
+        collection_interval_secs: 30
         metrics:
         - name: process_virtual_memory_bytes
           type: gauge

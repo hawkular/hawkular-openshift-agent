@@ -340,16 +340,11 @@ func (d *Discovery) watchConfigMap(namespace string) {
 			switch event.Type {
 			case watch.Added:
 				{
-					if len(configMapFromEvent.Data) != 1 {
-						log.Debugf("Detected a new configmap [%v] for namespace [%v] but it doesn't have one and only one entry. Ignoring.", configMapName, namespace)
-						continue
-					}
-
 					var cm *ConfigMap
 
 					yaml, ok := configMapFromEvent.Data[HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME]
 					if !ok {
-						log.Debugf("Detected a new configmap [%v] for namespace [%v] but its entry is not named [%v]. Ignoring.", configMapName, namespace, HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME)
+						log.Debugf("Detected a new configmap [%v] for namespace [%v] but has no entry named [%v]. Ignoring.", configMapName, namespace, HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME)
 						continue
 					}
 					log.Debugf("Detected a new configmap [%v] for namespace [%v]", configMapName, namespace)
@@ -369,14 +364,9 @@ func (d *Discovery) watchConfigMap(namespace string) {
 				}
 			case watch.Deleted:
 				{
-					if len(configMapFromEvent.Data) != 1 {
-						log.Debugf("Detected a deleted configmap [%v] for namespace [%v] but it doesn't have one and only one entry. Ignoring.", configMapName, namespace)
-						continue
-					}
-
 					_, ok := configMapFromEvent.Data[HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME]
 					if !ok {
-						log.Debugf("Detected a deleted configmap [%v] for namespace [%v] but its entry is not named [%v]. Ignoring.", configMapName, namespace, HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME)
+						log.Debugf("Detected a deleted configmap [%v] for namespace [%v] but has no entry named [%v]. Ignoring.", configMapName, namespace, HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME)
 						continue
 					}
 
@@ -388,16 +378,11 @@ func (d *Discovery) watchConfigMap(namespace string) {
 				}
 			case watch.Modified:
 				{
-					if len(configMapFromEvent.Data) != 1 {
-						log.Debugf("Detected a modified configmap [%v] for namespace [%v] but it doesn't have one and only one entry. Ignoring.", configMapName, namespace)
-						continue
-					}
-
 					var cm *ConfigMap
 
 					yaml, ok := configMapFromEvent.Data[HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME]
 					if !ok {
-						log.Debugf("Detected a modified configmap [%v] for namespace [%v] but its entry is not named [%v]. Ignoring.", configMapName, namespace, HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME)
+						log.Debugf("Detected a modified configmap [%v] for namespace [%v] but has no entry named [%v]. Ignoring.", configMapName, namespace, HAWKULAR_OPENSHIFT_AGENT_CONFIG_MAP_ENTRY_NAME)
 						continue
 					}
 					log.Debugf("Detected a modified configmap [%v] for namespace [%v]", configMapName, namespace)

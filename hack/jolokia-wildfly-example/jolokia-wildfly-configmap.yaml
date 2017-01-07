@@ -4,12 +4,12 @@ metadata:
   name: jolokia-wildfly
 data:
   hawkular-openshift-agent: |
-    collection_interval_secs: 10
     endpoints:
     - type: jolokia
       protocol: "http"
       port: 8080
       path: /jolokia-war-1.3.5
+      collection_interval_secs: 30
       metrics:
       - name: java.lang:type=Threading#ThreadCount
         type: counter

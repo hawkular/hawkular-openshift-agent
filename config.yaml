@@ -4,6 +4,8 @@ hawkular_server:
   credentials:
     username: jdoe
     password: password
+emitter:
+  address: :8081
 collector:
   minimum_collection_interval_secs: 10
   tags:
@@ -22,3 +24,12 @@ kubernetes:
   #token: ...bearer token here...
   #pod_name: hawkular-metrics-ns2ij
   #pod_namespace: openshift-infra
+endpoints:
+  - type: prometheus
+    enabled: false
+    url: http://127.0.0.1:8081/metrics
+    metrics:
+    - name: hawkular_openshift_agent_metric_data_points_collected
+    - name: go_goroutines
+    - name: process_resident_memory_bytes
+    - name: process_virtual_memory_bytes
