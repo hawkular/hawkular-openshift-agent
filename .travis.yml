@@ -9,7 +9,7 @@ notifications:
     - chat.freenode.net#hawkular
 
 # Workaround issue https://github.com/Masterminds/glide/issues/639
-# Run this before_install and do not run "make install_glide" during the install.
+# Run this before_install and do not run "make install-glide" during the install.
 before_install:
   - GLIDE_OS_ARCH=`go env GOHOSTOS`-`go env GOHOSTARCH`
   - GLIDE_TAG=$(curl -s https://glide.sh/version)
@@ -22,7 +22,7 @@ before_install:
 # Via Makefile, tell glide to install our dependencies, and then run the tests.
 
 install:
-#  - make install_glide
-  - make install_deps
+#  - make install-glide
+  - make install-deps
 
 script: make test
