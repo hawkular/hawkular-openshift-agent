@@ -65,28 +65,28 @@ run:
 	@hawkular-openshift-agent -v ${VERBOSE_MODE} -config config.yaml
 
 # Glide Targets
-#   install_glide - Installs the Glide executable itself. Just need to do this once.
-#   glide_create  - Examines all imports and creates Glide YAML file.
-#   install_deps  - Installs the dependencies declared in the Glide Lock file in the
+#   install-glide - Installs the Glide executable itself. Just need to do this once.
+#   glide-create  - Examines all imports and creates Glide YAML file.
+#   install-deps  - Installs the dependencies declared in the Glide Lock file in the
 #                   vendor directory. Does an update and creates the Glide Lock file if necessary.
 #                   Use this to install the dependencies after cloning the git repo.
-#   update_deps   - Updates the dependencies found in the Glide YAML file and
+#   update-deps   - Updates the dependencies found in the Glide YAML file and
 #                   installs them in the vendor directory. Creates/Updates the Glide Lock file.
 #                   Use this if you've updated or added dependencies.
 
-install_glide:
+install-glide:
 	@echo Installing Glide itself
 	@mkdir -p ${GOPATH}/bin
 	@curl https://glide.sh/get | sh
 
-glide_create:
+glide-create:
 	@echo Creating Glide YAML file
 	@glide create
 
-install_deps:
+install-deps:
 	@echo Installing dependencies in vendor directory
 	@glide install --strip-vendor
 
-update_deps:
+update-deps:
 	@echo Updating dependencies and storing in vendor directory
 	@glide update --strip-vendor

@@ -60,7 +60,7 @@ export PATH=${PATH}:${GOPATH}/bin
 [source,shell]
 ----
 cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
-make install_glide
+make install-glide
 ----
 
 * Tell Glide to install the Hawkular OpenShift Agent dependencies
@@ -68,7 +68,7 @@ make install_glide
 [source,shell]
 ----
 cd ${GOPATH}/src/github.com/hawkular/hawkular-openshift-agent
-make install_deps
+make install-deps
 ----
 
 * Build Hawkular OpenShift Agent
