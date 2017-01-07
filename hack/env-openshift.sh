@@ -12,7 +12,7 @@ OPENSHIFT_GOPATH=${HOME}/source/go/openshift
 # This is the IP address where OpenShift will bind its master.
 # This should be a valid IP address for the machine where OpenShift is installed.
 # NOTE: Do not use any IP address within the loopback range of 127.0.0.x.
-OPENSHIFT_IP_ADDRESS=192.168.1.2
+OPENSHIFT_IP_ADDRESS=$(ip -f inet addr | grep 'state UP' -A1 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
 
 #-----------------------------------------------------------------------------
 # Variables below have values derived from the user-defined variables above.
