@@ -1,47 +1,47 @@
-id: prometheus-example
+id: hawkular-openshift-agent-example-prometheus-python
 kind: Template
 apiVersion: v1
-name: prometheus-python-example
+name: hawkular-openshift-agent-example-prometheus-python
 metadata:
-  name: prometheus-python-example
+  name: hawkular-openshift-agent-example-prometheus-python
   labels:
     hawkular-openshift-agent-example: prometheus-python
 parameters:
 - description: The version of the image to use
   name: IMAGE_VERSION
-  value: dev
+  value: latest
 objects:
 - apiVersion: v1
   kind: ReplicationController
   metadata:
-    name: prometheus-python-example
+    name: hawkular-openshift-agent-example-prometheus-python
     labels:
-      name: prometheus-python-example
+      name: hawkular-openshift-agent-example-prometheus-python
       hawkular-openshift-agent-example: prometheus-python
   spec:
     selector:
-      name: prometheus-python-example
+      name: hawkular-openshift-agent-example-prometheus-python
     replicas: 1
     template:
       version: v1
       metadata:
         labels:
-          name: prometheus-python-example
+          name: hawkular-openshift-agent-example-prometheus-python
           hawkular-openshift-agent-example: prometheus-python
       spec:
         containers:
-        - image: hawkular/openshift-agent-example-prometheus-python:${IMAGE_VERSION}
-          name: prometheus-python-example
+        - image: hawkular/hawkular-openshift-agent-example-prometheus-python:${IMAGE_VERSION}
+          name: hawkular-openshift-agent-example-prometheus-python
         volumes:
         - name: hawkular-openshift-agent
           configMap:
-            name: prometheus-python-example
+            name: hawkular-openshift-agent-example-prometheus-python
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: prometheus-python-example
+    name: hawkular-openshift-agent-example-prometheus-python
     labels:
-      name: prometheus-python-example
+      name: hawkular-openshift-agent-example-prometheus-python
       hawkular-openshift-agent-example: prometheus-python
   data:
     hawkular-openshift-agent: |

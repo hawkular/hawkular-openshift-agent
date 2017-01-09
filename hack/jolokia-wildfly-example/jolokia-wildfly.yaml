@@ -1,30 +1,64 @@
-id: jolokia-wildfly
+id: hawkular-openshift-agent-example-jolokia-wildfly
 kind: Template
 apiVersion: v1
-name: jolokia-wildfly
+name: hawkular-openshift-agent-example-jolokia-wildfly
 metadata:
-  name: jolokia-wildfly
+  name: hawkular-openshift-agent-example-jolokia-wildfly
+  labels:
+    hawkular-openshift-agent-example: jolokia-wildfly
+parameters:
+- description: The version of the image to use
+  name: IMAGE_VERSION
+  value: latest
 objects:
 - apiVersion: v1
   kind: ReplicationController
   metadata:
-    name: jolokia-wildfly
+    name: hawkular-openshift-agent-example-jolokia-wildfly
     labels:
-      name: jolokia-wildfly
+      name: hawkular-openshift-agent-example-jolokia-wildfly
+      hawkular-openshift-agent-example: jolokia-wildfly
   spec:
     selector:
-      name: jolokia-wildfly
+      name: hawkular-openshift-agent-example-jolokia-wildfly
     replicas: 1
     template:
       version: v1
       metadata:
         labels:
-          name: jolokia-wildfly
+          name: hawkular-openshift-agent-example-jolokia-wildfly
+          hawkular-openshift-agent-example: jolokia-wildfly
       spec:
         containers:
-        - image: jmazzitelli/jolokia-wildfly
-          name: jolokia-wildfly
+        - image: hawkular/hawkular-openshift-agent-example-jolokia-wildfly:${IMAGE_VERSION}
+          name: hawkular-openshift-agent-example-jolokia-wildfly
         volumes:
         - name: hawkular-openshift-agent
           configMap:
-            name: jolokia-wildfly
+            name: hawkular-openshift-agent-example-jolokia-wildfly
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: hawkular-openshift-agent-example-jolokia-wildfly
+    labels:
+      name: hawkular-openshift-agent-example-jolokia-wildfly
+      hawkular-openshift-agent-example: jolokia-wildfly
+  data:
+    hawkular-openshift-agent: |
+      endpoints:
+      - type: jolokia
+        protocol: "http"
+        port: 8080
+        path: /jolokia-war-1.3.5
+        collection_interval_secs: 30
+        metrics:
+        - name: java.lang:type=Threading#ThreadCount
+          type: counter
+          id:   VM Thread Count
+        - name: java.lang:type=Memory#HeapMemoryUsage#used
+          type: gauge
+          id:   VM Heap Memory Used
+        - name: java.lang:type=Memory#HeapMemoryUsage#max
+          type: gauge
+          id:   VM Heap Memory Max
+
