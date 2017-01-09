@@ -1,7 +1,11 @@
+DOCKER_NAME = hawkular/hawkular-openshift-agent-example-prometheus-python
+DOCKER_VERSION ?= dev
+DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
+
 all: build
 
 build:
-	docker build -t hawkular/openshift-agent-example-prometheus-python:dev .
+	docker build -t ${DOCKER_TAG} .
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying the Prometheus Python Example to OpenShift. Using project `oc project --short`

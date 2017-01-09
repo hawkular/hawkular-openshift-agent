@@ -1,5 +1,9 @@
-VERSION = 0.1.0
-COMMIT_HASH = $(shell git rev-parse HEAD)
+VERSION ?= 0.2.0
+COMMIT_HASH ?= $(shell git rev-parse HEAD)
+
+DOCKER_NAME = hawkular/hawkular-openshift-agent
+DOCKER_VERSION ?= dev
+DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
 
 VERBOSE_MODE ?= 4
 
@@ -7,10 +11,6 @@ GO_BUILD_ENVVARS = \
 	GOOS=linux \
 	GOARCH=amd64 \
 	CGO_ENABLED=0 \
-
-DOCKER_NAME = hawkular/hawkular-openshift-agent
-DOCKER_VERSION = dev
-DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
 
 all: build
 
@@ -32,6 +32,12 @@ docker:
 	@cp -r deploy/docker/* _output/docker
 	@cp hawkular-openshift-agent _output/docker	
 	docker build -t ${DOCKER_TAG} _output/docker
+
+docker-examples:
+	@echo Building Docker Image of Example: Prometheus-Python
+	@DOCKER_VERSION=${DOCKER_VERSION} cd hack/prometheus-python-example && make build
+	@echo Building Docker Image of Example: Jolokia-WildFly
+	@DOCKER_VERSION=${DOCKER_VERSION} cd hack/jolokia-wildfly-example && make build
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift
