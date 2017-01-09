@@ -15,7 +15,7 @@ notifications:
 
 env:
   global:
-    - secure: "wh6fSqAZ324Hnl15vgm3cJaj5htI8KFDi2qOZa3RAMn6C0V/hCpsRD28ZBi4gBK2R2Dg5dDgczjX/Y96ZUJzcUlpzv6OD9B5FdyAK2We0PTmlVWgVqbgEGW1jgBkV7vG+2d/yzT3S5bwQaxDkWEaDLxUvPvzNvaNUB7vgh6KAUBed/c5xJPkZugnzhU2zj+Q/9P100y4L0+atzL0fU8+icTAzlWhdPj7iQ1Zhmvx+9Kpxdi/aXSSBr7S5AuwdXixb8VTMKktlQ2mqO0dJxH8Ae41f12s+UtXtv9jMM8ZOb+D831x8p3b/4lm9tfZkCeKvdp8Lo6ynANaOiVgG6hnFVToRlt8rH+8lxGvQ1G3LuFbkcvGkKjLnsofYKwTCH14G2QYc+tzx33SByIFRHeEePExZUl/Q85YA/Vw2dMpY8uRKNHFCt0mD4p9Eg/F+LeQoT4nYiQ4qPxXZQKz4nT1/jzd/QkglP1FE+ekkMj4tlw5l4WSxtdif2YPpPXPjFOcyV44vbZDtgRBiNdidAoQRn0wxc43sllSRV9mhk44b75mYNKezvAtoEBHa5qVY6x2dRrAi7x7ut8MryoPBVwvMqg2Uy/yimbGz2lbBAHfCaLi1pjpU0ZEnPggmSwFkIOe0Bbjg9AkivGxk6MJVa/LWfscK7a9hbiA9kLpDvzYcvw="
+    - secure: "tZbmG2N4MwhDpca88sA5JaCpWvRan8LlL6Wb+TEZ6FD5Nys1vs4AD2SNTfrJkmgT7hLrbdaQ/kvb9ewT/iZhZF38ymv2F3bM+hcW+FLhT7onsJJXLz2DkXEF97eX7AEL1Y8303yp4gBVy2HoeeH0s/td3dkRm4Q1L/pzS0heNUFbi2OaBC4GrhwUlhynzginrhOJCmk4JX08A2to5MvC3G2lpkeMov3ga6ZInxapd6SFD/xpzAzTNmndORZNADJnggBzRDYdE/M5pNyQTvn3QrWDz71Kp+F6fhcbCk6yKz/JX4BrurnDlUAYkIcBh17625KSPHgDbksCAr7RHc4UT9uhsJexwvykjUGbRU3PsjEk+GRr2FfDUjJ1/+0GH5DgtsOBUqx1+39yWrib4tAYtUGysaXcBdxCoQlXq07Knntaop3POYzsuD82QfsflQ3GSa22G1ZaVWGjDqYPOm2R7INrB/Sk+ERV07saKZ3y/iH/oaSo7vlVDR4ThWoCDocPGliqIAahNaLoj0oCV/yiH4c91GSNzXMvz/XDglq42/IBdIt4BLEINy0NPf4nEerUPg1WdosyZ6OYmbEak/A+syKQVwrSS23Nmes3xGVsDRMlUkYC173vPWnMt34cqfwAo6DN+sVLz3+F3BzHZt/VF00ao6O0uKR3gXwB9BPjbyY="
     - secure: "Ws+X9QhpzWl+0JE23FMX5jvUSwxxwmOIpcQQU9gi5CBKkFft9vF7FIeGMm5Vypi+8bkFB+C29hU0sjOLRoM8B7Wrox6o6zvPrcL1DjwOGRbWiqbUd2TQWAbkcRsyRGOfPblVTpXaX3STD0oSXZQcySkW+5l7FlpxhmLPnleuv9Z1CsV39DNqb7DI1npp082l6VzzHISz5l9GZPLyNn5tSO8ZiZzeUFS9FTdRF31wooo7DpvoeiJ4sixPKe/Vx8FvdwhLsNkYpfJ/flkNvvfJF5HTyS7GLIhEo1pQ72OnOwl9ipS6R1aIARIvPUMhYjrAllmtWhnEn0bnwUw6u/E6Gznk9ptOnXSuKOk0mCUq2+HD2Ay0R8E9odmo/nAfdkTfSqyb/10ArS5kAP/gG1WH9OojS3RcNYCcIGye7VLKIkrQen4IsrXXJF+BTgf+UdGXfLBuXYitRMX016IL21/qo6GiCSLXtv2cF2csj6iM/hXFeuDifTs0mWQ7hsesO2buKUnfDBpjtSElHa3IRe3lBibAue2lVzJQj6pwL8+gPgJ1ya+qA8htotNrPA753g7c0Fx1s6F1Rcx4FocsyVa2Qm3oUzmyTFb+/2ZuK7y6IQpcQoWC6G3jXxMHn4ZYdWFTGGS0TAagNoLMBThzotRUqYks7Ouv8FvZ5K2Q6cVv7+8="
 
 # Workaround issue https://github.com/Masterminds/glide/issues/639
@@ -41,7 +41,7 @@ after_success:
   - export COMMIT_HASH=${TRAVIS_COMMIT}
   - export DOCKER_VERSION=$(if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi)
   - make build
-  - docker login -u $DOCKER_USER -p $DOCKER_PASS
+  - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
   - make docker
   - make docker-examples
   - docker push hawkular/hawkular-openshift-agent
