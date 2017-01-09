@@ -223,12 +223,14 @@ metadata:
   namespace: my-project
 data:
   hawkular-openshift-agent: |
-    collection_interval_secs: 60
     endpoints:
     - type: prometheus
+      collection_interval_secs: 60
       protocol: "http"
       port: 8080
       path: /metrics
+      metrics:
+        ...
 ----
 
 Notice the name given to this config map - "my-web-pod-config". This is the name of the config map, and it is this name that should appear as a value to the "hawkular-openshift-agent" volume found on the "web-pod" pod. It identifies this config map to Hawkular OpenShift Agent as the one that should be used by that pod. Notice also that the name of the config map entry is fixed and must always be "hawkular-openshift-agent". Next, notice the config map entry here. This defines what are to be monitored. Here you see there is a single endpoint for this pod that will expose Prometheus metrics over http and port 8080 at /metrics. The IP address used will be that of the pod itself and thus need not be specified.
@@ -330,9 +332,7 @@ A full Prometheus endpoint configuration can look like this:
   metrics:
   - name: go_memstats_last_gc_time_seconds
     id: gc_time_secs
-    type: gauge
   - name: go_memstats_frees_total
-    type: counter
 ----
 
 Some things to note about configuring your Prometheus endpoints:
