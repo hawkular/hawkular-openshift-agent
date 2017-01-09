@@ -47,7 +47,7 @@ openshift-deploy: openshift-undeploy
 
 openshift-undeploy:
 	@echo Undeploying the Agent from OpenShift
-	oc delete all,secrets,sa,templates,configmaps --selector=metrics-infra=agent -n openshift-infra
+	oc delete all,secrets,sa,templates,configmaps,daemonsets --selector=metrics-infra=agent -n openshift-infra
 
 install:
 	@echo Installing...
