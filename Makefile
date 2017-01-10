@@ -41,7 +41,7 @@ docker-examples:
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift
-	oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-agent
+	oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-openshift-agent
 	oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n openshift-infra
 	oc process -f deploy/openshift/hawkular-openshift-agent.yaml | oc create -n openshift-infra -f -
 

@@ -13,7 +13,7 @@ objects:
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    name: hawkular-agent
+    name: hawkular-openshift-agent
     labels:
       metrics-infra: agent
 - apiVersion: extensions/v1beta1
@@ -33,7 +33,7 @@ objects:
           name: hawkular-openshift-agent
           metrics-infra: agent
       spec:
-        serviceAccount: hawkular-agent
+        serviceAccount: hawkular-openshift-agent
         containers:
         - image: hawkular/hawkular-openshift-agent:${IMAGE_VERSION}
           name: hawkular-openshift-agent
