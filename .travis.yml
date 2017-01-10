@@ -40,6 +40,8 @@ script: make test
 after_success:
   - export COMMIT_HASH=${TRAVIS_COMMIT}
   - export DOCKER_VERSION=$(if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi)
+  - export DOCKER_USER=$(if [ "$DOCKER_USER" == "" ]; then echo "unknown"; else echo $DOCKER_USER ; fi)
+  - export DOCKER_PASS=$(if [ "$DOCKER_PASS" == "" ]; then echo "unknown"; else echo $DOCKER_PASS ; fi)
   - make build
   - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
   - make docker
