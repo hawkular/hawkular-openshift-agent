@@ -189,6 +189,11 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			"POD:labels":         joinMap(ne.Pod.Labels),
 		}
 
+		// support ${POD:label[<label-name>]}
+		for n, v := range ne.Pod.Labels {
+			additionalEnv[fmt.Sprintf("POD:label[%v]", n)] = v
+		}
+
 		endpointTenant := nec.Config.Hawkular_Server.Tenant
 		if nec.Config.Kubernetes.Tenant != "" {
 			mappingFunc := expand.MappingFunc(true, additionalEnv)
