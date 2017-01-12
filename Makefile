@@ -41,13 +41,14 @@ docker-examples:
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift
-	oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:hawkular-openshift-agent
 	oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n openshift-infra
 	oc process -f deploy/openshift/hawkular-openshift-agent.yaml | oc create -n openshift-infra -f -
+	oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:openshift-infra:hawkular-openshift-agent
 
 openshift-undeploy:
 	@echo Undeploying the Agent from OpenShift
-	oc delete all,secrets,sa,templates,configmaps,daemonsets --selector=metrics-infra=agent -n openshift-infra
+	oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n openshift-infra
+	oc delete clusterroles hawkular-openshift-agent
 
 install:
 	@echo Installing...

@@ -27,6 +27,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
@@ -200,13 +201,19 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			endpointTenant = os.Expand(nec.Config.Kubernetes.Tenant, mappingFunc)
 		}
 
+		endpointCredentials, err := nec.determineCredentials(ne.Pod, cmeEndpoint.Credentials)
+		if err != nil {
+			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot determine credentials. err=%v", ne.Pod.GetIdentifier(), err)
+			continue
+		}
+
 		// We need to convert the k8s endpoint to the generic endpoint struct.
 		newEndpoint := &collector.Endpoint{
 			URL:                      url.String(),
 			Type:                     cmeEndpoint.Type,
 			Enabled:                  cmeEndpoint.Enabled,
 			Tenant:                   endpointTenant,
-			Credentials:              cmeEndpoint.Credentials,
+			Credentials:              endpointCredentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
 			Metrics:                  cmeEndpoint.Metrics,
 			Tags:                     cmeEndpoint.Tags,
@@ -251,6 +258,48 @@ func (nec *NodeEventConsumer) stopCollecting(ne *NodeEvent) {
 			nec.MetricsCollectorManager.StopCollecting(id)
 		}
 	}
+}
+
+// determineCredentials will build a Credentials object that contains the credentials needed to
+// communicate with the endpoint.
+func (nec *NodeEventConsumer) determineCredentials(p *Pod, cmeCredentials security.Credentials) (creds security.Credentials, err error) {
+	// function that will extract a credential string based on its value.
+	// If the string is prefixed with "secret:" it is assumed to be a key/value from a k8s secret.
+	// If the string is not prefixed, it is used as-is.
+	f := func(v string) string {
+		if strings.HasPrefix(v, "secret:") {
+			v = strings.TrimLeft(v, "secret:")
+			pair := strings.SplitN(v, "/", 2)
+			if len(pair) != 2 {
+				err = fmt.Errorf("Secret credentials are invalid for pod [%v]", p.GetIdentifier())
+				return ""
+			}
+			secret, e := nec.Discovery.Client.Secrets(p.Namespace.Name).Get(pair[0])
+			if e != nil {
+				err = fmt.Errorf("There is no secret named [%v] - credentials are invalid for pod [%v]. err=%v",
+					pair[0], p.GetIdentifier(), e)
+				return ""
+			}
+			secretValue, ok := secret.Data[pair[1]]
+			if !ok {
+				err = fmt.Errorf("There is no key named [%v] in secret named [%v] - credentials are invalid for pod [%v]",
+					pair[1], pair[0], p.GetIdentifier())
+				return ""
+			}
+			log.Debugf("Credentials obtained from secret [%v/%v] for pod [%v]", pair[0], pair[1], p.GetIdentifier())
+			return string(secretValue)
+		} else {
+			return v
+		}
+	}
+
+	creds = security.Credentials{
+		Username: f(cmeCredentials.Username),
+		Password: f(cmeCredentials.Password),
+		Token:    f(cmeCredentials.Token),
+	}
+
+	return
 }
 
 func getIdForEndpoint(p *Pod, e K8SEndpoint) (id string, err error) {
