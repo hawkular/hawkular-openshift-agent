@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,12 +25,12 @@ import (
 	"mime"
 	"net/http"
 
-	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
 const userAgent string = "Hawkular/Hawkular-OpenShift-Agent"
@@ -106,7 +106,7 @@ func scrapeBinaryOneFamily(r io.Reader, m *dto.MetricFamily) error {
 
 	for varintBytes == 0 {
 		if totalBytesRead >= len(headerArray) {
-			glog.Warning("Prometheus endpoint appears to be exporting invalid data")
+			log.Warning("Prometheus endpoint appears to be exporting invalid data")
 			return errors.New("invalid number of bytes read")
 		}
 

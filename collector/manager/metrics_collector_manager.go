@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,19 +18,21 @@
 package manager
 
 import (
+	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
-	"github.com/hawkular/hawkular-openshift-agent/emitter"
+	agentmetrics "github.com/hawkular/hawkular-openshift-agent/emitter/metrics"
+	"github.com/hawkular/hawkular-openshift-agent/emitter/status"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
+	"github.com/hawkular/hawkular-openshift-agent/util/stopwatch"
 )
 
 // MetricsCollectorManager is responsible for periodically collecting metrics from many different endpoints.
@@ -59,7 +61,9 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 		for _, e := range endpoints {
 			id := e.URL
 			if c, err := CreateMetricsCollector(id, mcm.Config.Identity, e, nil); err != nil {
-				glog.Warningf("Will not start collecting for endpoint [%v]. err=%v", id, err)
+				m := fmt.Sprintf("Will not start collecting for endpoint [%v]. err=%v", id, err)
+				log.Warning(m)
+				status.StatusReport.Endpoints[id] = m
 			} else {
 				mcm.StartCollecting(c)
 			}
@@ -77,7 +81,9 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 	id := theCollector.GetId()
 
 	if theCollector.GetEndpoint().IsEnabled() == false {
-		glog.Infof("Will not collect metrics from [%v] - it has been disabled.", id)
+		m := fmt.Sprintf("Will not collect metrics from [%v] - it has been disabled.", id)
+		log.Info(m)
+		status.StatusReport.Endpoints[id] = m
 		return
 	}
 
@@ -90,12 +96,15 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 
 	interval := theCollector.GetEndpoint().Collection_Interval_Secs
 	if interval < mcm.Config.Collector.Minimum_Collection_Interval_Secs {
-		glog.Warningf("Collection interval for [%v] is [%v] which is lower than the minimum allowed [%v]. Setting it to the minimum allowed.",
+		log.Warningf("Collection interval for [%v] is [%v] which is lower than the minimum allowed [%v]. Setting it to the minimum allowed.",
 			id, interval, mcm.Config.Collector.Minimum_Collection_Interval_Secs)
 		interval = mcm.Config.Collector.Minimum_Collection_Interval_Secs
 	}
 
-	glog.Infof("START collecting metrics from [%v] every [%v]s", id, interval)
+	log.Infof("START collecting metrics from [%v] every [%v]s", id, interval)
+	status.StatusReport.AddLogMessage(fmt.Sprintf("START collection: %v", id))
+	status.StatusReport.Endpoints[id] = "STARTING"
+
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	mcm.Tickers[id] = ticker
 	go func() {
@@ -107,23 +116,30 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 		// declare the metric definitions - creating new ones and updating existing ones
 		metricDetails, err := theCollector.CollectMetricDetails()
 		if err != nil {
-			glog.Warning("Failed to obtain metric details - metric definitions may be incomplete. err=%v", err)
 			metricDetails = make([]collector.MetricDetails, 0)
+			msg := fmt.Sprintf("Failed to obtain metric details - metric definitions may be incomplete. err=%v", err)
+			log.Warning(msg)
+			status.StatusReport.Endpoints[id] = msg
 		}
 		mcm.declareMetricDefinitions(metricDetails, theCollector.GetEndpoint(), theCollector.GetAdditionalEnvironment())
 
 		// now periodically collect the metric data
 		for _ = range ticker.C {
+			timer := stopwatch.NewStopwatch()
 			metrics, err := theCollector.CollectMetrics()
+			timer.MarkTime()
 			if err != nil {
-				glog.Warningf("Failed to collect metrics from [%v]. err=%v", id, err)
+				msg := fmt.Sprintf("Failed to collect metrics from [%v]. err=%v", id, err)
+				log.Warning(msg)
+				status.StatusReport.Endpoints[id] = msg
 			} else {
 				for i, m := range metrics {
 					metrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(m.ID, mappingFunc)
 				}
 				mcm.metricsChan <- metrics
 
-				emitter.Metrics.DataPointsCollected.Add(float64(len(metrics)))
+				agentmetrics.Metrics.DataPointsCollected.Add(float64(len(metrics)))
+				status.StatusReport.Endpoints[id] = fmt.Sprintf("OK. Last collection gathered [%v] metrics in [%v]", len(metrics), timer)
 			}
 		}
 	}()
@@ -137,10 +153,14 @@ func (mcm *MetricsCollectorManager) StopCollecting(collectorId string) {
 
 	ticker, ok := mcm.Tickers[collectorId]
 	if ok {
-		glog.Infof("STOP collecting metrics from [%v]", collectorId)
+		log.Infof("STOP collecting metrics from [%v]", collectorId)
+		status.StatusReport.AddLogMessage(fmt.Sprintf("STOP collection: %v", collectorId))
 		ticker.Stop()
 		delete(mcm.Tickers, collectorId)
 	}
+
+	// ensure we take it out of the status report, even if no ticker was running on it
+	delete(status.StatusReport.Endpoints, collectorId)
 }
 
 // StopCollectingAll halts all metric collections.
@@ -149,10 +169,16 @@ func (mcm *MetricsCollectorManager) StopCollectingAll() {
 	mcm.TickersLock.Lock()
 	defer mcm.TickersLock.Unlock()
 
-	glog.Infof("STOP collecting all metrics from all endpoints")
+	log.Infof("STOP collecting all metrics from all endpoints")
+	status.StatusReport.AddLogMessage("STOP collecting all metrics from all endpoints")
 	for id, ticker := range mcm.Tickers {
 		ticker.Stop()
 		delete(mcm.Tickers, id)
+	}
+
+	// ensure we take them all out of the status report, even for those which there are no tickers
+	for id := range status.StatusReport.Endpoints {
+		delete(status.StatusReport.Endpoints, id)
 	}
 }
 
@@ -182,13 +208,13 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 		}
 		if metricType == "" {
 			metricType = hmetrics.Gauge
-			glog.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", metric.ID, endpoint.String(), metricType)
+			log.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", metric.ID, endpoint.String(), metricType)
 		}
 
 		// Now add the fixed tag of "units".
 		units, err := collector.GetMetricUnits(metric.Units)
 		if err != nil {
-			glog.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to [%v]. err=%v", metric.ID, endpoint.String(), units.Symbol, err)
+			log.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to [%v]. err=%v", metric.ID, endpoint.String(), units.Symbol, err)
 		}
 
 		// Define additional envvars with pod specific data for use in replacing ${env} tokens in tags.

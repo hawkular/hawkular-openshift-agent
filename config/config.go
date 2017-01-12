@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -50,8 +51,11 @@ const (
 	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
 	ENV_K8S_TENANT        = "K8S_TENANT"
 
-	ENV_EMITTER_ENABLED = "EMITTER_ENABLED"
-	ENV_EMITTER_ADDRESS = "EMITTER_ADDRESS"
+	ENV_EMITTER_ADDRESS         = "EMITTER_ADDRESS"
+	ENV_EMITTER_METRICS_ENABLED = "EMITTER_METRICS_ENABLED"
+	ENV_EMITTER_STATUS_ENABLED  = "EMITTER_STATUS_ENABLED"
+	ENV_EMITTER_HEALTH_ENABLED  = "EMITTER_HEALTH_ENABLED"
+	ENV_EMITTER_STATUS_LOG_SIZE = "EMITTER_STATUS_LOG_SIZE"
 )
 
 // Hawkular_Server defines where the Hawkular Server is. This is where metrics are stored.
@@ -98,12 +102,15 @@ type Kubernetes struct {
 	Tenant        string ",omitempty"
 }
 
-// Emitter defines the behavior of the metrics emitter which is responsible for
-// emitting the agent's own metric data.
+// Emitter defines the behavior of the emitter which is responsible for
+// emitting the agent's own metric data, a status report, and/or the health probe.
 // USED FOR YAML
 type Emitter struct {
-	Enabled string ",omitempty"
-	Address string ",omitempty"
+	Metrics_Enabled string ",omitempty"
+	Status_Enabled  string ",omitempty"
+	Health_Enabled  string ",omitempty"
+	Address         string ",omitempty"
+	Status_Log_Size int    ",omitempty"
 }
 
 // Config defines the agent's full YAML configuration.
@@ -140,8 +147,11 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
 	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
 
-	c.Emitter.Enabled = getDefaultString(ENV_EMITTER_ENABLED, "true")
+	c.Emitter.Metrics_Enabled = getDefaultString(ENV_EMITTER_METRICS_ENABLED, "true")
+	c.Emitter.Status_Enabled = getDefaultString(ENV_EMITTER_STATUS_ENABLED, "true")
+	c.Emitter.Health_Enabled = getDefaultString(ENV_EMITTER_HEALTH_ENABLED, "true")
 	c.Emitter.Address = getDefaultString(ENV_EMITTER_ADDRESS, "")
+	c.Emitter.Status_Log_Size = getDefaultInt(ENV_EMITTER_STATUS_LOG_SIZE, 10)
 
 	return
 }
@@ -150,6 +160,21 @@ func getDefaultString(envvar string, defaultValue string) (retVal string) {
 	retVal = os.Getenv(envvar)
 	if retVal == "" {
 		retVal = defaultValue
+	}
+	return
+}
+
+func getDefaultInt(envvar string, defaultValue int) (retVal int) {
+	retValString := os.Getenv(envvar)
+	if retValString == "" {
+		retVal = defaultValue
+	} else {
+		if num, err := strconv.Atoi(retValString); err != nil {
+			log.Warningf("Invalid number for envvar [%v]. err=%v", envvar, err)
+			retVal = defaultValue
+		} else {
+			retVal = num
+		}
 	}
 	return
 }

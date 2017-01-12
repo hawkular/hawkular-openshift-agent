@@ -62,6 +62,13 @@ objects:
         containers:
         - image: hawkular/hawkular-openshift-agent:${IMAGE_VERSION}
           name: hawkular-openshift-agent
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
           command:
             - "/opt/hawkular/hawkular-openshift-agent"
             - "-config"

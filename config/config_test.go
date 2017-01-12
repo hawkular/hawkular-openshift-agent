@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,13 +32,19 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_K8S_POD_NAMESPACE, os.Getenv(ENV_K8S_POD_NAMESPACE))
 	defer os.Setenv(ENV_K8S_POD_NAME, os.Getenv(ENV_K8S_POD_NAME))
 	defer os.Setenv(ENV_K8S_TENANT, os.Getenv(ENV_K8S_TENANT))
-	defer os.Setenv(ENV_EMITTER_ENABLED, os.Getenv(ENV_EMITTER_ENABLED))
+	defer os.Setenv(ENV_EMITTER_METRICS_ENABLED, os.Getenv(ENV_EMITTER_METRICS_ENABLED))
+	defer os.Setenv(ENV_EMITTER_STATUS_ENABLED, os.Getenv(ENV_EMITTER_STATUS_ENABLED))
+	defer os.Setenv(ENV_EMITTER_HEALTH_ENABLED, os.Getenv(ENV_EMITTER_HEALTH_ENABLED))
+	defer os.Setenv(ENV_EMITTER_STATUS_LOG_SIZE, os.Getenv(ENV_EMITTER_STATUS_LOG_SIZE))
 	os.Setenv(ENV_HS_URL, "http://TestEnvVar:9090")
 	os.Setenv(ENV_HS_TOKEN, "abc123")
 	os.Setenv(ENV_K8S_POD_NAMESPACE, "TestEnvVar pod namespace")
 	os.Setenv(ENV_K8S_POD_NAME, "TestEnvVar pod name")
 	os.Setenv(ENV_K8S_TENANT, "${POD:namespace_name}")
-	os.Setenv(ENV_EMITTER_ENABLED, "false")
+	os.Setenv(ENV_EMITTER_METRICS_ENABLED, "false")
+	os.Setenv(ENV_EMITTER_STATUS_ENABLED, "false")
+	os.Setenv(ENV_EMITTER_HEALTH_ENABLED, "false")
+	os.Setenv(ENV_EMITTER_STATUS_LOG_SIZE, "123")
 
 	conf := NewConfig()
 
@@ -57,8 +63,17 @@ func TestEnvVar(t *testing.T) {
 	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
 		t.Error("Tenant is wrong")
 	}
-	if conf.Emitter.Enabled != "false" {
-		t.Error("Emitter Enabled is wrong")
+	if conf.Emitter.Metrics_Enabled != "false" {
+		t.Error("Emitter Metrics Enabled is wrong")
+	}
+	if conf.Emitter.Status_Enabled != "false" {
+		t.Error("Emitter Status Enabled is wrong")
+	}
+	if conf.Emitter.Health_Enabled != "false" {
+		t.Error("Emitter Health Enabled is wrong")
+	}
+	if conf.Emitter.Status_Log_Size != 123 {
+		t.Error("Emitter Status Log Size is wrong")
 	}
 }
 
@@ -95,11 +110,20 @@ func TestDefaults(t *testing.T) {
 	if len(conf.Endpoints) != 0 {
 		t.Error("There should be no endpoints by default")
 	}
-	if conf.Emitter.Enabled != "true" {
-		t.Error("Emitter Enabled is wrong - default should be true")
+	if conf.Emitter.Metrics_Enabled != "true" {
+		t.Error("Emitter Metrics Enabled is wrong - default should be true")
+	}
+	if conf.Emitter.Status_Enabled != "true" {
+		t.Error("Emitter Status Enabled is wrong - default should be true")
+	}
+	if conf.Emitter.Health_Enabled != "true" {
+		t.Error("Emitter Health Enabled is wrong - default should be true")
 	}
 	if conf.Emitter.Address != "" {
-		t.Error("Emitter Address  is wrong")
+		t.Error("Emitter Address is wrong")
+	}
+	if conf.Emitter.Status_Log_Size != 10 {
+		t.Error("Emitter Status Log Size default is wrong")
 	}
 }
 
@@ -116,8 +140,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Pod_Name:      "TestMarshalUnmarshal name",
 		},
 		Emitter: Emitter{
-			Enabled: "false",
-			Address: ":12345",
+			Metrics_Enabled: "false",
+			Status_Enabled:  "false",
+			Health_Enabled:  "false",
+			Address:         ":12345",
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -183,8 +209,14 @@ func TestMarshalUnmarshal(t *testing.T) {
 		t.Error("Metric tags should be empty but not nil")
 	}
 
-	if conf.Emitter.Enabled != "false" {
-		t.Error("Emitter Enabled should be false")
+	if conf.Emitter.Metrics_Enabled != "false" {
+		t.Error("Emitter Metrics Enabled is wrong")
+	}
+	if conf.Emitter.Status_Enabled != "false" {
+		t.Error("Emitter Status Enabled is wrong")
+	}
+	if conf.Emitter.Health_Enabled != "false" {
+		t.Error("Emitter Health Enabled is wrong")
 	}
 	if conf.Emitter.Address != ":12345" {
 		t.Error("Emitter Address is wrong")
@@ -214,8 +246,11 @@ func TestLoadSave(t *testing.T) {
 			Tenant:        "${POD:namespace_name}",
 		},
 		Emitter: Emitter{
-			Enabled: "false",
-			Address: ":12345",
+			Metrics_Enabled: "false",
+			Status_Enabled:  "false",
+			Health_Enabled:  "false",
+			Address:         ":12345",
+			Status_Log_Size: 1234,
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -283,11 +318,20 @@ func TestLoadSave(t *testing.T) {
 		t.Error("Tag2 is not correct")
 	}
 
-	if conf.Emitter.Enabled != "false" {
-		t.Error("Emitter Enabled should be false")
+	if conf.Emitter.Metrics_Enabled != "false" {
+		t.Error("Emitter Metrics Enabled is wrong")
+	}
+	if conf.Emitter.Status_Enabled != "false" {
+		t.Error("Emitter Status Enabled is wrong")
+	}
+	if conf.Emitter.Health_Enabled != "false" {
+		t.Error("Emitter Health Enabled is wrong")
 	}
 	if conf.Emitter.Address != ":12345" {
 		t.Error("Emitter Address is wrong")
+	}
+	if conf.Emitter.Status_Log_Size != 1234 {
+		t.Error("Emitter Status Log Size is wrong")
 	}
 }
 

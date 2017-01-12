@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"reflect"
 
-	"github.com/golang/glog"
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/config"
@@ -60,13 +59,13 @@ func NewMetricsStorageManager(conf *config.Config) (ms *MetricsStorageManager, e
 }
 
 func (ms *MetricsStorageManager) StartStoringMetrics() {
-	glog.Info("START storing metrics definitions and data")
+	log.Info("START storing metrics definitions and data")
 	go ms.consumeMetricDefinitions()
 	go ms.consumeMetrics()
 }
 
 func (ms *MetricsStorageManager) StopStoringMetrics() {
-	glog.Info("STOP storing metrics definitions and data")
+	log.Info("STOP storing metrics definitions and data")
 	close(ms.MetricsChannel)
 	close(ms.MetricDefinitionsChannel)
 }
@@ -96,10 +95,10 @@ func (ms *MetricsStorageManager) consumeMetricDefinitions() {
 					// doesn't exist - create it
 					ok, createErr := ms.hawkClientMetricDefinitions.Create(md, modifier)
 					if !ok {
-						glog.Warningf("Failed to create new metric definition [%v] of type [%v] in tenant [%v]. err=%v", md.ID, md.Type, tenant, createErr)
+						log.Warningf("Failed to create new metric definition [%v] of type [%v] in tenant [%v]. err=%v", md.ID, md.Type, tenant, createErr)
 					}
 				} else {
-					glog.Warningf("Failed to determine if metric definition [%v] of type [%v] in tenant [%v] exists. err=%v", md.ID, md.Type, tenant, err)
+					log.Warningf("Failed to determine if metric definition [%v] of type [%v] in tenant [%v] exists. err=%v", md.ID, md.Type, tenant, err)
 				}
 			} else {
 				// metric def exists, we just need to update it if it needs to be
@@ -111,7 +110,7 @@ func (ms *MetricsStorageManager) consumeMetricDefinitions() {
 							log.Tracef("Deleting obsolete tag [%v] from metric definition [%v] of type [%v] in tenant [%v].", existingTagName, md.ID, md.Type, tenant)
 							err := ms.hawkClientMetricDefinitions.DeleteTags(md.Type, md.ID, map[string]string{existingTagName: existingTagValue}, modifier)
 							if err != nil {
-								glog.Warningf("Failed to delete obsolete tag [%v=%v] from metric definition [%v] of type [%v] in tenant [%v]. err=%v", existingTagName, existingTagValue, md.ID, md.Type, tenant, err)
+								log.Warningf("Failed to delete obsolete tag [%v=%v] from metric definition [%v] of type [%v] in tenant [%v]. err=%v", existingTagName, existingTagValue, md.ID, md.Type, tenant, err)
 							}
 						}
 					}
@@ -120,7 +119,7 @@ func (ms *MetricsStorageManager) consumeMetricDefinitions() {
 					log.Debugf("Updating tags for metric definition [%v] of type [%v] in tenant [%v]", md.ID, md.Type, tenant)
 					err := ms.hawkClientMetricDefinitions.UpdateTags(md.Type, md.ID, md.Tags, modifier)
 					if err != nil {
-						glog.Warningf("Failed to update tags for metric definition [%v] of type [%v] in tenant [%v]. err=%v", md.ID, md.Type, tenant, err)
+						log.Warningf("Failed to update tags for metric definition [%v] of type [%v] in tenant [%v]. err=%v", md.ID, md.Type, tenant, err)
 					}
 				}
 			}
@@ -147,7 +146,7 @@ func (ms *MetricsStorageManager) consumeMetrics() {
 		err := ms.hawkClientMetrics.Write(metrics, hmetrics.Tenant(tenant))
 
 		if err != nil {
-			glog.Warningf("Failed to store metrics. err=%v", err)
+			log.Warningf("Failed to store metrics. err=%v", err)
 		} else {
 			log.Debugf("Stored datapoints for [%v] metrics", len(metrics))
 			if log.IsTrace() {
@@ -168,7 +167,7 @@ func getHawkularMetricsClient(conf *config.Config) (*hmetrics.Client, error) {
 
 		cert, err := ioutil.ReadFile(conf.Hawkular_Server.CA_Cert_File)
 		if err != nil {
-			glog.Warningf("Failed to load the CA file for Hawkular Metrics. You may not be able to properly connect to the Hawkular Metrics server. err=%v", err)
+			log.Warningf("Failed to load the CA file for Hawkular Metrics. You may not be able to properly connect to the Hawkular Metrics server. err=%v", err)
 		}
 
 		certs.AppendCertsFromPEM(cert)

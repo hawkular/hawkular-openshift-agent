@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/glog"
 	core "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.4/pkg/api"
 	"k8s.io/client-go/1.4/pkg/api/v1"
@@ -205,7 +204,8 @@ func (d *Discovery) watchPods() {
 		// we only want to listen to pods on our own node
 		fieldSelector, err := fields.ParseSelector(fmt.Sprintf("spec.nodeName==%v", d.Inventory.Node.Name))
 		if err != nil {
-			glog.Fatal(err)
+			log.Error(err)
+			return nil
 		}
 
 		listOptions := api.ListOptions{
@@ -216,7 +216,8 @@ func (d *Discovery) watchPods() {
 
 		watcher, err := d.Client.Pods(v1.NamespaceAll).Watch(listOptions)
 		if err != nil {
-			glog.Fatal(err)
+			log.Error(err)
+			return nil
 		}
 
 		return watcher
@@ -228,7 +229,7 @@ func (d *Discovery) watchPods() {
 			namespaceFromEvent, err := d.Client.Namespaces().Get(podFromEvent.GetNamespace())
 			var namespaceUID string
 			if err != nil {
-				glog.Warning("Failed to obtain UID of namespace [%v]. err=%v", podFromEvent.GetNamespace(), err)
+				log.Warning("Failed to obtain UID of namespace [%v]. err=%v", podFromEvent.GetNamespace(), err)
 			} else {
 				namespaceUID = string(namespaceFromEvent.GetUID())
 			}
@@ -316,7 +317,7 @@ func (d *Discovery) watchPods() {
 
 func (d *Discovery) unwatchPods() {
 	if d.PodWatcher != nil {
-		glog.Infof("Stopping the pod watcher for node [%v]", d.Inventory.Node.Name)
+		log.Infof("Stopping the pod watcher for node [%v]", d.Inventory.Node.Name)
 		d.PodWatcher.stop()
 		d.PodWatcher = nil
 	}
@@ -339,7 +340,8 @@ func (d *Discovery) watchConfigMap(namespace string) {
 
 		watcher, err := d.Client.ConfigMaps(namespace).Watch(listOptions)
 		if err != nil {
-			glog.Fatal(err)
+			log.Error(err)
+			return nil
 		}
 
 		return watcher
@@ -366,7 +368,7 @@ func (d *Discovery) watchConfigMap(namespace string) {
 						cm = NewConfigMap(namespace, configMapName, cme)
 						d.Inventory.ConfigMaps.AddEntry(cm)
 					} else {
-						glog.Warningf("Cannot use new configmap [%v] for namespace [%v]. err=%v", configMapName, namespace, err)
+						log.Warningf("Cannot use new configmap [%v] for namespace [%v]. err=%v", configMapName, namespace, err)
 						continue
 					}
 
@@ -405,7 +407,7 @@ func (d *Discovery) watchConfigMap(namespace string) {
 						cm = NewConfigMap(namespace, configMapName, cme)
 						d.Inventory.ConfigMaps.AddEntry(cm)
 					} else {
-						glog.Warningf("Cannot use modified configmap [%v] for namespace [%v]. err=%v", configMapName, namespace, err)
+						log.Warningf("Cannot use modified configmap [%v] for namespace [%v]. err=%v", configMapName, namespace, err)
 						continue
 					}
 
@@ -430,7 +432,7 @@ func (d *Discovery) watchConfigMap(namespace string) {
 func (d *Discovery) unwatchConfigMap(namespace string) {
 	doomedWatcher, ok := d.ConfigMapWatchers[namespace]
 	if ok == true {
-		glog.Infof("Stopping the configmap watcher for namespace [%v]", namespace)
+		log.Infof("Stopping the configmap watcher for namespace [%v]", namespace)
 		doomedWatcher.stop()
 		delete(d.ConfigMapWatchers, namespace)
 	}

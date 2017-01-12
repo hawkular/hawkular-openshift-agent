@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	//"github.com/golang/glog"
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 	prom "github.com/prometheus/client_model/go"
 

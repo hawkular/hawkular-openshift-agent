@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
@@ -126,7 +125,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 			metrics = append(metrics, metric)
 
 		} else {
-			glog.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
+			log.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
 				jc.Endpoint.Metrics[i].Name, url, err)
 		}
 	}

@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,12 +22,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
-
 	"github.com/hawkular/hawkular-openshift-agent/collector"
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/emitter/status"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
@@ -64,13 +63,13 @@ func (nec *NodeEventConsumer) Start() {
 
 	client, err := GetKubernetesClient(conf)
 	if err != nil {
-		glog.Errorf("Error trying to get the Kubernetes Client: err=%v", err)
+		log.Errorf("Error trying to get the Kubernetes Client: err=%v", err)
 		return
 	}
 
 	k8sNode, err := GetLocalNode(conf, client)
 	if err != nil {
-		glog.Error(err)
+		log.Error(err)
 		return
 	}
 
@@ -78,6 +77,7 @@ func (nec *NodeEventConsumer) Start() {
 		Name: k8sNode.GetName(),
 		UID:  string(k8sNode.GetUID()),
 	}
+
 	nec.CollectorIds = make(map[string][]string)
 
 	nec.Discovery = NewDiscovery(conf, client, node)
@@ -93,12 +93,15 @@ func (nec *NodeEventConsumer) Stop() {
 		nec.Discovery.stop()
 	}
 
-	// stop all our collectors
-	for _, ids := range nec.CollectorIds {
+	// stop all our collectors for all pods
+	for podId, ids := range nec.CollectorIds {
 		for _, id := range ids {
 			nec.MetricsCollectorManager.StopCollecting(id)
 		}
+		delete(nec.CollectorIds, podId)
+		delete(status.StatusReport.Pods, podId)
 	}
+
 }
 
 // consumeNodeEvents listens to the node event channel and will process
@@ -153,7 +156,7 @@ func (nec *NodeEventConsumer) consumeNodeEvents() {
 			}
 		default:
 			{
-				glog.Warningf("Ignoring unknown trigger [%v]", ne.Trigger)
+				log.Warningf("Ignoring unknown trigger [%v]", ne.Trigger)
 			}
 		}
 	}
@@ -165,12 +168,41 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 	for _, cmeEndpoint := range ne.ConfigMapEntry.Endpoints {
 		url, err := cmeEndpoint.GetUrl(ne.Pod.PodIP)
 		if err != nil {
-			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot build URL. err=%v", ne.Pod.GetIdentifier(), err)
+			log.Warningf("Will not start collecting for endpoint in pod [%v] - cannot build URL. err=%v", ne.Pod.GetIdentifier(), err)
 			continue
 		}
 
+		// get an ID to be used for the collector
+		id, err := getIdForEndpoint(ne.Pod, cmeEndpoint)
+		if err != nil {
+			log.Warningf("Will not start collecting for endpoint in pod [%v] - cannot get ID. err=%v", ne.Pod.GetIdentifier(), err)
+			continue
+		}
+
+		// keep track of each pod's collector IDs in case we need to stop them later on
+		ids, ok := nec.CollectorIds[ne.Pod.GetIdentifier()]
+		if ok {
+			alreadyThere := false
+			for _, i := range ids {
+				if i == id {
+					alreadyThere = true
+					break
+				}
+			}
+			if !alreadyThere {
+				nec.CollectorIds[ne.Pod.GetIdentifier()] = append(ids, id)
+			}
+		} else {
+			nec.CollectorIds[ne.Pod.GetIdentifier()] = []string{id}
+		}
+
+		// update the status report
+		status.StatusReport.Pods[ne.Pod.GetIdentifier()] = nec.CollectorIds[ne.Pod.GetIdentifier()]
+
 		if cmeEndpoint.IsEnabled() == false {
-			glog.Infof("Will not start collecting for endpoint [%v] in pod [%v] - it has been disabled.", url, ne.Pod.GetIdentifier())
+			m := fmt.Sprintf("Will not start collecting for endpoint [%v] in pod [%v] - it has been disabled.", url, ne.Pod.GetIdentifier())
+			log.Info(m)
+			status.StatusReport.Endpoints[id] = m
 			continue
 		}
 
@@ -203,7 +235,9 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 
 		endpointCredentials, err := nec.determineCredentials(ne.Pod, cmeEndpoint.Credentials)
 		if err != nil {
-			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot determine credentials. err=%v", ne.Pod.GetIdentifier(), err)
+			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - cannot determine credentials. err=%v", ne.Pod.GetIdentifier(), err)
+			log.Warning(m)
+			status.StatusReport.Endpoints[id] = m
 			continue
 		}
 
@@ -221,32 +255,20 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 
 		// make sure the endpoint is configured correctly
 		if err := newEndpoint.ValidateEndpoint(); err != nil {
-			glog.Warningf("Will not start collecting for endpoint in pod [%v] - invalid endpoint. err=%v", ne.Pod.GetIdentifier(), err)
-			continue
-		}
-
-		// get an ID to be used for the collector
-		id, err := getIdForEndpoint(ne.Pod, cmeEndpoint)
-		if err != nil {
-			glog.Warningf("Will not start collecting for endpoint in pod [%v] - cannot get ID. err=%v", ne.Pod.GetIdentifier(), err)
+			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - invalid endpoint. err=%v", ne.Pod.GetIdentifier(), err)
+			log.Warning(m)
+			status.StatusReport.Endpoints[id] = m
 			continue
 		}
 
 		if c, err := manager.CreateMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv); err != nil {
-			glog.Warningf("Will not start collecting for endpoint in pod [%v]. err=%v", ne.Pod.GetIdentifier(), err)
+			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - cannot create collector. err=%v", ne.Pod.GetIdentifier(), err)
+			log.Warning(m)
+			status.StatusReport.Endpoints[id] = m
 			continue
 		} else {
 			nec.MetricsCollectorManager.StartCollecting(c)
 		}
-
-		// keep track of each pod's collector IDs in case we need to stop them later on
-		ids, ok := nec.CollectorIds[ne.Pod.GetIdentifier()]
-		if ok {
-			nec.CollectorIds[ne.Pod.GetIdentifier()] = append(ids, id)
-		} else {
-			nec.CollectorIds[ne.Pod.GetIdentifier()] = []string{id}
-		}
-
 	}
 }
 
@@ -257,7 +279,11 @@ func (nec *NodeEventConsumer) stopCollecting(ne *NodeEvent) {
 		for _, id := range ids {
 			nec.MetricsCollectorManager.StopCollecting(id)
 		}
+		delete(nec.CollectorIds, ne.Pod.GetIdentifier())
 	}
+
+	// ensure its removed from the status report
+	delete(status.StatusReport.Pods, ne.Pod.GetIdentifier())
 }
 
 // determineCredentials will build a Credentials object that contains the credentials needed to
@@ -307,7 +333,7 @@ func getIdForEndpoint(p *Pod, e K8SEndpoint) (id string, err error) {
 	if err != nil {
 		return
 	}
-	id = url.String()
+	id = fmt.Sprintf("%v/%v|%v", p.Namespace.Name, p.Name, url.String())
 	return
 }
 
