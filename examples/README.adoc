@@ -1,0 +1,43 @@
+# Examples
+
+This directory contains example applications using the Hawkular OpenShift Agent.
+
+## Jolokia Wildfly Example
+
+This example installs the Jolokia JVM agent into a Wildfly 10 instance and is configured to expose the Heap Memory Used metric.
+
+Since a Jolokia endpoint exposes a full JMX endpoint, it is essential to make sure that this endpoint is secured under https and also requires authentication to access it.
+
+### Deploying
+The link:jolokia-wildfly-example/jolokia-wildfly.yaml[jolokia-wildfly] template can be used to deploy this example:
+```
+$ oc process -f jolokia-wildfly-example/jolokia-wildfly.yaml | oc create -f -
+```
+
+## Prometheus Python Example
+
+This example will start up a simple python application which will expose an unsecured Prometheus endpoint. As an unsecured endpoint, any application can access it without having to be authenticated.
+
+### Deploying
+The link:prometheus-python-example/prometheus-python.yaml[prometheus-python] template can be used to deploy this example:
+```
+$ oc process -f prometheus-python-example/prometheus-python.yaml | oc create -f -
+```
+
+# Building the Examples
+Each of the example directories contains a `Makefile` which can be used to build the examples.
+
+## Building the Docker Image
+```
+$ make
+```
+
+## Deploying the Example
+```
+$ make openshift-deploy
+```
+
+## Undeploying the Example
+```
+$ make openshift-undeploy
+```

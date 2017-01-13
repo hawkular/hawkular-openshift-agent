@@ -10,6 +10,14 @@ parameters:
 - description: The version of the image to use
   name: IMAGE_VERSION
   value: latest
+- description: The password used for the Jolokia endpoint authentication
+  name: JOLOKIA_PASSWORD
+  generate: expression
+  from: '[a-zA-Z0-9]{15}'
+  required: true
+- description: The username used for the Jolokia endpoint authentication
+  name: JOLOKIA_USER
+  value: jolokia
 objects:
 - apiVersion: v1
   kind: ReplicationController
@@ -32,6 +40,20 @@ objects:
         containers:
         - image: hawkular/hawkular-openshift-agent-example-jolokia-wildfly:${IMAGE_VERSION}
           name: hawkular-openshift-agent-example-jolokia-wildfly
+          ports:
+          - name: jolokia
+            containerPort: 8778
+          - name: http
+            containerPort: 8080
+          - name: https
+            containerPort: 8443
+          env:
+          - name: JOLOKIA_PASSWORD
+            value: ${JOLOKIA_PASSWORD}
+          - name: JOLOKIA_USER
+            value: ${JOLOKIA_USER}
+          - name: JAVA_OPTS_APPEND
+            value: "-javaagent:$JBOSS_HOME/jolokia.jar=port=8778,protocol=https,caCert=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt,clientPrincipal=cn=system:master-proxy,useSslClientAuthentication=true,extraClientCheck=true,host=0.0.0.0,discoveryEnabled=false,user=${JOLOKIA_USER},password=${JOLOKIA_PASSWORD}"
         volumes:
         - name: hawkular-openshift-agent
           configMap:
@@ -47,18 +69,17 @@ objects:
     hawkular-openshift-agent: |
       endpoints:
       - type: jolokia
-        protocol: "http"
-        port: 8080
-        path: /jolokia-war-1.3.5
-        collection_interval_secs: 30
+        protocol: https
+        port: 8778
+        path: /jolokia/
+        collection_interval_secs: 15
+        tls:
+          skip_certificate_validation: true
+        credentials:
+          username: ${JOLOKIA_USER}
+          password: ${JOLOKIA_PASSWORD}
         metrics:
-        - name: java.lang:type=Threading#ThreadCount
-          type: counter
-          id:   VM Thread Count
         - name: java.lang:type=Memory#HeapMemoryUsage#used
           type: gauge
-          id:   VM Heap Memory Used
-        - name: java.lang:type=Memory#HeapMemoryUsage#max
-          type: gauge
-          id:   VM Heap Memory Max
-
+          description: Heap Memory Used
+          units: B
