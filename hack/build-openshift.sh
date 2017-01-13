@@ -4,8 +4,9 @@
 # build-openshift.sh
 #
 # This will download the OpenShift Origin source code and build it.
-# You can start it via start-openshift.sh or "cluster-openshift.sh up"
-# You can stop it via stop-openshift.sh or "cluster-openshift.sh down"
+# You can start it via "cluster-openshift.sh up"
+# You can stop it via "cluster-openshift.sh down"
+# You can get version and status information via "cluster-openshift.sh status"
 ##############################################################################
 
 # Before we do anything, make sure all software prerequisites are available.
@@ -79,7 +80,9 @@ make clean build
 
 if [ "$?" = "0" ]; then
   echo OpenShift Origin build is complete!
-  echo You can use the start-openshift.sh/stop-openshift.sh or cluster-openshift.sh scripts to start and stop it.
+  echo You can start it via: cluster-openshift.sh up
+  echo You can stop it via: cluster-openshift.sh down
+  echo You can get version and status information via: cluster-openshift.sh status
 
   grep 'OPTIONS=.*--insecure-registry' /etc/sysconfig/docker > /dev/null 2>&1
   if [ "$?" != "0" ]; then

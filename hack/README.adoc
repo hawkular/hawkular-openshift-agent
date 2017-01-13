@@ -8,24 +8,35 @@ These files are used to build, start, and stop your own OpenShift environment fr
 
 |`env-openshift.sh`|Defines the OpenShift environment. Edit this so the variables are set to the appropriate values.
 |`build-openshift.sh`|Downloads the OpenShift Origin source code and builds it.
-|`start-openshift.sh`|Starts the OpenShift Origin server that was built from source.
-|`stop-openshift.sh`|Stops the OpenShift Origin server thtat was built from source.
-|`cluster-openshift.sh`|Used instead of the above start/stop scripts. Pass "up"/"down" to start/stop OpenShift.
-|`afterstart-openshift.sh`|You don't run this; it is used automatically by `start-openshift.sh`.
+|`cluster-openshift.sh`|Starts and stops your OpenShift Origin environment. Pass "up"/"down" to start/stop OpenShift.
 |===
+
+To build your own OpenShift Origin:
+
+1. Edit `env-openshift.sh` to set some of the variables to match your environment. Typically, you will leave most of this file the same, but you may want to edit the value of OPENSHIFT_GOPATH to point to a directory where you want the OpenShift Origin source to go. OPENSHIFT_IP_ADDRESS should pick up the IP address of your local machine, but if for some reason it does not, or if you want to use a different IP address, you may change the value of this variable to the custom IP address you want OpenShift Origin to bind to.
+
+2. Run `build-openshift.sh` which will update the OpenShift Origin code to the latest version (cloning the git repository if it has not yet been downloaded to your filesystem) and then run the build.
+
+At this point, you have your own copy of OpenShift Origin built. You can start and stop it using the `cluster-openshift.sh` script:
+
+* You can start it via: `cluster-openshift.sh up`
+* You can stop it via: `cluster-openshift.sh down`
+* You can get version and status information via: `cluster-openshift.sh status`
 
 == Deploy the Agent
 
-These files are used to deploy and undeploy the agent in a running OpenShift environment:
+To deploy the agent, use the link:../Makefile[Makefile] located in the root directory of this project.
 
-|===
-|Script Name|Description
+```
+make openshift-deploy
+```
 
-| `deploy-agent.sh`|Deploys the agent into a running OpenShift environment.
-| `undeploy-agent.sh`|Undeploys the agent from a running OpenShift environment.
-|===
+If you want to build your own local docker image of the agent, you can use the "build docker" targets:
 
-The above scripts use these configuration files:
+```
+make build docker
+```
 
-* link:../deploy/openshift/hawkular-openshift-agent-configmap.yaml[]
-* link:../deploy/openshift/hawkular-openshift-agent.yaml[]
+== Deploy Some Example Containers
+
+To deploy the examples, use the Makefiles found in the link:../examples[examples].
