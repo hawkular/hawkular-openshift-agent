@@ -50,6 +50,10 @@ openshift-undeploy:
 	oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n openshift-infra
 	oc delete clusterroles hawkular-openshift-agent
 
+openshift-status:
+	@echo Obtaining Status from the Agent running in OpenShift
+	@curl -k -H "Authorization: Bearer `oc whoami -t`" `oc version | grep 'Server ' | awk '{print $$2;}'`/api/v1/namespaces/openshift-infra/pods/`oc get pods -n openshift-infra --selector metrics-infra=agent --no-headers | awk '{print $$1;}'`:8080/proxy/status
+
 install:
 	@echo Installing...
 	${GO_BUILD_ENVVARS} go install \

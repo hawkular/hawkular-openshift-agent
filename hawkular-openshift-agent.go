@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/emitter"
+	"github.com/hawkular/hawkular-openshift-agent/emitter/status"
 	"github.com/hawkular/hawkular-openshift-agent/k8s"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/storage"
@@ -64,7 +65,7 @@ func main() {
 	validateFlags()
 
 	// log startup information
-	glog.Infof("Hawkular OpenShift Agent: Version: %v, Commit: %v\n", version, commitHash)
+	log.Infof("Hawkular OpenShift Agent: Version: %v, Commit: %v\n", version, commitHash)
 	log.Debugf("Hawkular OpenShift Agent Command line: [%v]", strings.Join(os.Args, " "))
 
 	// load config file if specified, otherwise, rely on environment variables to configure us
@@ -75,7 +76,7 @@ func main() {
 		}
 		Configuration = c
 	} else {
-		glog.Infof("No configuration file specified. Will rely on environment for configuration.")
+		log.Infof("No configuration file specified. Will rely on environment for configuration.")
 		Configuration = config.NewConfig()
 	}
 	log.Tracef("Hawkular OpenShift Agent Configuration:\n%s", Configuration)
@@ -84,8 +85,17 @@ func main() {
 		glog.Fatal(err)
 	}
 
-	// prepare our own metrics endpoint - the agent emits its own metrics so it can monitor itself
-	emitter.EmitMetrics(Configuration)
+	// prepare our own emitter endpoint - the agent emits status and its own metrics so it can monitor itself
+	status.StatusReport = status.StatusReportType{
+		Name:        "Hawkular OpenShift Agent",
+		Version:     version,
+		Commit_Hash: commitHash,
+		Pods:        make(map[string][]string, 0),
+		Endpoints:   make(map[string]string, 0),
+		Log:         make(status.LogMessages, Configuration.Emitter.Status_Log_Size),
+	}
+	status.StatusReport.AddLogMessage("Agent Started")
+	emitter.StartEmitter(Configuration)
 
 	// prepare the storage manager and start storing metrics as they come in
 	storageManager, err := storage.NewMetricsStorageManager(Configuration)
@@ -122,7 +132,7 @@ func waitForTermination() {
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for _ = range signalChan {
-			glog.Info("Termination Signal Received")
+			log.Info("Termination Signal Received")
 			doneChan <- true
 		}
 	}()
@@ -144,6 +154,11 @@ func validateConfig() error {
 		if err := e.ValidateEndpoint(); err != nil {
 			return fmt.Errorf("Hawkular Server configuration is invalid: %v", err)
 		}
+	}
+
+	if Configuration.Emitter.Status_Log_Size < 10 || Configuration.Emitter.Status_Log_Size > 1000 {
+		return fmt.Errorf("Emitter Status Log Size must be between 10 and 1000. It was [%v]",
+			Configuration.Emitter.Status_Log_Size)
 	}
 
 	return nil

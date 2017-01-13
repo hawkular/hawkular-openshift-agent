@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/golang/glog"
 	"gopkg.in/yaml.v2"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
@@ -66,7 +65,7 @@ func (e K8SEndpoint) IsEnabled() bool {
 		return true
 	}
 	if e.Enabled != "false" {
-		glog.Warningf("Enabled flag must be 'true' or 'false' but was '%v'. This endpoint is considered disabled.", e.Enabled)
+		log.Warningf("Enabled flag must be 'true' or 'false' but was '%v'. This endpoint is considered disabled.", e.Enabled)
 	}
 	return false
 }
@@ -106,7 +105,7 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 	cme = NewConfigMapEntry()
 	err = yaml.Unmarshal([]byte(yamlString), &cme)
 	if err != nil {
-		glog.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
+		log.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
 	}
 
 	// YAML unmarshalling leaves empty tags as nil - we want empty but non-nil.
@@ -126,7 +125,7 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 			cme.Endpoints[i].Enabled = "true"
 		} else if e.Enabled != "true" && e.Enabled != "false" {
 			err = fmt.Errorf("Enabled flag must be 'true' or 'false': %v", e.Enabled)
-			glog.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
+			log.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
 			cme.Endpoints[i].Enabled = "false"
 		}
 	}
@@ -137,7 +136,7 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 func MarshalConfigMapEntry(cme *ConfigMapEntry) (yamlString string, err error) {
 	yamlBytes, err := yaml.Marshal(&cme)
 	if err != nil {
-		glog.Errorf("Failed to produce yaml for config map entry. error=%v", err)
+		log.Errorf("Failed to produce yaml for config map entry. error=%v", err)
 	}
 
 	yamlString = string(yamlBytes)
