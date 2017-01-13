@@ -39,6 +39,7 @@ const (
 // Endpoint describes a place where and what metrics are exposed.
 // Type indicates the kind of metric endpoint (e.g. Prometheus or Jolokia).
 // Protocol defines the communications protocol (e.g. http or https).
+// TLS configures transport layer security if the prptocol uses TLS.
 // Notice that Host is not defined - it will be determined at runtime via the pod configuration.
 // USED FOR YAML
 type K8SEndpoint struct {
@@ -47,6 +48,7 @@ type K8SEndpoint struct {
 	Protocol                 K8SEndpointProtocol
 	Port                     int
 	Path                     string
+	TLS                      security.TLS
 	Credentials              security.Credentials
 	Collection_Interval_Secs int
 	Tags                     tags.Tags

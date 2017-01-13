@@ -54,11 +54,13 @@ type MonitoredMetric struct {
 // If tenant is not supplied, the global tenant ID defined
 // in the global agent configuration file should be used.
 // Tags specified here will be attached to all metrics coming from this endpoint.
+// TLS configures transport layer security if the URL connection uses TLS.
 // USED FOR YAML (see agent config file)
 type Endpoint struct {
 	Type                     EndpointType
 	Enabled                  string
 	URL                      string
+	TLS                      security.TLS
 	Credentials              security.Credentials
 	Collection_Interval_Secs int
 	Tenant                   string

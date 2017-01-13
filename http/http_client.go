@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,27 +26,45 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
 )
 
-func GetHttpClient(identity *security.Identity) (*http.Client, error) {
+type HttpClientConfig struct {
+	Identity      *security.Identity
+	TLSConfig     *tls.Config
+	HTTPTransport *http.Transport
+}
 
-	// Enable accessing insecure endpoints. We should be able to access metrics from any endpoint
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+func (conf *HttpClientConfig) BuildHttpClient() (*http.Client, error) {
+
+	// make our own copy of TLS config
+	tlsConfig := &tls.Config{}
+	if conf.TLSConfig != nil {
+		*tlsConfig = *conf.TLSConfig
 	}
 
-	if identity != nil && identity.Cert_File != "" {
-		cert, err := tls.LoadX509KeyPair(identity.Cert_File, identity.Private_Key_File)
+	if conf.Identity != nil && conf.Identity.Cert_File != "" {
+		cert, err := tls.LoadX509KeyPair(conf.Identity.Cert_File, conf.Identity.Private_Key_File)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading the client certificates: %v", err)
 		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
+		tlsConfig.Certificates = append(tlsConfig.Certificates, cert)
 	}
 
-	transport := &http.Transport{
-		TLSClientConfig:       tlsConfig,
-		IdleConnTimeout:       time.Second * 600,
-		ResponseHeaderTimeout: time.Second * 600,
+	// make our own copy of HTTP transport
+	transport := &http.Transport{}
+	if conf.HTTPTransport != nil {
+		*transport = *conf.HTTPTransport
 	}
 
+	// make sure the transport has some things we know we need
+	transport.TLSClientConfig = tlsConfig
+
+	if transport.IdleConnTimeout == 0 {
+		transport.IdleConnTimeout = time.Second * 600
+	}
+	if transport.ResponseHeaderTimeout == 0 {
+		transport.ResponseHeaderTimeout = time.Second * 600
+	}
+
+	// build the http client
 	httpClient := http.Client{Transport: transport}
 
 	return &httpClient, nil

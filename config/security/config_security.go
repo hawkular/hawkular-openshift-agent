@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +36,13 @@ type Credentials struct {
 	Username string ",omitempty"
 	Password string ",omitempty"
 	Token    string ",omitempty"
+}
+
+// Skip_Certificate_Validation will disable server certificate verification - the client
+// will accept any certificate presented by the server and any host name in that certificate.
+// USED FOR YAML
+type TLS struct {
+	Skip_Certificate_Validation bool ",omitempty"
 }
 
 // ValidateCredentials makes sure that if username is provided, so is password (and vice versa)

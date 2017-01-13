@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import (
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 )
 
@@ -34,6 +35,8 @@ endpoints:
   protocol: https
   port: 8888
   path: /the/path
+  tls:
+    skip_certificate_validation: true
   collection_interval_secs: 12345
   metrics:
   - id: metric1id
@@ -53,6 +56,9 @@ endpoints:
 	}
 	if cme.Endpoints[0].IsEnabled() != true {
 		t.Fatalf("Endpoint.IsEnabled should be true")
+	}
+	if cme.Endpoints[0].TLS.Skip_Certificate_Validation != true {
+		t.Fatalf("Endpoint Accept Any Server should be true")
 	}
 	if cme.Endpoints[0].Tags == nil {
 		t.Fatalf("Endpoint tags should not be nil")
@@ -94,6 +100,9 @@ func TestYamlText(t *testing.T) {
 		Protocol:                 K8S_ENDPOINT_PROTOCOL_HTTP,
 		Port:                     1111,
 		Path:                     "/1111",
+		TLS: security.TLS{
+			Skip_Certificate_Validation: true,
+		},
 		Metrics: []collector.MonitoredMetric{
 			collector.MonitoredMetric{
 				ID:   "metric1id",
@@ -120,6 +129,13 @@ func TestYamlText(t *testing.T) {
 
 	if cme.Endpoints[0].IsEnabled() != false {
 		t.Fatalf("Should have been disabled: %v", cme)
+	}
+
+	if cme.Endpoints[0].TLS.Skip_Certificate_Validation != true {
+		t.Fatalf("First endpoint should accept any server: %v", cme)
+	}
+	if cme.Endpoints[1].TLS.Skip_Certificate_Validation != false {
+		t.Fatalf("Second endpoint should NOT accept any server: %v", cme)
 	}
 
 	// I just want to see what happens if you don't specify the metrics slice in the second endpoint
