@@ -129,7 +129,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 			metrics, err := theCollector.CollectMetrics()
 			timer.MarkTime()
 			if err != nil {
-				msg := fmt.Sprintf("Failed to collect metrics from [%v]. err=%v", id, err)
+				msg := fmt.Sprintf("Failed to collect metrics from [%v] at [%v]. err=%v", id, time.Now().Format(time.RFC822Z), err)
 				log.Warning(msg)
 				status.StatusReport.Endpoints[id] = msg
 			} else {
@@ -139,7 +139,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 				mcm.metricsChan <- metrics
 
 				agentmetrics.Metrics.DataPointsCollected.Add(float64(len(metrics)))
-				status.StatusReport.Endpoints[id] = fmt.Sprintf("OK. Last collection gathered [%v] metrics in [%v]", len(metrics), timer)
+				status.StatusReport.Endpoints[id] = fmt.Sprintf("OK. Last collection at [%v] gathered [%v] metrics in [%v]", time.Now().Format(time.RFC822Z), len(metrics), timer)
 			}
 		}
 	}()
