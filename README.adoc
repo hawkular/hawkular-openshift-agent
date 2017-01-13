@@ -616,6 +616,9 @@ Tag values can be defined with token expressions in the form of `${var}` or `$va
 |POD:labels
 |The Pod labels concatenated in a single string separated by commas, e.g. `label1:value1,label2:value2,...`
 
+|POD:label[_key_]
+|A single Pod label value for the label key _key_
+
 |METRIC:name
 |The name of the metric on which this tag is found.
 
