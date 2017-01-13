@@ -9,7 +9,7 @@ build:
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying the Jolokia WildFly Example to OpenShift. Using project `oc project --short`
-	oc process -f jolokia-wildfly.yaml -v IMAGE_VERSION=latest | oc create -f -
+	oc process -f jolokia-wildfly.yaml -p IMAGE_VERSION=${DOCKER_VERSION} | oc create -f -
 
 openshift-undeploy:
 	@echo Undeploying the Jolokia WildFly Example from OpenShift. Using project `oc project --short`
