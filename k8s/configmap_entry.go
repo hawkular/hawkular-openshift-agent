@@ -20,6 +20,7 @@ package k8s
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -43,16 +44,16 @@ const (
 // Notice that Host is not defined - it will be determined at runtime via the pod configuration.
 // USED FOR YAML
 type K8SEndpoint struct {
-	Type                     collector.EndpointType
-	Enabled                  string
-	Protocol                 K8SEndpointProtocol
-	Port                     int
-	Path                     string
-	TLS                      security.TLS
-	Credentials              security.Credentials
-	Collection_Interval_Secs int
-	Tags                     tags.Tags
-	Metrics                  []collector.MonitoredMetric
+	Type                collector.EndpointType
+	Enabled             string
+	Protocol            K8SEndpointProtocol
+	Port                int
+	Path                string
+	TLS                 security.TLS
+	Credentials         security.Credentials
+	Collection_Interval string
+	Tags                tags.Tags
+	Metrics             []collector.MonitoredMetric
 }
 
 // ConfigMapEntry describes one of the YAML configurations provided in a Pod's configmap.
@@ -107,7 +108,7 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 	cme = NewConfigMapEntry()
 	err = yaml.Unmarshal([]byte(yamlString), &cme)
 	if err != nil {
-		log.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
+		log.Errorf("Failed to parse yaml data for config map entry. err=%v", err)
 	}
 
 	// YAML unmarshalling leaves empty tags as nil - we want empty but non-nil.
@@ -127,8 +128,16 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 			cme.Endpoints[i].Enabled = "true"
 		} else if e.Enabled != "true" && e.Enabled != "false" {
 			err = fmt.Errorf("Enabled flag must be 'true' or 'false': %v", e.Enabled)
-			log.Errorf("Failed to parse yaml data for config map entry. error=%v", err)
+			log.Errorf("Failed to parse yaml data for config map entry. err=%v", err)
 			cme.Endpoints[i].Enabled = "false"
+		}
+
+		if e.Collection_Interval != "" {
+			if _, parseErr := time.ParseDuration(e.Collection_Interval); parseErr != nil {
+				err = fmt.Errorf("Invalid collection interval [%v]. err=%v", e.Collection_Interval, parseErr)
+				log.Errorf("Failed to parse yaml data for config map entry. err=%v", err)
+				cme.Endpoints[i].Collection_Interval = ""
+			}
 		}
 	}
 	return
@@ -138,7 +147,7 @@ func UnmarshalConfigMapEntry(yamlString string) (cme *ConfigMapEntry, err error)
 func MarshalConfigMapEntry(cme *ConfigMapEntry) (yamlString string, err error) {
 	yamlBytes, err := yaml.Marshal(&cme)
 	if err != nil {
-		log.Errorf("Failed to produce yaml for config map entry. error=%v", err)
+		log.Errorf("Failed to produce yaml for config map entry. err=%v", err)
 	}
 
 	yamlString = string(yamlBytes)

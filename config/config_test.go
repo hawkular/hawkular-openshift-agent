@@ -80,8 +80,11 @@ func TestEnvVar(t *testing.T) {
 func TestDefaults(t *testing.T) {
 	conf := NewConfig()
 
-	if conf.Collector.Minimum_Collection_Interval_Secs != 10 {
+	if conf.Collector.Minimum_Collection_Interval != "10s" {
 		t.Error("Minimum collection interval default is wrong")
+	}
+	if conf.Collector.Default_Collection_Interval != "5m" {
+		t.Error("Default collection interval default is wrong")
 	}
 	if conf.Hawkular_Server.URL != "http://127.0.0.1:8080" {
 		t.Error("Hawkular Server URL is wrong")
@@ -130,7 +133,8 @@ func TestDefaults(t *testing.T) {
 func TestMarshalUnmarshal(t *testing.T) {
 	testConf := Config{
 		Collector: Collector{
-			Minimum_Collection_Interval_Secs: 12345,
+			Minimum_Collection_Interval: "12345s",
+			Default_Collection_Interval: "98765s",
 		},
 		Hawkular_Server: Hawkular_Server{
 			URL: "http://server:80",
@@ -147,14 +151,14 @@ func TestMarshalUnmarshal(t *testing.T) {
 		},
 		Endpoints: []collector.Endpoint{
 			{
-				URL:  "http://host:1111/metrics",
-				Type: collector.ENDPOINT_TYPE_PROMETHEUS,
-				Collection_Interval_Secs: 123,
+				URL:                 "http://host:1111/metrics",
+				Type:                collector.ENDPOINT_TYPE_PROMETHEUS,
+				Collection_Interval: "123s",
 			},
 			{
-				URL:  "http://host:2222/jolokia",
-				Type: collector.ENDPOINT_TYPE_JOLOKIA,
-				Collection_Interval_Secs: 234,
+				URL:                 "http://host:2222/jolokia",
+				Type:                collector.ENDPOINT_TYPE_JOLOKIA,
+				Collection_Interval: "234s",
 			},
 		},
 	}
@@ -178,8 +182,11 @@ func TestMarshalUnmarshal(t *testing.T) {
 		t.Errorf("Failed to unmarshal: %v", err)
 	}
 
-	if conf.Collector.Minimum_Collection_Interval_Secs != 12345 {
-		t.Errorf("Failed to unmarshal collection interval:\n%v", conf)
+	if conf.Collector.Minimum_Collection_Interval != "12345s" {
+		t.Errorf("Failed to unmarshal min collection interval:\n%v", conf)
+	}
+	if conf.Collector.Default_Collection_Interval != "98765s" {
+		t.Errorf("Failed to unmarshal default collection interval:\n%v", conf)
 	}
 	if conf.Collector.Metric_ID_Prefix != "" {
 		t.Errorf("Failed to unmarshal empty metric ID prefix:\n%v", conf)
@@ -193,10 +200,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Kubernetes.Pod_Name != "TestMarshalUnmarshal name" {
 		t.Error("Pod name is wrong")
 	}
-	if conf.Endpoints[0].Collection_Interval_Secs != 123 {
+	if conf.Endpoints[0].Collection_Interval != "123s" {
 		t.Error("First endpoint is not correct")
 	}
-	if conf.Endpoints[1].Collection_Interval_Secs != 234 {
+	if conf.Endpoints[1].Collection_Interval != "234s" {
 		t.Error("Second endpoint is not correct")
 	}
 	if conf.Collector.Tags == nil || len(conf.Collector.Tags) > 0 {
@@ -230,8 +237,9 @@ func TestLoadSave(t *testing.T) {
 			Private_Key_File: "/my/key",
 		},
 		Collector: Collector{
-			Minimum_Collection_Interval_Secs: 12345,
-			Metric_ID_Prefix:                 "prefix",
+			Minimum_Collection_Interval: "12345s",
+			Default_Collection_Interval: "98765s",
+			Metric_ID_Prefix:            "prefix",
 			Tags: tags.Tags{
 				"tag1": "tagvalue1",
 				"tag2": "tagvalue2",
@@ -254,14 +262,14 @@ func TestLoadSave(t *testing.T) {
 		},
 		Endpoints: []collector.Endpoint{
 			{
-				URL:  "http://host:1111/metrics",
-				Type: collector.ENDPOINT_TYPE_PROMETHEUS,
-				Collection_Interval_Secs: 123,
+				URL:                 "http://host:1111/metrics",
+				Type:                collector.ENDPOINT_TYPE_PROMETHEUS,
+				Collection_Interval: "123s",
 			},
 			{
-				URL:  "http://host:2222/jolokia",
-				Type: collector.ENDPOINT_TYPE_JOLOKIA,
-				Collection_Interval_Secs: 234,
+				URL:                 "http://host:2222/jolokia",
+				Type:                collector.ENDPOINT_TYPE_JOLOKIA,
+				Collection_Interval: "234s",
 			},
 		},
 	}
@@ -287,8 +295,11 @@ func TestLoadSave(t *testing.T) {
 	if conf.Identity.Private_Key_File != "/my/key" {
 		t.Errorf("Failed to unmarshal identity:\n%v", conf)
 	}
-	if conf.Collector.Minimum_Collection_Interval_Secs != 12345 {
-		t.Errorf("Failed to unmarshal collection interval:\n%v", conf)
+	if conf.Collector.Minimum_Collection_Interval != "12345s" {
+		t.Errorf("Failed to unmarshal min collection interval:\n%v", conf)
+	}
+	if conf.Collector.Default_Collection_Interval != "98765s" {
+		t.Errorf("Failed to unmarshal default collection interval:\n%v", conf)
 	}
 	if conf.Collector.Metric_ID_Prefix != "prefix" {
 		t.Errorf("Failed to unmarshal metric ID prefix:\n%v", conf)
@@ -305,10 +316,10 @@ func TestLoadSave(t *testing.T) {
 	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
 		t.Error("Tenant is wrong")
 	}
-	if conf.Endpoints[0].Collection_Interval_Secs != 123 {
+	if conf.Endpoints[0].Collection_Interval != "123s" {
 		t.Error("First endpoint is not correct")
 	}
-	if conf.Endpoints[1].Collection_Interval_Secs != 234 {
+	if conf.Endpoints[1].Collection_Interval != "234s" {
 		t.Error("Second endpoint is not correct")
 	}
 	if conf.Collector.Tags["tag1"] != "tagvalue1" {

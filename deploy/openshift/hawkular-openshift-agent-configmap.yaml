@@ -11,7 +11,8 @@ data:
     kubernetes:
       tenant: ${POD:namespace_name}
     collector:
-      minimum_collection_interval_secs: 10
+      minimum_collection_interval: 10s
+      default_collection_interval: 30s
       metric_id_prefix: pod/${POD:uid}/custom/
       tags:
         metric_name: ${METRIC:name}
@@ -36,7 +37,7 @@ data:
       protocol: "http"
       port: 8080
       path: /metrics
-      collection_interval_secs: 30
+      collection_interval: 30s
       metrics:
       - name: hawkular_openshift_agent_metric_data_points_collected
       - name: process_cpu_seconds_total

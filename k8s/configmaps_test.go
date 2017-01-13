@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,20 +26,20 @@ import (
 func TestConfigMaps(t *testing.T) {
 	cme1 := NewConfigMapEntry()
 	cme1.Endpoints = append(cme1.Endpoints, K8SEndpoint{
-		Type:     collector.ENDPOINT_TYPE_JOLOKIA,
-		Protocol: K8S_ENDPOINT_PROTOCOL_HTTPS,
-		Port:     1111,
-		Path:     "/1111",
-		Collection_Interval_Secs: 123,
+		Type:                collector.ENDPOINT_TYPE_JOLOKIA,
+		Protocol:            K8S_ENDPOINT_PROTOCOL_HTTPS,
+		Port:                1111,
+		Path:                "/1111",
+		Collection_Interval: "123s",
 	})
 
 	cme2 := NewConfigMapEntry()
 	cme2.Endpoints = append(cme2.Endpoints, K8SEndpoint{
-		Type:     collector.ENDPOINT_TYPE_PROMETHEUS,
-		Protocol: K8S_ENDPOINT_PROTOCOL_HTTP,
-		Port:     2222,
-		Path:     "/2222",
-		Collection_Interval_Secs: 987,
+		Type:                collector.ENDPOINT_TYPE_PROMETHEUS,
+		Protocol:            K8S_ENDPOINT_PROTOCOL_HTTP,
+		Port:                2222,
+		Path:                "/2222",
+		Collection_Interval: "987s",
 	})
 
 	// put config maps with different names in the same namespace
