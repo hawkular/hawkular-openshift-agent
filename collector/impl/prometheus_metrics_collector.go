@@ -19,6 +19,7 @@ package impl
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"time"
 
@@ -78,7 +79,13 @@ func (pc *PrometheusMetricsCollector) GetAdditionalEnvironment() map[string]stri
 // CollectMetrics implements a method from MetricsCollector interface
 func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHeader, err error) {
 
-	client, err := http.GetHttpClient(pc.Identity)
+	httpConfig := http.HttpClientConfig{
+		Identity: pc.Identity,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: pc.Endpoint.TLS.Skip_Certificate_Validation,
+		},
+	}
+	client, err := httpConfig.BuildHttpClient()
 	if err != nil {
 		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.URL, err)
 		return
@@ -210,7 +217,13 @@ func (pc *PrometheusMetricsCollector) prepareTagsMap(promLabels []*prom.LabelPai
 // CollectMetricDetails implements a method from MetricsCollector interface
 func (pc *PrometheusMetricsCollector) CollectMetricDetails() (metricDetails []collector.MetricDetails, err error) {
 
-	client, err := http.GetHttpClient(pc.Identity)
+	httpConfig := http.HttpClientConfig{
+		Identity: pc.Identity,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: pc.Endpoint.TLS.Skip_Certificate_Validation,
+		},
+	}
+	client, err := httpConfig.BuildHttpClient()
 	if err != nil {
 		err = fmt.Errorf("Failed to create http client for Prometheus endpoint [%v]. err=%v", pc.Endpoint.URL, err)
 		return

@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ package http
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -85,10 +86,16 @@ func TestSecureComm(t *testing.T) {
 	t.Logf("Started test http server: https://%v", testServerHostPort)
 
 	// the client
-	httpClient, err := GetHttpClient(&security.Identity{
-		Cert_File:        testClientCertFile,
-		Private_Key_File: testClientKeyFile,
-	})
+	httpConfig := HttpClientConfig{
+		Identity: &security.Identity{
+			Cert_File:        testClientCertFile,
+			Private_Key_File: testClientKeyFile,
+		},
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	httpClient, err := httpConfig.BuildHttpClient()
 	if err != nil {
 		t.Fatalf("Failed to create http client")
 	}

@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -120,7 +120,8 @@ func TestJolokia(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpClient, err := hawkhttp.GetHttpClient(nil)
+	httpConfig := hawkhttp.HttpClientConfig{}
+	httpClient, err := httpConfig.BuildHttpClient()
 
 	reqs := NewJolokiaRequests()
 	reqs.AddRequest(JolokiaRequest{

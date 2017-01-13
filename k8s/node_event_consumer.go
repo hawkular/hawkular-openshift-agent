@@ -247,6 +247,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			Type:                     cmeEndpoint.Type,
 			Enabled:                  cmeEndpoint.Enabled,
 			Tenant:                   endpointTenant,
+			TLS:                      cmeEndpoint.TLS,
 			Credentials:              endpointCredentials,
 			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
 			Metrics:                  cmeEndpoint.Metrics,

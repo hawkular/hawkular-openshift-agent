@@ -19,6 +19,7 @@ package impl
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"time"
 
@@ -80,7 +81,13 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 	log.Debugf("Told to collect [%v] Jolokia metrics from [%v]", len(jc.Endpoint.Metrics), url)
 
-	httpClient, err := http.GetHttpClient(jc.Identity)
+	httpConfig := http.HttpClientConfig{
+		Identity: jc.Identity,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: jc.Endpoint.TLS.Skip_Certificate_Validation,
+		},
+	}
+	httpClient, err := httpConfig.BuildHttpClient()
 	if err != nil {
 		err = fmt.Errorf("Failed to create http client for Jolokia endpoint [%v]. err=%v", url, err)
 		return
