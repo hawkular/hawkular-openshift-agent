@@ -37,7 +37,7 @@ endpoints:
   path: /the/path
   tls:
     skip_certificate_validation: true
-  collection_interval_secs: 12345
+  collection_interval: 12345s
   metrics:
   - id: metric1id
     name: metric1
@@ -94,12 +94,12 @@ endpoints:
 func TestYamlText(t *testing.T) {
 	cme := NewConfigMapEntry()
 	cme.Endpoints = append(cme.Endpoints, K8SEndpoint{
-		Collection_Interval_Secs: 123,
-		Enabled:                  "false",
-		Type:                     collector.ENDPOINT_TYPE_PROMETHEUS,
-		Protocol:                 K8S_ENDPOINT_PROTOCOL_HTTP,
-		Port:                     1111,
-		Path:                     "/1111",
+		Collection_Interval: "123s",
+		Enabled:             "false",
+		Type:                collector.ENDPOINT_TYPE_PROMETHEUS,
+		Protocol:            K8S_ENDPOINT_PROTOCOL_HTTP,
+		Port:                1111,
+		Path:                "/1111",
 		TLS: security.TLS{
 			Skip_Certificate_Validation: true,
 		},
@@ -120,11 +120,11 @@ func TestYamlText(t *testing.T) {
 		},
 	})
 	cme.Endpoints = append(cme.Endpoints, K8SEndpoint{
-		Type:     collector.ENDPOINT_TYPE_JOLOKIA,
-		Protocol: K8S_ENDPOINT_PROTOCOL_HTTPS,
-		Port:     2222,
-		Path:     "/2222",
-		Collection_Interval_Secs: 123,
+		Type:                collector.ENDPOINT_TYPE_JOLOKIA,
+		Protocol:            K8S_ENDPOINT_PROTOCOL_HTTPS,
+		Port:                2222,
+		Path:                "/2222",
+		Collection_Interval: "123s",
 	})
 
 	if cme.Endpoints[0].IsEnabled() != false {
@@ -162,7 +162,7 @@ endpoints:
   protocol: https
   port: 8888
   path: /the/path
-  collection_interval_secs: 12345
+  collection_interval: 12345s
   tags:
     endpointtagname1: endpointtag1
     endpointtagname2: endpointtag2
@@ -202,7 +202,7 @@ endpoints:
 	if cme.Endpoints[0].Path != "/the/path" {
 		t.Fatalf("Endpoint.Path is wrong")
 	}
-	if cme.Endpoints[0].Collection_Interval_Secs != 12345 {
+	if cme.Endpoints[0].Collection_Interval != "12345s" {
 		t.Fatalf("Endpoint.Collection_Interval is wrong")
 	}
 	if len(cme.Endpoints[0].Metrics) != 2 {
@@ -245,7 +245,7 @@ endpoints:
 	if err != nil {
 		t.Fatalf("Could not unmarshal ConfigMapEntry yaml. err=%v", err)
 	}
-	if cme.Endpoints[0].Collection_Interval_Secs != cme2.Endpoints[0].Collection_Interval_Secs {
+	if cme.Endpoints[0].Collection_Interval != cme2.Endpoints[0].Collection_Interval {
 		t.Fatalf("Marshalling did not produce expected yaml. [%v] != [%v]", cme, cme2)
 	}
 }
@@ -256,7 +256,7 @@ endpoints:
 - type: jolokia
   protocol: https
   port: 8888
-  collection_interval_secs: 12345
+  collection_interval: 12345s
   path: /the/path
   metrics: []
 `

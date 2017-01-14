@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 
@@ -141,12 +142,30 @@ func waitForTermination() {
 }
 
 func validateConfig() error {
-	if Configuration.Collector.Minimum_Collection_Interval_Secs < 5 {
-		return fmt.Errorf("Configured minimum collection interval is too low: %v", Configuration.Collector.Minimum_Collection_Interval_Secs)
+	var minInterval time.Duration
+	if Configuration.Collector.Minimum_Collection_Interval == "" {
+		Configuration.Collector.Minimum_Collection_Interval = "5s"
+		minInterval = time.Second * 5
+	} else {
+		var err error
+		if minInterval, err = time.ParseDuration(Configuration.Collector.Minimum_Collection_Interval); err != nil {
+			return fmt.Errorf("Invalid minimum collection interval. err=%v", err)
+		} else if minInterval < (time.Second * 5) {
+			return fmt.Errorf("Configured minimum collection interval is too low: %v", Configuration.Collector.Minimum_Collection_Interval)
+		}
 	}
 
-	err := Configuration.Hawkular_Server.Credentials.ValidateCredentials()
-	if err != nil {
+	if Configuration.Collector.Default_Collection_Interval == "" {
+		Configuration.Collector.Default_Collection_Interval = "5m"
+	}
+
+	if defaultInterval, err := time.ParseDuration(Configuration.Collector.Default_Collection_Interval); err != nil {
+		return fmt.Errorf("Invalid default collection interval. err=%v", err)
+	} else if defaultInterval < minInterval {
+		return fmt.Errorf("Configured default collection interval [%v] is less than the minimum collection interval [%v]", Configuration.Collector.Default_Collection_Interval, Configuration.Collector.Minimum_Collection_Interval)
+	}
+
+	if err := Configuration.Hawkular_Server.Credentials.ValidateCredentials(); err != nil {
 		return fmt.Errorf("Hawkular Server configuration is invalid: %v", err)
 	}
 

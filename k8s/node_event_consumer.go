@@ -243,15 +243,15 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 
 		// We need to convert the k8s endpoint to the generic endpoint struct.
 		newEndpoint := &collector.Endpoint{
-			URL:                      url.String(),
-			Type:                     cmeEndpoint.Type,
-			Enabled:                  cmeEndpoint.Enabled,
-			Tenant:                   endpointTenant,
-			TLS:                      cmeEndpoint.TLS,
-			Credentials:              endpointCredentials,
-			Collection_Interval_Secs: cmeEndpoint.Collection_Interval_Secs,
-			Metrics:                  cmeEndpoint.Metrics,
-			Tags:                     cmeEndpoint.Tags,
+			URL:                 url.String(),
+			Type:                cmeEndpoint.Type,
+			Enabled:             cmeEndpoint.Enabled,
+			Tenant:              endpointTenant,
+			TLS:                 cmeEndpoint.TLS,
+			Credentials:         endpointCredentials,
+			Collection_Interval: cmeEndpoint.Collection_Interval,
+			Metrics:             cmeEndpoint.Metrics,
+			Tags:                cmeEndpoint.Tags,
 		}
 
 		// make sure the endpoint is configured correctly

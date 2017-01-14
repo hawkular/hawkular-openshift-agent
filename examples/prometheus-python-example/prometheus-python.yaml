@@ -50,7 +50,7 @@ objects:
         protocol: "http"
         port: 8181
         path: /
-        collection_interval_secs: 30
+        collection_interval: 30s
         metrics:
         - name: process_virtual_memory_bytes
           type: gauge

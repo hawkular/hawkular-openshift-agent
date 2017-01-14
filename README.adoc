@@ -225,7 +225,7 @@ data:
   hawkular-openshift-agent: |
     endpoints:
     - type: prometheus
-      collection_interval_secs: 60
+      collection_interval: 60s
       protocol: "http"
       port: 8080
       path: /metrics
@@ -308,7 +308,7 @@ As an example, suppose you want Hawkular OpenShift Agent to scrape metrics from 
 ----
 - type: "prometheus"
   url: "http://yourcorp.com:9090/metrics"
-  collection_interval_secs: 300
+  collection_interval: 5m
 ----
 
 == Prometheus Endpoints
@@ -328,7 +328,7 @@ A full Prometheus endpoint configuration can look like this:
     token: your-bearer-token-here
     #username: your-user
     #password: your-pass
-  collection_interval_secs: 300
+  collection_interval: 1m
   metrics:
   - name: go_memstats_last_gc_time_seconds
     id: gc_time_secs
@@ -367,7 +367,7 @@ A full Jolokia endpoint configuration can look like this:
     token: your-bearer-token-here
     #username: your-user
     #password: your-pass
-  collection_interval_secs: 300
+  collection_interval: 60s
   metrics:
   - name: java.lang:type=Threading#ThreadCount
     type: counter

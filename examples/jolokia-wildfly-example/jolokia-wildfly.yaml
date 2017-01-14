@@ -72,7 +72,7 @@ objects:
         protocol: https
         port: 8778
         path: /jolokia/
-        collection_interval_secs: 15
+        collection_interval: 15s
         tls:
           skip_certificate_validation: true
         credentials:

@@ -56,6 +56,9 @@ const (
 	ENV_EMITTER_STATUS_ENABLED  = "EMITTER_STATUS_ENABLED"
 	ENV_EMITTER_HEALTH_ENABLED  = "EMITTER_HEALTH_ENABLED"
 	ENV_EMITTER_STATUS_LOG_SIZE = "EMITTER_STATUS_LOG_SIZE"
+
+	ENV_COLLECTOR_MINIMUM_COLL_INTERVAL = "COLLECTOR_MINIMUM_COLLECTION_INTERVAL"
+	ENV_COLLECTOR_DEFAULT_COLL_INTERVAL = "COLLECTOR_DEFAULT_COLLECTION_INTERVAL"
 )
 
 // Hawkular_Server defines where the Hawkular Server is. This is where metrics are stored.
@@ -76,9 +79,10 @@ type Hawkular_Server struct {
 // all metrics collected by the agent.
 // USED FOR YAML
 type Collector struct {
-	Minimum_Collection_Interval_Secs int
-	Tags                             tags.Tags ",omitempty"
-	Metric_ID_Prefix                 string
+	Minimum_Collection_Interval string
+	Default_Collection_Interval string
+	Tags                        tags.Tags ",omitempty"
+	Metric_ID_Prefix            string
 }
 
 // Kubernetes provides all the details necessary to communicate with the Kubernetes system.
@@ -138,7 +142,8 @@ func NewConfig() (c *Config) {
 	c.Hawkular_Server.Credentials.Token = strings.TrimSpace(getDefaultString(ENV_HS_TOKEN, ""))
 	c.Hawkular_Server.CA_Cert_File = getDefaultString(ENV_HS_CA_CERT_FILE, "")
 
-	c.Collector.Minimum_Collection_Interval_Secs = 10
+	c.Collector.Minimum_Collection_Interval = getDefaultString(ENV_COLLECTOR_MINIMUM_COLL_INTERVAL, "10s")
+	c.Collector.Default_Collection_Interval = getDefaultString(ENV_COLLECTOR_DEFAULT_COLL_INTERVAL, "5m")
 
 	c.Kubernetes.Master_URL = getDefaultString(ENV_K8S_MASTER_URL, "")
 	c.Kubernetes.Pod_Namespace = getDefaultString(ENV_K8S_POD_NAMESPACE, "")

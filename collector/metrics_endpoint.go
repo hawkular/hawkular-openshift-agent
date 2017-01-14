@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ package collector
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hawkular/hawkular-client-go/metrics"
 
@@ -57,15 +58,15 @@ type MonitoredMetric struct {
 // TLS configures transport layer security if the URL connection uses TLS.
 // USED FOR YAML (see agent config file)
 type Endpoint struct {
-	Type                     EndpointType
-	Enabled                  string
-	URL                      string
-	TLS                      security.TLS
-	Credentials              security.Credentials
-	Collection_Interval_Secs int
-	Tenant                   string
-	Tags                     tags.Tags ",omitempty"
-	Metrics                  []MonitoredMetric
+	Type                EndpointType
+	Enabled             string
+	URL                 string
+	TLS                 security.TLS
+	Credentials         security.Credentials
+	Collection_Interval string
+	Tenant              string
+	Tags                tags.Tags ",omitempty"
+	Metrics             []MonitoredMetric
 }
 
 func (m *MonitoredMetric) String() string {
@@ -89,7 +90,7 @@ func (e *Endpoint) String() string {
 		metricStrings[i] = m.String()
 	}
 	return fmt.Sprintf("Endpoint: type=[%v], enabled=[%v], url=[%v], coll_int=[%v], tenant=[%v], tags=[%v], metrics=[%v]",
-		e.Type, e.Enabled, e.URL, e.Collection_Interval_Secs, e.Tenant, e.Tags, metricStrings)
+		e.Type, e.Enabled, e.URL, e.Collection_Interval, e.Tenant, e.Tags, metricStrings)
 }
 
 // ValidateEndpoint will check the endpoint configuration for correctness.
@@ -135,6 +136,12 @@ func (e *Endpoint) ValidateEndpoint() error {
 		// if there is no metric ID given, just use the metric name itself
 		if m.ID == "" {
 			e.Metrics[i].ID = m.Name
+		}
+	}
+
+	if e.Collection_Interval != "" {
+		if _, err := time.ParseDuration(e.Collection_Interval); err != nil {
+			return fmt.Errorf("Endpoint [%v] has an invalid collection interval. err=%v", e.URL, err)
 		}
 	}
 

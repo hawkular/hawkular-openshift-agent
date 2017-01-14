@@ -94,18 +94,40 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 	mcm.TickersLock.Lock()
 	defer mcm.TickersLock.Unlock()
 
-	interval := theCollector.GetEndpoint().Collection_Interval_Secs
-	if interval < mcm.Config.Collector.Minimum_Collection_Interval_Secs {
-		log.Warningf("Collection interval for [%v] is [%v] which is lower than the minimum allowed [%v]. Setting it to the minimum allowed.",
-			id, interval, mcm.Config.Collector.Minimum_Collection_Interval_Secs)
-		interval = mcm.Config.Collector.Minimum_Collection_Interval_Secs
+	// determine the collection interval
+	var collectionInterval, minimumInterval time.Duration
+	var parseErr error
+	collectionIntervalString := theCollector.GetEndpoint().Collection_Interval
+	if collectionIntervalString == "" {
+		log.Debugf("Collection interval for [%v] is not defined - setting to the default interval [%v]",
+			id, mcm.Config.Collector.Default_Collection_Interval)
+		collectionIntervalString = mcm.Config.Collector.Default_Collection_Interval
+	}
+	if collectionInterval, parseErr = time.ParseDuration(collectionIntervalString); parseErr != nil {
+		log.Warningf("Collection interval for [%v] is invalid - setting to the default interval [%v]. err=%v",
+			id, mcm.Config.Collector.Default_Collection_Interval, parseErr)
+		if collectionInterval, parseErr = time.ParseDuration(mcm.Config.Collector.Default_Collection_Interval); parseErr != nil {
+			log.Warningf("Default collection interval is invalid. This is a bug, please report. err=%v", parseErr)
+			collectionInterval = time.Minute * 5
+		}
+	}
+	if minimumInterval, parseErr = time.ParseDuration(mcm.Config.Collector.Minimum_Collection_Interval); parseErr == nil {
+		if collectionInterval < minimumInterval {
+			log.Warningf("Collection interval for [%v] is [%v] which is lower than the minimum allowed [%v]. Setting it to the minimum allowed.",
+				id, collectionInterval.String(), minimumInterval.String())
+			collectionInterval = minimumInterval
+		}
+	} else {
+		log.Warningf("Minimum collection interval is invalid. This is a bug, please report. err=%v", parseErr)
 	}
 
-	log.Infof("START collecting metrics from [%v] every [%v]s", id, interval)
+	// log some information about the new collector
+	log.Infof("START collecting metrics from [%v] every [%v]", id, collectionInterval)
 	status.StatusReport.AddLogMessage(fmt.Sprintf("START collection: %v", id))
 	status.StatusReport.Endpoints[id] = "STARTING"
 
-	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	// now periodically collect the metrics
+	ticker := time.NewTicker(collectionInterval)
 	mcm.Tickers[id] = ticker
 	go func() {
 
