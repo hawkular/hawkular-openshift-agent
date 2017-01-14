@@ -9,7 +9,7 @@ build:
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying the Prometheus Python Example to OpenShift. Using project `oc project --short`
-	oc process -f prometheus-python.yaml -p IMAGE_VERSION=${DOCKER_VERSION} | oc create -f -
+	oc process -f prometheus-python.yaml -v IMAGE_VERSION=${DOCKER_VERSION} | oc create -f -
 
 openshift-undeploy:
 	@echo Undeploying the Prometheus Python Example from OpenShift in project `oc project --short`
