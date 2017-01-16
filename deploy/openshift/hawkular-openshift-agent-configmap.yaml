@@ -39,7 +39,7 @@ data:
       path: /metrics
       collection_interval: 30s
       metrics:
-      - name: hawkular_openshift_agent_metric_data_points_collected
+      - name: hawkular_openshift_agent_metric_data_points_collected_total
       - name: process_cpu_seconds_total
       - name: go_goroutines
       - name: go_memstats_alloc_bytes

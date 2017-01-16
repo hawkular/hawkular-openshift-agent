@@ -28,7 +28,7 @@ type MetricsType struct {
 var Metrics = MetricsType{
 	DataPointsCollected: prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "hawkular_openshift_agent_metric_data_points_collected",
+			Name: "hawkular_openshift_agent_metric_data_points_collected_total",
 			Help: "The total number of individual metric data points collected from all endpoints.",
 		},
 	),
