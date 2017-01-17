@@ -99,7 +99,7 @@ func (nec *NodeEventConsumer) Stop() {
 			nec.MetricsCollectorManager.StopCollecting(id)
 		}
 		delete(nec.CollectorIds, podId)
-		delete(status.StatusReport.Pods, podId)
+		status.StatusReport.SetPod(podId, nil)
 	}
 
 }
@@ -197,12 +197,12 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		}
 
 		// update the status report
-		status.StatusReport.Pods[ne.Pod.GetIdentifier()] = nec.CollectorIds[ne.Pod.GetIdentifier()]
+		status.StatusReport.SetPod(ne.Pod.GetIdentifier(), nec.CollectorIds[ne.Pod.GetIdentifier()])
 
 		if cmeEndpoint.IsEnabled() == false {
 			m := fmt.Sprintf("Will not start collecting for endpoint [%v] in pod [%v] - it has been disabled.", url, ne.Pod.GetIdentifier())
 			log.Info(m)
-			status.StatusReport.Endpoints[id] = m
+			status.StatusReport.SetEndpoint(id, m)
 			continue
 		}
 
@@ -237,7 +237,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		if err != nil {
 			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - cannot determine credentials. err=%v", ne.Pod.GetIdentifier(), err)
 			log.Warning(m)
-			status.StatusReport.Endpoints[id] = m
+			status.StatusReport.SetEndpoint(id, m)
 			continue
 		}
 
@@ -258,14 +258,14 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		if err := newEndpoint.ValidateEndpoint(); err != nil {
 			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - invalid endpoint. err=%v", ne.Pod.GetIdentifier(), err)
 			log.Warning(m)
-			status.StatusReport.Endpoints[id] = m
+			status.StatusReport.SetEndpoint(id, m)
 			continue
 		}
 
 		if c, err := manager.CreateMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv); err != nil {
 			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - cannot create collector. err=%v", ne.Pod.GetIdentifier(), err)
 			log.Warning(m)
-			status.StatusReport.Endpoints[id] = m
+			status.StatusReport.SetEndpoint(id, m)
 			continue
 		} else {
 			nec.MetricsCollectorManager.StartCollecting(c)
@@ -284,7 +284,7 @@ func (nec *NodeEventConsumer) stopCollecting(ne *NodeEvent) {
 	}
 
 	// ensure its removed from the status report
-	delete(status.StatusReport.Pods, ne.Pod.GetIdentifier())
+	status.StatusReport.SetPod(ne.Pod.GetIdentifier(), nil)
 }
 
 // determineCredentials will build a Credentials object that contains the credentials needed to

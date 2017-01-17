@@ -25,14 +25,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type LogMessages []string
-
 // Name is the name of the agent.
 // Version is the x.y.z version string of the agent.
 // Commit_Hash is the git commit hash of the source used to build the agent.
 // Pods is keyed on the pod identifier whose value is the endpoint IDs for the pod.
 // Endpoints is keyed on an endpoint ID whose value is the last message related to the endpoint.
 // Log is a small rolling log of important messages.
+// Do not directly access StatusReport data fields; for thread safety, use the funcs.
 // USED FOR YAML
 type StatusReportType struct {
 	Name        string
@@ -40,14 +39,71 @@ type StatusReportType struct {
 	Commit_Hash string
 	Pods        map[string][]string
 	Endpoints   map[string]string
-	Log         LogMessages
+	Log         []string
 	lock        sync.RWMutex
 }
 
-var StatusReport = StatusReportType{
-	lock: sync.RWMutex{},
+var StatusReport StatusReportType
+
+func InitStatusReport(name string, version string, commitHash string, logSize int) {
+	StatusReport = StatusReportType{
+		Name:        name,
+		Version:     version,
+		Commit_Hash: commitHash,
+		Pods:        make(map[string][]string, 0),
+		Endpoints:   make(map[string]string, 0),
+		Log:         make([]string, logSize),
+		lock:        sync.RWMutex{},
+	}
 }
 
+// GetPod will get the set of endpoints assigned to the given pod ID.
+func (s *StatusReportType) GetPod(podId string) (endpointIds []string, ok bool) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	endpointIds, ok = s.Pods[podId]
+	return
+}
+
+// SetPod will assign the given set of endpoints to the given pod ID.
+func (s *StatusReportType) SetPod(podId string, endpointIds []string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if endpointIds == nil {
+		delete(s.Pods, podId)
+	} else {
+		s.Pods[podId] = endpointIds
+	}
+}
+
+// GetEndpoint will get the status message assigned to the given endpoint ID.
+func (s *StatusReportType) GetEndpoint(endpointId string) (messages string, ok bool) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	messages, ok = s.Endpoints[endpointId]
+	return
+}
+
+// SetEndpoint will assign the given status message to the given endpoint ID.
+func (s *StatusReportType) SetEndpoint(endpointId string, msg string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if msg == "" {
+		delete(s.Endpoints, endpointId)
+	} else {
+		s.Endpoints[endpointId] = msg
+	}
+}
+
+func (s *StatusReportType) DeleteAllEndpoints() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	for id := range s.Endpoints {
+		delete(s.Endpoints, id)
+	}
+}
+
+// AddLogMessage pushes the given message to the rolling log.
 func (s *StatusReportType) AddLogMessage(m string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()

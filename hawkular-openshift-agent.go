@@ -87,14 +87,7 @@ func main() {
 	}
 
 	// prepare our own emitter endpoint - the agent emits status and its own metrics so it can monitor itself
-	status.StatusReport = status.StatusReportType{
-		Name:        "Hawkular OpenShift Agent",
-		Version:     version,
-		Commit_Hash: commitHash,
-		Pods:        make(map[string][]string, 0),
-		Endpoints:   make(map[string]string, 0),
-		Log:         make(status.LogMessages, Configuration.Emitter.Status_Log_Size),
-	}
+	status.InitStatusReport("Hawkular OpenShift Agent", version, commitHash, Configuration.Emitter.Status_Log_Size)
 	status.StatusReport.AddLogMessage("Agent Started")
 	emitter.StartEmitter(Configuration)
 

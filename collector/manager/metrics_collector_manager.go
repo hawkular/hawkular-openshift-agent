@@ -63,7 +63,7 @@ func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collect
 			if c, err := CreateMetricsCollector(id, mcm.Config.Identity, e, nil); err != nil {
 				m := fmt.Sprintf("Will not start collecting for endpoint [%v]. err=%v", id, err)
 				log.Warning(m)
-				status.StatusReport.Endpoints[id] = m
+				status.StatusReport.SetEndpoint(id, m)
 			} else {
 				mcm.StartCollecting(c)
 			}
@@ -83,7 +83,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 	if theCollector.GetEndpoint().IsEnabled() == false {
 		m := fmt.Sprintf("Will not collect metrics from [%v] - it has been disabled.", id)
 		log.Info(m)
-		status.StatusReport.Endpoints[id] = m
+		status.StatusReport.SetEndpoint(id, m)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 	// log some information about the new collector
 	log.Infof("START collecting metrics from [%v] every [%v]", id, collectionInterval)
 	status.StatusReport.AddLogMessage(fmt.Sprintf("START collection: %v", id))
-	status.StatusReport.Endpoints[id] = "STARTING"
+	status.StatusReport.SetEndpoint(id, "STARTING")
 
 	// now periodically collect the metrics
 	ticker := time.NewTicker(collectionInterval)
@@ -141,7 +141,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 			metricDetails = make([]collector.MetricDetails, 0)
 			msg := fmt.Sprintf("Failed to obtain metric details - metric definitions may be incomplete. err=%v", err)
 			log.Warning(msg)
-			status.StatusReport.Endpoints[id] = msg
+			status.StatusReport.SetEndpoint(id, msg)
 		}
 		mcm.declareMetricDefinitions(metricDetails, theCollector.GetEndpoint(), theCollector.GetAdditionalEnvironment())
 
@@ -151,9 +151,9 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 			metrics, err := theCollector.CollectMetrics()
 			timer.MarkTime()
 			if err != nil {
-				msg := fmt.Sprintf("Failed to collect metrics from [%v] at [%v]. err=%v", id, time.Now().Format(time.RFC822Z), err)
+				msg := fmt.Sprintf("Failed to collect metrics from [%v] at [%v]. err=%v", id, time.Now().Format(time.RFC1123Z), err)
 				log.Warning(msg)
-				status.StatusReport.Endpoints[id] = msg
+				status.StatusReport.SetEndpoint(id, msg)
 			} else {
 				for i, m := range metrics {
 					metrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(m.ID, mappingFunc)
@@ -161,7 +161,7 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 				mcm.metricsChan <- metrics
 
 				agentmetrics.Metrics.DataPointsCollected.Add(float64(len(metrics)))
-				status.StatusReport.Endpoints[id] = fmt.Sprintf("OK. Last collection at [%v] gathered [%v] metrics in [%v]", time.Now().Format(time.RFC822Z), len(metrics), timer)
+				status.StatusReport.SetEndpoint(id, fmt.Sprintf("OK. Last collection at [%v] gathered [%v] metrics in [%v]", time.Now().Format(time.RFC1123Z), len(metrics), timer))
 			}
 		}
 	}()
@@ -182,7 +182,7 @@ func (mcm *MetricsCollectorManager) StopCollecting(collectorId string) {
 	}
 
 	// ensure we take it out of the status report, even if no ticker was running on it
-	delete(status.StatusReport.Endpoints, collectorId)
+	status.StatusReport.SetEndpoint(collectorId, "")
 }
 
 // StopCollectingAll halts all metric collections.
@@ -199,9 +199,7 @@ func (mcm *MetricsCollectorManager) StopCollectingAll() {
 	}
 
 	// ensure we take them all out of the status report, even for those which there are no tickers
-	for id := range status.StatusReport.Endpoints {
-		delete(status.StatusReport.Endpoints, id)
-	}
+	status.StatusReport.DeleteAllEndpoints()
 }
 
 func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []collector.MetricDetails, endpoint *collector.Endpoint, additionalEnv map[string]string) {
