@@ -1,4 +1,4 @@
-VERSION ?= 0.4.0.Beta
+VERSION ?= 0.5.0.Final
 COMMIT_HASH ?= $(shell git rev-parse HEAD)
 
 DOCKER_NAME = hawkular/hawkular-openshift-agent
