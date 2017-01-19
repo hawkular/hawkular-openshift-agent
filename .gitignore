@@ -39,5 +39,6 @@ _testmain.go
 # IntelliJ
 .idea/
 
-# Deps
-vendor/
+# Go vendor directory
+# Due to the way the agent is to be productized, the vendor directory is to be committed to the git repo
+#vendor/
