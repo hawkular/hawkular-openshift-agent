@@ -31,6 +31,9 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/http"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/prometheus"
+	"github.com/hawkular/hawkular-openshift-agent/util/expand"
+	"os"
+	"strings"
 )
 
 type PrometheusMetricsCollector struct {
@@ -129,11 +132,11 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 		switch metricFamily.GetType() {
 		case prom.MetricType_GAUGE:
 			{
-				metrics = append(metrics, pc.convertGauge(metricFamily, metricId, now))
+				metrics = append(metrics, pc.convertGauge(metricFamily, metricId, now)...)
 			}
 		case prom.MetricType_COUNTER:
 			{
-				metrics = append(metrics, pc.convertCounter(metricFamily, metricId, now))
+				metrics = append(metrics, pc.convertCounter(metricFamily, metricId, now)...)
 			}
 		case prom.MetricType_SUMMARY,
 			prom.MetricType_HISTOGRAM,
@@ -162,40 +165,96 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 	return
 }
 
-func (pc *PrometheusMetricsCollector) convertGauge(promMetricFamily *prom.MetricFamily, id string, now time.Time) (metric hmetrics.MetricHeader) {
-	metric = hmetrics.MetricHeader{
-		Type:   hmetrics.Gauge,
-		ID:     id,
-		Tenant: pc.Endpoint.Tenant,
-		Data:   make([]hmetrics.Datapoint, len(promMetricFamily.GetMetric())),
-	}
+func (pc *PrometheusMetricsCollector) convertGauge(promMetricFamily *prom.MetricFamily, id string, now time.Time) (metricsCreated [] hmetrics.MetricHeader) {
+	metricsCreated = make([]hmetrics.MetricHeader, 0)
+	if strings.Contains(id, "$") {
+		for _, m := range promMetricFamily.GetMetric() {
+			labelPairMap := pc.prepareTagsMap(m.GetLabel())
+			idMappingFunc := expand.MappingFunc(false, labelPairMap)
 
-	for i, m := range promMetricFamily.GetMetric() {
-		g := m.GetGauge()
-		metric.Data[i] = hmetrics.Datapoint{
-			Timestamp: now,
-			Value:     g.GetValue(),
-			Tags:      pc.prepareTagsMap(m.GetLabel()),
+			// We still tag the data-points as not all labels have to be used on the metric name replacement
+			g := m.GetGauge()
+			data := make([]hmetrics.Datapoint, 1)
+			data[0] = hmetrics.Datapoint{
+				Timestamp:      now,
+				Value:          g.GetValue(),
+				Tags:           labelPairMap,
+			}
+
+			metric := hmetrics.MetricHeader{
+				Type:   hmetrics.Gauge,
+				ID:     os.Expand(id, idMappingFunc),
+				Tenant: pc.Endpoint.Tenant,
+				Data:   data,
+			}
+
+			metricsCreated = append(metricsCreated, metric)
 		}
+
+	} else {
+		metric := hmetrics.MetricHeader{
+			Type:   hmetrics.Gauge,
+			ID:     id,
+			Tenant: pc.Endpoint.Tenant,
+			Data:   make([]hmetrics.Datapoint, len(promMetricFamily.GetMetric())),
+		}
+
+		for i, m := range promMetricFamily.GetMetric() {
+			g := m.GetGauge()
+			metric.Data[i] = hmetrics.Datapoint{
+				Timestamp: now,
+				Value:     g.GetValue(),
+				Tags:      pc.prepareTagsMap(m.GetLabel()),
+			}
+		}
+
+		metricsCreated = append(metricsCreated, metric)
 	}
 
 	return
 }
 
-func (pc *PrometheusMetricsCollector) convertCounter(promMetricFamily *prom.MetricFamily, id string, now time.Time) (metric hmetrics.MetricHeader) {
-	metric = hmetrics.MetricHeader{
-		Type:   hmetrics.Counter,
-		ID:     id,
-		Tenant: pc.Endpoint.Tenant,
-		Data:   make([]hmetrics.Datapoint, len(promMetricFamily.GetMetric())),
-	}
+func (pc *PrometheusMetricsCollector) convertCounter(promMetricFamily *prom.MetricFamily, id string, now time.Time) (metricsCreated []hmetrics.MetricHeader) {
+	metricsCreated = make([]hmetrics.MetricHeader, 0)
+	if strings.Contains(id, "$") {
+		for _, m := range promMetricFamily.GetMetric() {
+			labelPairMap := pc.prepareTagsMap(m.GetLabel())
+			idMappingFunc := expand.MappingFunc(false, labelPairMap)
 
-	for i, m := range promMetricFamily.GetMetric() {
-		g := m.GetCounter()
-		metric.Data[i] = hmetrics.Datapoint{
-			Timestamp: now,
-			Value:     g.GetValue(),
-			Tags:      pc.prepareTagsMap(m.GetLabel()),
+			// We still tag the data-points as not all labels have to be used on the metric name replacement
+			g := m.GetCounter()
+			data := make([]hmetrics.Datapoint, 1)
+			data[0] = hmetrics.Datapoint{
+				Timestamp:      now,
+				Value:          g.GetValue(),
+				Tags:           labelPairMap,
+			}
+
+			metric := hmetrics.MetricHeader{
+				Type:   hmetrics.Counter,
+				ID:     os.Expand(id, idMappingFunc),
+				Tenant: pc.Endpoint.Tenant,
+				Data:   data,
+			}
+
+			metricsCreated = append(metricsCreated, metric)
+		}
+
+	} else {
+		metric := hmetrics.MetricHeader{
+			Type:   hmetrics.Counter,
+			ID:     id,
+			Tenant: pc.Endpoint.Tenant,
+			Data:   make([]hmetrics.Datapoint, len(promMetricFamily.GetMetric())),
+		}
+
+		for i, m := range promMetricFamily.GetMetric() {
+			g := m.GetCounter()
+			metric.Data[i] = hmetrics.Datapoint{
+				Timestamp: now,
+				Value:     g.GetValue(),
+				Tags:      pc.prepareTagsMap(m.GetLabel()),
+			}
 		}
 	}
 
