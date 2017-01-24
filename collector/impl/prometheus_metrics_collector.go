@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
@@ -32,8 +34,6 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/prometheus"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
-	"os"
-	"strings"
 )
 
 type PrometheusMetricsCollector struct {
