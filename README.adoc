@@ -321,7 +321,6 @@ A full Prometheus endpoint configuration can look like this:
   metrics:
   - name: jvm_memory_pool_bytes_committed
     id: jvm_memory_pool_bytes_committed_${pool}
-    type: gauge
   - name: go_memstats_last_gc_time_seconds
     id: gc_time_secs
   - name: go_memstats_frees_total
