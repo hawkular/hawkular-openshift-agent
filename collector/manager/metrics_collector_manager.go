@@ -59,7 +59,7 @@ func NewMetricsCollectorManager(conf *config.Config, metricsChan chan []hmetrics
 func (mcm *MetricsCollectorManager) StartCollectingEndpoints(endpoints []collector.Endpoint) {
 	if endpoints != nil {
 		for _, e := range endpoints {
-			id := fmt.Sprintf("%v|%v", e.Type, e.URL)
+			id := fmt.Sprintf("X|X|%v|%v", e.Type, e.URL)
 			if c, err := CreateMetricsCollector(id, mcm.Config.Identity, e, nil); err != nil {
 				m := fmt.Sprintf("Will not start collecting for endpoint [%v]. err=%v", id, err)
 				log.Warning(m)

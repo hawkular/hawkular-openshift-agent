@@ -23,6 +23,72 @@ import (
 	"testing"
 )
 
+func TestCleanup(t *testing.T) {
+	InitStatusReport("foo", "1", "aaabbb", 3)
+	StatusReport.SetPod("pod1", []string{"pod1-e1", "pod1-e2"})
+	StatusReport.SetPod("pod2", []string{"pod2-e1", "pod2-e2"})
+	StatusReport.SetEndpoint("pod1-e1", "OK")
+	StatusReport.SetEndpoint("pod1-e2", "OK")
+	StatusReport.SetEndpoint("pod2-e1", "OK")
+	StatusReport.SetEndpoint("pod2-e2", "OK")
+	StatusReport.SetEndpoint("unused", "OK")
+
+	StatusReport.Marshal() // shows that Marshal performs the cleanup
+	if _, ok := StatusReport.GetEndpoint("pod1-e1"); !ok {
+		t.Error("pod1-e1 should still be there")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod1-e2"); !ok {
+		t.Error("pod1-e2 should still be there")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod2-e1"); !ok {
+		t.Error("pod2-e1 should still be there")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod2-e2"); !ok {
+		t.Error("pod2-e2 should still be there")
+	}
+	if _, ok := StatusReport.GetEndpoint("unused"); ok {
+		t.Error("unused should have been deleted from the cleanup")
+	}
+
+	StatusReport.SetPod("pod1", nil) // removing pod will do the cleanup of its endpoints
+	if _, ok := StatusReport.GetEndpoint("pod1-e1"); ok {
+		t.Error("pod1-e1 should have been deleted from the cleanup")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod1-e2"); ok {
+		t.Error("pod1-e2 should have been deleted from the cleanup")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod2-e1"); !ok {
+		t.Error("pod2-e1 should still be there")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod2-e2"); !ok {
+		t.Error("pod2-e2 should still be there")
+	}
+
+	StatusReport.SetPod("pod2", nil) // removing pod will do the cleanup of its endpoints
+	if _, ok := StatusReport.GetEndpoint("pod2-e1"); ok {
+		t.Error("pod2-e1 should have been deleted from the cleanup")
+	}
+	if _, ok := StatusReport.GetEndpoint("pod2-e2"); ok {
+		t.Error("pod2-e2 should have been deleted from the cleanup")
+	}
+
+	if len(StatusReport.Endpoints) != 0 || len(StatusReport.Pods) != 0 {
+		t.Error("All endpoints should have been deleted from the cleanup")
+	}
+
+	// When agent is collecting from external (non-OpenShift) endpoints, the IDs are prefixed with "X|X|".
+	// In this case, the endpoints should never be cleaned up.
+	StatusReport.SetEndpoint("X|X|e1", "OK")
+	StatusReport.SetEndpoint("X|X|e2", "OK")
+	StatusReport.cleanup(true)
+	if _, ok := StatusReport.GetEndpoint("X|X|e1"); !ok {
+		t.Error("e1 should still be there")
+	}
+	if _, ok := StatusReport.GetEndpoint("X|X|e2"); !ok {
+		t.Error("e2 should still be there")
+	}
+}
+
 func TestStatusReportPods(t *testing.T) {
 	endpts1 := []string{"e1-a", "e1-b"}
 	endpts2 := []string{"e2-a", "e2-b"}

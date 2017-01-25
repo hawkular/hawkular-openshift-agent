@@ -19,6 +19,7 @@ package status
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,6 +72,7 @@ func (s *StatusReportType) SetPod(podId string, endpointIds []string) {
 	defer s.lock.Unlock()
 	if endpointIds == nil {
 		delete(s.Pods, podId)
+		s.cleanup(false)
 	} else {
 		s.Pods[podId] = endpointIds
 	}
@@ -114,6 +116,8 @@ func (s *StatusReportType) AddLogMessage(m string) {
 }
 
 func (s *StatusReportType) Marshal() (str string) {
+	s.cleanup(true)
+
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if statusBytes, err := yaml.Marshal(&StatusReport); err != nil {
@@ -121,5 +125,31 @@ func (s *StatusReportType) Marshal() (str string) {
 	} else {
 		str = string(statusBytes)
 	}
+	return
+}
+
+// cleanup removes obsolete endpoints.
+// If "needsLock" is false, caller MUST have obtained the write lock already.
+func (s *StatusReportType) cleanup(needsLock bool) {
+	if needsLock {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+
+	// sometimes endpoints get leftover, even though they are not being monitored anymore - remove them
+	validEndpoints := make(map[string]bool, 0)
+	for _, podEndpoints := range s.Pods {
+		for _, podEndpoint := range podEndpoints {
+			validEndpoints[podEndpoint] = true
+		}
+	}
+
+	for endpoint, _ := range s.Endpoints {
+		// if endpoint is prefixed with X|X| it is not a pod endpoint and should never be cleaned up
+		if !validEndpoints[endpoint] && !strings.HasPrefix(endpoint, "X|X|") {
+			delete(s.Endpoints, endpoint)
+		}
+	}
+
 	return
 }
