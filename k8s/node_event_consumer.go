@@ -334,7 +334,7 @@ func getIdForEndpoint(p *Pod, e K8SEndpoint) (id string, err error) {
 	if err != nil {
 		return
 	}
-	id = fmt.Sprintf("%v/%v|%v", p.Namespace.Name, p.Name, url.String())
+	id = fmt.Sprintf("%v|%v|%v|%v", p.Namespace.Name, p.Name, e.Type, url.String())
 	return
 }
 
