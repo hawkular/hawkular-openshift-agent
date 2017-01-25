@@ -58,6 +58,7 @@ openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift
 	oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n openshift-infra
 	oc process -f deploy/openshift/hawkular-openshift-agent.yaml -v IMAGE_VERSION=${DOCKER_VERSION} | oc create -n openshift-infra -f -
+	oc create -f deploy/openshift/hawkular-openshift-agent-route.yaml -n openshift-infra
 	oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:openshift-infra:hawkular-openshift-agent
 
 openshift-undeploy:
@@ -66,7 +67,7 @@ openshift-undeploy:
 	oc delete clusterroles hawkular-openshift-agent
 
 openshift-status:
-	@echo Obtaining Status from the Agent running in OpenShift
+	@echo Obtaining Status from the Agent via OpenShift API Proxy
 	@curl -k -H "Authorization: Bearer `oc whoami -t`" `oc version | grep 'Server ' | awk '{print $$2;}'`/api/v1/namespaces/openshift-infra/pods/`oc get pods -n openshift-infra --selector metrics-infra=agent --no-headers | awk '{print $$1;}'`:8080/proxy/status
 
 install:
