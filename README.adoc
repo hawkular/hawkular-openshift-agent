@@ -519,6 +519,89 @@ kubernetes:
   tenant: VALUE
 ----
 |If defined, this will be the tenant where all pod metrics are stored. If not defined, the default is the tenant specified in the Hawkular_Server section. If defined, may include ${var} tokens where `var` is either an agent environment variable of one of the valid POD tag tokens such as `POD:namespace_name`.
+
+|COLLECTOR_MINIMUM_COLLECTION_INTERVAL
+|
+[source,yaml]
+----
+collector:
+  minimum_collection_interval: VALUE
+----
+|Limits the fastest that any endpoint can have its metrics collected. If an endpoint defines its collection interval smaller than this value, that endpoint's collection interval will be set to this minimum value. Specified as a number followed by units such as "30s" for thirty seconds or "2m" for two minutes.
+
+|COLLECTOR_DEFAULT_COLLECTION_INTERVAL
+|
+[source,yaml]
+----
+collector:
+  default_collection_interval: VALUE
+----
+|The default collection interval for those endpoints that do not explicitly define its own collection interval. Specified as a number followed by units such as "30s" for thirty seconds or "2m" for two minutes.
+
+|EMITTER_ADDRESS
+|
+[source,yaml]
+----
+emitter:
+  address: [address]:port
+----
+|If the emitter endpoint is to be enabled, this is the bind address and port. If address is not specified, it will be an IP of the host machine. If not specified at all, this will be either ":8080" if the agent's identity is not declared and ":8443" if the agent's identity is declared. Note that if the agent's identity is declared, the endpoint will be exposed over https, otherwise http is used. If neither metrics, status, or health emitters are enabled, this setting is not used and no http(s) endpoint is created by the agent.
+
+|EMITTER_METRICS_ENABLED
+|
+[source,yaml]
+----
+emitter:
+  metrics_enabled: (true\|false)
+----
+|If true, the agent's own metrics are emitted at the /metrics endpoint.
+
+|EMITTER_STATUS_ENABLED
+|
+[source,yaml]
+----
+emitter:
+  status_enabled: (true\|false)
+----
+|If enabled the status is emitted at the /status endpoint. This is useful to admins and developers to see internal details about the agent. Use the status credentials settings to secure this endpoint via basic authentication.
+
+|EMITTER_HEALTH_ENABLED
+|
+[source,yaml]
+----
+emitter:
+  health_enabled: (true\|false)
+----
+|If true, a simple health endpoint is emitted at /health endpoint. This is useful for health probes to check the health of the agent.
+
+|EMITTER_STATUS_LOG_SIZE
+|
+[source,yaml]
+----
+emitter:
+  status_log_size: VALUE
+----
+|The status endpoint emits important log messages. Set this value to limit the size of the log.
+
+|EMITTER_STATUS_CREDENTIALS_USERNAME
+|
+[source,yaml]
+----
+emitter:
+  status_credentials:
+    username: VALUE
+----
+|If the status emitter is enabled, you can set this username (along with the password) to force users to authenticate themselves in order to see the status information.
+
+|EMITTER_STATUS_CREDENTIALS_PASSWORD
+|
+[source,yaml]
+----
+emitter:
+  status_credentials:
+    password: VALUE
+----
+|If the status emitter is enabled, you can set this password (along with the username) to force users to authenticate themselves in order to see the status information.
 |===
 
 == Metric Tags
