@@ -67,8 +67,10 @@ openshift-undeploy:
 	oc delete clusterroles hawkular-openshift-agent
 
 openshift-status:
-	@echo Obtaining Status from the Agent via OpenShift API Proxy
-	@curl -k -H "Authorization: Bearer `oc whoami -t`" `oc version | grep 'Server ' | awk '{print $$2;}'`/api/v1/namespaces/openshift-infra/pods/`oc get pods -n openshift-infra --selector metrics-infra=agent --no-headers | awk '{print $$1;}'`:8080/proxy/status
+	@echo Obtaining Status from the Agent
+	@curl -k -H "Authorization: Basic $(shell echo -n `oc get secret hawkular-openshift-agent-status -n openshift-infra --template='{{.data.username}}' | base64 --decode`:`oc get secret hawkular-openshift-agent-status -n openshift-infra --template='{{.data.password}}' | base64 --decode` | base64)" http://hawkular-openshift-agent-openshift-infra.$(shell oc version | grep 'Server ' | awk '{print $$2;}' | egrep -o '([0-9]{1,3}[.]){3}[0-9]{1,3}').xip.io/status
+	# The below goes through the API proxy but will not work if credentials are required since the proxy doesn't passthru credentials
+	#@curl -k -H "Authorization: Bearer `oc whoami -t`" `oc version | grep 'Server ' | awk '{print $$2;}'`/api/v1/namespaces/openshift-infra/pods/`oc get pods -n openshift-infra --selector metrics-infra=agent --no-headers | awk '{print $$1;}'`:8080/proxy/status
 
 install:
 	@echo Installing...
