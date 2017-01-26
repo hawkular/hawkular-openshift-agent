@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/hawkular/hawkular-openshift-agent/config"
+	"github.com/hawkular/hawkular-openshift-agent/config/security"
 	"github.com/hawkular/hawkular-openshift-agent/emitter/health"
 	"github.com/hawkular/hawkular-openshift-agent/emitter/metrics"
 	"github.com/hawkular/hawkular-openshift-agent/emitter/status"
@@ -44,7 +45,13 @@ func StartEmitter(conf *config.Config) {
 
 	if conf.Emitter.Status_Enabled == "true" {
 		enabled = true
-		http.HandleFunc("/status", StatusHandler)
+		statusHandler := StatusHandler{
+			Credentials: security.Credentials{
+				Username: conf.Emitter.Status_Credentials.Username,
+				Password: conf.Emitter.Status_Credentials.Password,
+			},
+		}
+		http.HandleFunc("/status", statusHandler.handler)
 		log.Info("Agent emitter will emit status")
 	} else {
 		log.Info("Agent emitter will NOT emit status")
@@ -90,12 +97,42 @@ func StartEmitter(conf *config.Config) {
 	}()
 }
 
-// HTTP HANDLERS FOR THE DIFFERENT PATHS ARE BELOW
+type StatusHandler struct {
+	Credentials security.Credentials
+}
 
-func StatusHandler(w http.ResponseWriter, r *http.Request) {
-	str := status.StatusReport.Marshal()
-	if _, err := io.WriteString(w, str); err != nil {
-		log.Errorf("Cannot send status response. err=%v", err)
+func (s *StatusHandler) handler(w http.ResponseWriter, r *http.Request) {
+	statusCode := http.StatusOK
+
+	if s.Credentials.Username != "" || s.Credentials.Password != "" {
+		u, p, ok := r.BasicAuth()
+		if !ok {
+			statusCode = http.StatusUnauthorized
+		} else if s.Credentials.Username != u || s.Credentials.Password != p {
+			statusCode = http.StatusForbidden
+		}
+	} else {
+		log.Warning("Access to the status endpoint is not secure. It is recommended you define credentials for the status emitter.")
+	}
+
+	switch statusCode {
+	case http.StatusOK:
+		{
+			str := status.StatusReport.Marshal()
+			if _, err := io.WriteString(w, str); err != nil {
+				log.Errorf("Cannot send status response. err=%v", err)
+			}
+		}
+	case http.StatusUnauthorized:
+		{
+			w.Header().Set("WWW-Authenticate", "Basic realm=\"Hawkular OpenShift Agent\"")
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
+	default:
+		{
+			http.Error(w, http.StatusText(statusCode), statusCode)
+			log.Errorf("Cannot send status response to unauthorized user. %v", statusCode)
+		}
 	}
 }
 

@@ -41,6 +41,15 @@ objects:
     name: hawkular-openshift-agent
     labels:
       metrics-infra: agent
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: hawkular-openshift-agent-status
+    labels:
+      metrics-infra: agent
+  data:
+    username: ZGV2
+    password: Y2hhbmdlbWU=
 - apiVersion: extensions/v1beta1
   kind: DaemonSet
   metadata:
@@ -91,13 +100,23 @@ objects:
           - name: HAWKULAR_SERVER_USERNAME
             valueFrom:
               secretKeyRef:
-                name: hawkular-metrics-account 
+                name: hawkular-metrics-account
                 key: hawkular-metrics.username
           - name: HAWKULAR_SERVER_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: hawkular-metrics-account
                 key: hawkular-metrics.password
+          - name: EMITTER_STATUS_CREDENTIALS_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: hawkular-openshift-agent-status
+                key: username
+          - name: EMITTER_STATUS_CREDENTIALS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: hawkular-openshift-agent-status
+                key: password
           volumeMounts:
           - name: hawkular-metrics-certificate
             mountPath: "/hawkular-metrics-certificate"
