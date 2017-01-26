@@ -6,6 +6,10 @@ hawkular_server:
     password: password
 emitter:
   address: :8081
+  status_enabled: true
+  status_credentials:
+    username: dev
+    password: changeme
 collector:
   minimum_collection_interval: 10s
   tags:

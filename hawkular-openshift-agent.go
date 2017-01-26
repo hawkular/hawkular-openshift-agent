@@ -173,6 +173,18 @@ func validateConfig() error {
 			Configuration.Emitter.Status_Log_Size)
 	}
 
+	if Configuration.Emitter.Status_Enabled == "true" {
+		if err := Configuration.Emitter.Status_Credentials.ValidateCredentials(); err != nil {
+			return fmt.Errorf("Emitter credentials are invalid: %v", err)
+		}
+		if Configuration.Emitter.Status_Credentials.Token != "" {
+			return fmt.Errorf("Token is not supported for emitter credentials")
+		}
+		if Configuration.Emitter.Status_Credentials.Username == "" || Configuration.Emitter.Status_Credentials.Password == "" {
+			log.Warning("The status emitter is not secure. It is recommended you secure the status emitter with credentials.")
+		}
+	}
+
 	return nil
 }
 

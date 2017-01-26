@@ -51,11 +51,13 @@ const (
 	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
 	ENV_K8S_TENANT        = "K8S_TENANT"
 
-	ENV_EMITTER_ADDRESS         = "EMITTER_ADDRESS"
-	ENV_EMITTER_METRICS_ENABLED = "EMITTER_METRICS_ENABLED"
-	ENV_EMITTER_STATUS_ENABLED  = "EMITTER_STATUS_ENABLED"
-	ENV_EMITTER_HEALTH_ENABLED  = "EMITTER_HEALTH_ENABLED"
-	ENV_EMITTER_STATUS_LOG_SIZE = "EMITTER_STATUS_LOG_SIZE"
+	ENV_EMITTER_ADDRESS                     = "EMITTER_ADDRESS"
+	ENV_EMITTER_METRICS_ENABLED             = "EMITTER_METRICS_ENABLED"
+	ENV_EMITTER_STATUS_ENABLED              = "EMITTER_STATUS_ENABLED"
+	ENV_EMITTER_HEALTH_ENABLED              = "EMITTER_HEALTH_ENABLED"
+	ENV_EMITTER_STATUS_LOG_SIZE             = "EMITTER_STATUS_LOG_SIZE"
+	ENV_EMITTER_STATUS_CREDENTIALS_USERNAME = "EMITTER_STATUS_CREDENTIALS_USERNAME"
+	ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD = "EMITTER_STATUS_CREDENTIALS_PASSWORD"
 
 	ENV_COLLECTOR_MINIMUM_COLL_INTERVAL = "COLLECTOR_MINIMUM_COLLECTION_INTERVAL"
 	ENV_COLLECTOR_DEFAULT_COLL_INTERVAL = "COLLECTOR_DEFAULT_COLLECTION_INTERVAL"
@@ -110,11 +112,12 @@ type Kubernetes struct {
 // emitting the agent's own metric data, a status report, and/or the health probe.
 // USED FOR YAML
 type Emitter struct {
-	Metrics_Enabled string ",omitempty"
-	Status_Enabled  string ",omitempty"
-	Health_Enabled  string ",omitempty"
-	Address         string ",omitempty"
-	Status_Log_Size int    ",omitempty"
+	Metrics_Enabled    string               ",omitempty"
+	Status_Enabled     string               ",omitempty"
+	Health_Enabled     string               ",omitempty"
+	Address            string               ",omitempty"
+	Status_Log_Size    int                  ",omitempty"
+	Status_Credentials security.Credentials ",omitempty"
 }
 
 // Config defines the agent's full YAML configuration.
@@ -153,10 +156,14 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
 
 	c.Emitter.Metrics_Enabled = getDefaultString(ENV_EMITTER_METRICS_ENABLED, "true")
-	c.Emitter.Status_Enabled = getDefaultString(ENV_EMITTER_STATUS_ENABLED, "true")
+	c.Emitter.Status_Enabled = getDefaultString(ENV_EMITTER_STATUS_ENABLED, "false")
 	c.Emitter.Health_Enabled = getDefaultString(ENV_EMITTER_HEALTH_ENABLED, "true")
 	c.Emitter.Address = getDefaultString(ENV_EMITTER_ADDRESS, "")
 	c.Emitter.Status_Log_Size = getDefaultInt(ENV_EMITTER_STATUS_LOG_SIZE, 10)
+	c.Emitter.Status_Credentials = security.Credentials{
+		Username: getDefaultString(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME, ""),
+		Password: getDefaultString(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD, ""),
+	}
 
 	return
 }

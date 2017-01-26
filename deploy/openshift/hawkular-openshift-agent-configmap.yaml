@@ -10,6 +10,8 @@ data:
   config.yaml: |
     kubernetes:
       tenant: ${POD:namespace_name}
+    emitter:
+      status_enabled: true
     collector:
       minimum_collection_interval: 10s
       default_collection_interval: 30s

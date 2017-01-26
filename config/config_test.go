@@ -36,15 +36,19 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_EMITTER_STATUS_ENABLED, os.Getenv(ENV_EMITTER_STATUS_ENABLED))
 	defer os.Setenv(ENV_EMITTER_HEALTH_ENABLED, os.Getenv(ENV_EMITTER_HEALTH_ENABLED))
 	defer os.Setenv(ENV_EMITTER_STATUS_LOG_SIZE, os.Getenv(ENV_EMITTER_STATUS_LOG_SIZE))
+	defer os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME, os.Getenv(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME))
+	defer os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD, os.Getenv(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD))
 	os.Setenv(ENV_HS_URL, "http://TestEnvVar:9090")
 	os.Setenv(ENV_HS_TOKEN, "abc123")
 	os.Setenv(ENV_K8S_POD_NAMESPACE, "TestEnvVar pod namespace")
 	os.Setenv(ENV_K8S_POD_NAME, "TestEnvVar pod name")
 	os.Setenv(ENV_K8S_TENANT, "${POD:namespace_name}")
 	os.Setenv(ENV_EMITTER_METRICS_ENABLED, "false")
-	os.Setenv(ENV_EMITTER_STATUS_ENABLED, "false")
+	os.Setenv(ENV_EMITTER_STATUS_ENABLED, "true")
 	os.Setenv(ENV_EMITTER_HEALTH_ENABLED, "false")
 	os.Setenv(ENV_EMITTER_STATUS_LOG_SIZE, "123")
+	os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME, "user")
+	os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD, "pass")
 
 	conf := NewConfig()
 
@@ -66,7 +70,7 @@ func TestEnvVar(t *testing.T) {
 	if conf.Emitter.Metrics_Enabled != "false" {
 		t.Error("Emitter Metrics Enabled is wrong")
 	}
-	if conf.Emitter.Status_Enabled != "false" {
+	if conf.Emitter.Status_Enabled != "true" {
 		t.Error("Emitter Status Enabled is wrong")
 	}
 	if conf.Emitter.Health_Enabled != "false" {
@@ -74,6 +78,12 @@ func TestEnvVar(t *testing.T) {
 	}
 	if conf.Emitter.Status_Log_Size != 123 {
 		t.Error("Emitter Status Log Size is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Username != "user" {
+		t.Error("Emitter Status Username is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Password != "pass" {
+		t.Error("Emitter Status Password is wrong")
 	}
 }
 
@@ -116,8 +126,8 @@ func TestDefaults(t *testing.T) {
 	if conf.Emitter.Metrics_Enabled != "true" {
 		t.Error("Emitter Metrics Enabled is wrong - default should be true")
 	}
-	if conf.Emitter.Status_Enabled != "true" {
-		t.Error("Emitter Status Enabled is wrong - default should be true")
+	if conf.Emitter.Status_Enabled != "false" {
+		t.Error("Emitter Status Enabled is wrong - default should be false")
 	}
 	if conf.Emitter.Health_Enabled != "true" {
 		t.Error("Emitter Health Enabled is wrong - default should be true")
@@ -127,6 +137,12 @@ func TestDefaults(t *testing.T) {
 	}
 	if conf.Emitter.Status_Log_Size != 10 {
 		t.Error("Emitter Status Log Size default is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Username != "" {
+		t.Error("Emitter Status Username is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Password != "" {
+		t.Error("Emitter Status Password is wrong")
 	}
 }
 
@@ -148,6 +164,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Status_Enabled:  "false",
 			Health_Enabled:  "false",
 			Address:         ":12345",
+			Status_Credentials: security.Credentials{
+				Username: "foo-username",
+				Password: "foo-password",
+			},
 		},
 		Endpoints: []collector.Endpoint{
 			{
@@ -227,6 +247,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}
 	if conf.Emitter.Address != ":12345" {
 		t.Error("Emitter Address is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Username != "foo-username" {
+		t.Error("Emitter Credentials Username is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Password != "foo-password" {
+		t.Error("Emitter Credentials Password is wrong")
 	}
 }
 
@@ -344,6 +370,13 @@ func TestLoadSave(t *testing.T) {
 	if conf.Emitter.Status_Log_Size != 1234 {
 		t.Error("Emitter Status Log Size is wrong")
 	}
+	if conf.Emitter.Status_Credentials.Username != "" {
+		t.Error("Emitter Credentials Username is wrong")
+	}
+	if conf.Emitter.Status_Credentials.Password != "" {
+		t.Error("Emitter Credentials Password is wrong")
+	}
+
 }
 
 func TestError(t *testing.T) {
