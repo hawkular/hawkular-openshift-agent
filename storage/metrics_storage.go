@@ -89,6 +89,8 @@ func (ms *MetricsStorageManager) consumeMetricDefinitions() {
 
 		// Store the metric definitions to H-Metrics.
 		for _, md := range metricDefs {
+			log.Tracef("Asked to store metric definition: %#v", md)
+
 			existing, err := ms.hawkClientMetricDefinitions.Definition(md.Type, md.ID, modifier)
 			if existing == nil {
 				if err == nil {

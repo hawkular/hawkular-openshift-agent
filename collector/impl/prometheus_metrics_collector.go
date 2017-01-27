@@ -34,11 +34,11 @@ import (
 )
 
 type PrometheusMetricsCollector struct {
-	ID              string
-	Identity        *security.Identity
-	Endpoint        *collector.Endpoint
-	Environment     map[string]string
-	metricNameIdMap map[string]string
+	ID            string
+	Identity      *security.Identity
+	Endpoint      *collector.Endpoint
+	Environment   map[string]string
+	metricNameMap map[string]bool
 }
 
 func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *PrometheusMetricsCollector) {
@@ -50,10 +50,9 @@ func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoi
 	}
 
 	// Put all metric names in a map so we can quickly look them up to know which metrics should be stored and which are to be ignored.
-	// Notice the value of the map is the metric ID - this will be the Hawkular Metrics ID when the metric is stored.
-	mc.metricNameIdMap = make(map[string]string, len(endpoint.Metrics))
+	mc.metricNameMap = make(map[string]bool, len(endpoint.Metrics))
 	for _, m := range endpoint.Metrics {
-		mc.metricNameIdMap[m.Name] = m.ID
+		mc.metricNameMap[m.Name] = true
 	}
 
 	return
@@ -95,16 +94,14 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 	now := time.Now()
 
 	if len(pc.Endpoint.Metrics) == 0 {
-		log.Debugf("There are no metrics defined for Prometheus endpoint [%v]", url)
-		metrics = make([]hmetrics.MetricHeader, 0)
-		return
+		log.Debugf("Told to collect all Prometheus metrics from [%v]", url)
+	} else {
+		log.Debugf("Told to collect [%v] Prometheus metrics from [%v]", len(pc.Endpoint.Metrics), url)
 	}
-
-	log.Debugf("Told to collect [%v] Prometheus metrics from [%v]", len(pc.Endpoint.Metrics), url)
 
 	metricFamilies, err := prometheus.Scrape(url, &pc.Endpoint.Credentials, client)
 	if err != nil {
-		err = fmt.Errorf("Failed to collect Prometheus metrics from [%v]. err=%v", pc.Endpoint.URL, err)
+		err = fmt.Errorf("Failed to collect Prometheus metrics from [%v]. err=%v", url, err)
 		return
 	}
 
@@ -112,18 +109,15 @@ func (pc *PrometheusMetricsCollector) CollectMetrics() (metrics []hmetrics.Metri
 
 	for _, metricFamily := range metricFamilies {
 
-		// by default the metric Id is the metric name
-		metricId := metricFamily.GetName()
-
 		// If the endpoint was given a list of metrics to collect but the current metric isn't in the list, skip it.
 		// If the metric was in the list, use its ID when storing to H-Metrics.
-		if len(pc.metricNameIdMap) > 0 {
-			var ok bool
-			metricId, ok = pc.metricNameIdMap[metricFamily.GetName()]
-			if !ok {
-				continue
-			}
+		if len(pc.metricNameMap) > 0 && pc.metricNameMap[metricFamily.GetName()] == false {
+			log.Tracef("Told not to collect metric [%v] from endpoint [%v]", metricFamily.GetName(), url)
+			continue
 		}
+
+		// by default the metric id is the metric name - we'll let the caller (the collector manager) determine the real ID
+		metricId := metricFamily.GetName()
 
 		// convert the prometheus metric into a hawkular metrics object
 		switch metricFamily.GetType() {
@@ -206,7 +200,9 @@ func (pc *PrometheusMetricsCollector) prepareTagsMap(promLabels []*prom.LabelPai
 	totalTags := len(promLabels)
 	hmetricsTags = make(map[string]string, totalTags)
 
-	// all Prometheus labels are added as tags to the metric datapoint
+	// Prometheus endpoints indicate different times series data by attaching labels to data points within a metric family.
+	// All Prometheus labels are added as tags to the Hawkular Metric datapoint to indicate there are different time series data.
+	// This tells the collector manager to split this one metric into several metrics, which is what they really are.
 	for _, l := range promLabels {
 		hmetricsTags[l.GetName()] = l.GetValue()
 	}
@@ -215,7 +211,7 @@ func (pc *PrometheusMetricsCollector) prepareTagsMap(promLabels []*prom.LabelPai
 }
 
 // CollectMetricDetails implements a method from MetricsCollector interface
-func (pc *PrometheusMetricsCollector) CollectMetricDetails() (metricDetails []collector.MetricDetails, err error) {
+func (pc *PrometheusMetricsCollector) CollectMetricDetails(metricNames []string) (metricDetails []collector.MetricDetails, err error) {
 
 	httpConfig := http.HttpClientConfig{
 		Identity: pc.Identity,
@@ -231,17 +227,16 @@ func (pc *PrometheusMetricsCollector) CollectMetricDetails() (metricDetails []co
 
 	url := pc.Endpoint.URL
 
-	if len(pc.Endpoint.Metrics) == 0 {
-		log.Debugf("There are no metrics defined for Prometheus endpoint [%v]", url)
+	if len(metricNames) == 0 {
 		metricDetails = make([]collector.MetricDetails, 0)
 		return
 	}
 
-	log.Debugf("Told to collect details on [%v] Prometheus metrics from [%v]", len(pc.Endpoint.Metrics), url)
+	log.Debugf("Told to collect details on [%v] Prometheus metrics from [%v]", len(metricNames), url)
 
 	metricFamilies, err := prometheus.Scrape(url, &pc.Endpoint.Credentials, client)
 	if err != nil {
-		err = fmt.Errorf("Failed to collect details on Prometheus metrics from [%v]. err=%v", pc.Endpoint.URL, err)
+		err = fmt.Errorf("Failed to collect details on Prometheus metrics from [%v]. err=%v", url, err)
 		return
 	}
 
@@ -249,20 +244,22 @@ func (pc *PrometheusMetricsCollector) CollectMetricDetails() (metricDetails []co
 
 	for _, metricFamily := range metricFamilies {
 
-		// by default the metric Id is the metric name
-		metricId := metricFamily.GetName()
-
-		// If the endpoint was given a list of metrics to collect but the current metric isn't in the list, skip it.
-		// If the metric was in the list, use its ID.
-		if len(pc.metricNameIdMap) > 0 {
-			var ok bool
-			metricId, ok = pc.metricNameIdMap[metricFamily.GetName()]
-			if !ok {
-				continue
+		// if this isn't a metric we are looking for, skip it
+		doIt := false
+		for _, metricToLookFor := range metricNames {
+			if metricToLookFor == metricFamily.GetName() {
+				doIt = true
+				break
 			}
 		}
+		if !doIt {
+			continue
+		}
 
-		singleMetricDetails := collector.MetricDetails{}
+		singleMetricDetails := collector.MetricDetails{
+			Name:        metricFamily.GetName(),
+			Description: metricFamily.GetHelp(),
+		}
 
 		switch metricFamily.GetType() {
 		case prom.MetricType_GAUGE:
@@ -284,12 +281,10 @@ func (pc *PrometheusMetricsCollector) CollectMetricDetails() (metricDetails []co
 			}
 		}
 
-		singleMetricDetails.ID = metricId
-		singleMetricDetails.Description = metricFamily.GetHelp()
-
 		metricDetails = append(metricDetails, singleMetricDetails)
 	}
 
+	// NOTE: the returned details might NOT be in the same order as their names in the metricNames input parameter!
 	return
 
 }

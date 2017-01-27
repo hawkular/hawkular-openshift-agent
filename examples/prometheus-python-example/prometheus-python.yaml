@@ -51,13 +51,3 @@ objects:
         port: 8181
         path: /
         collection_interval: 30s
-        metrics:
-        - name: test_method_invocations_total
-        - name: test_last_sleep_duration
-        - name: test_meals_eaten_total
-        - name: process_virtual_memory_bytes
-        - name: process_resident_memory_bytes
-        - name: process_start_time_seconds
-        - name: process_cpu_seconds_total
-        - name: process_open_fds
-        - name: process_max_fds

@@ -229,7 +229,10 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 
 		endpointTenant := nec.Config.Hawkular_Server.Tenant
 		if nec.Config.Kubernetes.Tenant != "" {
-			mappingFunc := expand.MappingFunc(true, additionalEnv)
+			mappingFunc := expand.MappingFunc(expand.MappingFuncConfig{
+				Env:      additionalEnv,
+				UseOSEnv: true,
+			})
 			endpointTenant = os.Expand(nec.Config.Kubernetes.Tenant, mappingFunc)
 		}
 

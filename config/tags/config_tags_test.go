@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
 
 func TestAppend(t *testing.T) {
@@ -55,7 +57,7 @@ func TestExpandWithDefault(t *testing.T) {
 		"tag3": "${THIS_DOES_NOT_EXIST}",
 	}
 
-	tags = tags.ExpandTokens(true, nil)
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{UseOSEnv: true})
 
 	assertTagValue(t, tags, "tag1", envvar1)
 	assertTagValue(t, tags, "tag2", "default value")
@@ -83,7 +85,7 @@ func TestExpandEnvVars(t *testing.T) {
 		"tag8": "$$literal",
 	}
 
-	tags = tags.ExpandTokens(true, nil)
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{UseOSEnv: true})
 
 	assertTagValue(t, tags, "tag0", "tagvalue 0 with no tokens!")
 	assertTagValue(t, tags, "tag1", envvar1)
@@ -99,15 +101,17 @@ func TestExpandEnvVars(t *testing.T) {
 func TestAdditionalValues(t *testing.T) {
 
 	tags := Tags{"tag1": "$not_a_env_var"}
-	tags = tags.ExpandTokens(false, map[string]string{"not_a_env_var": "some value"})
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{Env: map[string]string{"not_a_env_var": "some value"}})
 	assertTagValue(t, tags, "tag1", "some value")
 
 	tags = Tags{"tag1": "the sum of $one plus $two is ${three}"}
-	tags = tags.ExpandTokens(false, map[string]string{
-		"one":    "1",
-		"two":    "2",
-		"three":  "3",
-		"unused": "?",
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{
+		Env: map[string]string{
+			"one":    "1",
+			"two":    "2",
+			"three":  "3",
+			"unused": "?",
+		},
 	})
 	assertTagValue(t, tags, "tag1", "the sum of 1 plus 2 is 3")
 }
@@ -115,9 +119,11 @@ func TestAdditionalValues(t *testing.T) {
 func TestSpecialCharsInNames(t *testing.T) {
 
 	tags := Tags{"tag1": "pod name is ${POD:Name} p|a = ${p|a}"}
-	tags = tags.ExpandTokens(false, map[string]string{
-		"POD:Name": "foo",
-		"p|a":      "bar",
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{
+		Env: map[string]string{
+			"POD:Name": "foo",
+			"p|a":      "bar",
+		},
 	})
 	assertTagValue(t, tags, "tag1", "pod name is foo p|a = bar")
 }
@@ -128,19 +134,24 @@ func TestOverrideEnvVar(t *testing.T) {
 	os.Setenv("TEST_FIRST_ENVVAR", envvar1)
 
 	tags := Tags{"tag1": "$TEST_FIRST_ENVVAR"}
-	tags = tags.ExpandTokens(true, nil)
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{UseOSEnv: true})
 	assertTagValue(t, tags, "tag1", envvar1)
 
 	tags = Tags{"tag1": "$TEST_FIRST_ENVVAR"}
-	tags = tags.ExpandTokens(false, nil)
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{})
 	assertTagValue(t, tags, "tag1", "")
 
 	tags = Tags{"tag1": "$TEST_FIRST_ENVVAR"}
-	tags = tags.ExpandTokens(true, map[string]string{"TEST_FIRST_ENVVAR": "override value"})
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{
+		UseOSEnv: true,
+		Env:      map[string]string{"TEST_FIRST_ENVVAR": "override value"},
+	})
 	assertTagValue(t, tags, "tag1", "override value")
 
 	tags = Tags{"tag1": "$TEST_FIRST_ENVVAR"}
-	tags = tags.ExpandTokens(false, map[string]string{"TEST_FIRST_ENVVAR": "override value"})
+	tags = tags.ExpandTokens(expand.MappingFuncConfig{
+		Env: map[string]string{"TEST_FIRST_ENVVAR": "override value"},
+	})
 	assertTagValue(t, tags, "tag1", "override value")
 }
 

@@ -18,8 +18,11 @@
 package manager
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -90,10 +93,6 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 	// if there was an old ticker still running for this collector, stop it
 	mcm.StopCollecting(id)
 
-	// lock access to the Tickers array
-	mcm.TickersLock.Lock()
-	defer mcm.TickersLock.Unlock()
-
 	// determine the collection interval
 	var collectionInterval, minimumInterval time.Duration
 	var parseErr error
@@ -123,45 +122,182 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 
 	// log some information about the new collector
 	log.Infof("START collecting metrics from [%v] every [%v]", id, collectionInterval)
-	status.StatusReport.AddLogMessage(fmt.Sprintf("START collection: %v", id))
+	status.StatusReport.AddLogMessage(fmt.Sprintf("START collection: %v (interval=%v)", id, collectionInterval))
 	status.StatusReport.SetEndpoint(id, "STARTING")
 
-	// now periodically collect the metrics
+	// lock access to the Tickers array
+	mcm.TickersLock.Lock()
+	defer mcm.TickersLock.Unlock()
+
+	// now periodically collect the metrics within a go routine
 	ticker := time.NewTicker(collectionInterval)
 	mcm.Tickers[id] = ticker
 	go func() {
-
 		// we need these to expand tokens in the IDs
-		mappingFunc := expand.MappingFunc(false, theCollector.GetAdditionalEnvironment())
-		mappingFuncWithEnv := expand.MappingFunc(true, theCollector.GetAdditionalEnvironment())
+		mappingFunc := expand.MappingFunc(expand.MappingFuncConfig{
+			Env:                   theCollector.GetAdditionalEnvironment(),
+			UseOSEnv:              false,
+			DoNotExpandIfNotFound: true,
+		})
+		mappingFuncWithOsEnv := expand.MappingFunc(expand.MappingFuncConfig{
+			Env:      theCollector.GetAdditionalEnvironment(),
+			UseOSEnv: true,
+		})
 
-		// declare the metric definitions - creating new ones and updating existing ones
-		metricDetails, err := theCollector.CollectMetricDetails()
-		if err != nil {
-			metricDetails = make([]collector.MetricDetails, 0)
-			msg := fmt.Sprintf("Failed to obtain metric details - metric definitions may be incomplete. err=%v", err)
-			log.Warning(msg)
-			status.StatusReport.SetEndpoint(id, msg)
+		// cache that tracks what metric definitions we already created - key is full metric ID (prefixed and expanded)
+		metricDefinitionsDeclared := make(map[string]collector.MonitoredMetric, 0)
+
+		// Cache the endpoint metrics to be collected in a map keyed on name for quick lookups.
+		// This cache will be empty if the endpoint was told to collect all metrics.
+		monitoredMetricsByNameMap := make(map[string]collector.MonitoredMetric, len(theCollector.GetEndpoint().Metrics))
+		for _, mm := range theCollector.GetEndpoint().Metrics {
+			monitoredMetricsByNameMap[mm.Name] = mm
 		}
-		mcm.declareMetricDefinitions(metricDetails, theCollector.GetEndpoint(), theCollector.GetAdditionalEnvironment())
 
-		// now periodically collect the metric data
+		// for each collection interval, perform endpoint metric collection (this also creates/updates metric definitions as needed)
 		for _ = range ticker.C {
 			timer := stopwatch.NewStopwatch()
-			metrics, err := theCollector.CollectMetrics()
+			collectedMetrics, err := theCollector.CollectMetrics()
 			timer.MarkTime()
 			if err != nil {
 				msg := fmt.Sprintf("Failed to collect metrics from [%v] at [%v]. err=%v", id, time.Now().Format(time.RFC1123Z), err)
 				log.Warning(msg)
 				status.StatusReport.SetEndpoint(id, msg)
 			} else {
-				for i, m := range metrics {
-					metrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(m.ID, mappingFunc)
-				}
-				mcm.metricsChan <- metrics
+				// counts the number of metrics this current collection loop has collected so far
+				totalNumberOfMetricsCollected := 0
 
-				agentmetrics.Metrics.DataPointsCollected.Add(float64(len(metrics)))
-				status.StatusReport.SetEndpoint(id, fmt.Sprintf("OK. Last collection at [%v] gathered [%v] metrics in [%v]", time.Now().Format(time.RFC1123Z), len(metrics), timer))
+				// if any metric definitions need to be created, they will be noted here - key is full and expanded metric ID
+				metricDefinitionsNeeded := make(map[string]collector.MonitoredMetric, 0)
+
+				for i, collectedMetric := range collectedMetrics {
+					// If the endpoint has a list of metrics, make sure we only collect what we were told to collect.
+					// If the endpoint has no metrics listed, it means we are to collect all of them.
+					// Remember the collected metric's ID is really the metric name.
+					var monitoredMetric collector.MonitoredMetric
+					if len(monitoredMetricsByNameMap) > 0 {
+						var ok bool
+						monitoredMetric, ok = monitoredMetricsByNameMap[collectedMetric.ID] // remember, the collector returned metric IDs which are our metric names
+						if !ok {
+							collectedMetrics[i].ID = "" // unknown metric that will need to be removed
+							log.Warningf("Metric [%v] was collected but wasn't expected from endpoint [%v]", collectedMetric.ID, id)
+							continue
+						}
+					} else {
+						// endpoint wasn't given any monitoredMetric data so just create one based on the collected metric data.
+						monitoredMetric = collector.MonitoredMetric{
+							ID:   collectedMetric.ID,
+							Name: collectedMetric.ID,
+							Type: collectedMetric.Type,
+						}
+					}
+
+					// we want to prefix the metric ID and replace the ${x} tokens but leave unmapped ${x} untouched so we know if we need to split the metric
+					collectedMetrics[i].ID = os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithOsEnv) + os.Expand(monitoredMetric.ID, mappingFunc)
+
+					// To support endpoints that report different time series based on labels (e.g. Prometheus)
+					// metric IDs can be declared with ${label} tokens. This means metrics with the same name
+					// but have labels can really represent different metric IDs. We need to "split" these metrics
+					// up and make sure we create metric definitions for each of these metric IDs.
+					// For example, an endpoint can declare a metric whose name is "request_time" with these datapoints collected:
+					//   request_time{method="GET"} (has one label where key=method and value=GET)
+					//   request_time{method="POST"} (has one label where key=method and value=POST)
+					// They have the same metric name "request_time" but the endpoint can declare this metric with an ID of
+					// "request_time_${method}". In that case, these datapoints result in 2 metric definitions with 2 IDs.
+					// Note that if a metric has an ID that does not define ${label} tokens explicitly, but that metric
+					// has data points with tags, then those metrics will be split up by default. The ID will
+					// have a default format with the sorted list of tags appended to the end.
+
+					if !strings.Contains(collectedMetrics[i].ID, "${") {
+						// look at each data point and extract each label name. Use a map to avoid duplicates.
+						keysMap := make(map[string]bool, 0)
+						for _, datapt := range collectedMetric.Data {
+							for k, _ := range datapt.Tags {
+								keysMap[k] = true
+							}
+						}
+						if len(keysMap) > 0 {
+							// put the keys in an array and sort the array - we want the tags to be in order
+							keys := make([]string, len(keysMap))
+							keyIndex := 0
+							for k, _ := range keysMap {
+								keys[keyIndex] = k
+								keyIndex++
+							}
+							sort.Strings(keys)
+							var keysString bytes.Buffer
+							comma := ""
+							for _, k := range keys {
+								keysString.WriteString(fmt.Sprintf("%v%v=${%v}", comma, k, k))
+								comma = ","
+							}
+							collectedMetrics[i].ID = fmt.Sprintf("%v{%v}", collectedMetrics[i].ID, keysString.String())
+							log.Tracef("Metric [%v] to be split into separate metrics using ID [%v] for endpoint [%v]", monitoredMetric.Name, collectedMetrics[i].ID, id)
+						}
+					}
+
+					if strings.Contains(collectedMetrics[i].ID, "${") {
+						splitMetrics := make([]hmetrics.MetricHeader, len(collectedMetric.Data))
+						for j, datapt := range collectedMetric.Data {
+							splitMetrics[j] = hmetrics.MetricHeader{
+								Tenant: collectedMetric.Tenant,
+								Type:   collectedMetric.Type,
+								Data:   []hmetrics.Datapoint{datapt},
+								ID: os.Expand(collectedMetrics[i].ID, expand.MappingFunc(expand.MappingFuncConfig{
+									UseOSEnv: false,
+									Env:      datapt.Tags,
+								})),
+							}
+
+							// if we need to create the metric definition, remember it
+							if _, ok := metricDefinitionsDeclared[splitMetrics[j].ID]; !ok {
+								metricDefinitionsNeeded[splitMetrics[j].ID] = monitoredMetric
+							}
+						}
+
+						log.Tracef("Split metric [%v] into [%v] separate metrics for endpoint [%v]", collectedMetrics[i].ID, len(splitMetrics), id)
+						collectedMetrics[i].ID = "" // this is a metric that will need to be removed - only the split-out metrics are needed
+
+						// send the metrics that were split out
+						mcm.metricsChan <- splitMetrics
+						totalNumberOfMetricsCollected += len(splitMetrics)
+					} else {
+						// if we need to create the metric definition, remember it
+						if _, ok := metricDefinitionsDeclared[collectedMetrics[i].ID]; !ok {
+							metricDefinitionsNeeded[collectedMetrics[i].ID] = monitoredMetric
+						}
+					}
+				}
+
+				// we may have unknown or split-up metrics - remove them
+				i := 0
+				for _, collectedMetric := range collectedMetrics {
+					if collectedMetric.ID != "" {
+						collectedMetrics[i] = collectedMetric
+						i++
+					}
+				}
+				collectedMetrics = collectedMetrics[:i]
+
+				// send the metrics (doesn't include the obsolete metrics or the metrics that were split out)
+				mcm.metricsChan <- collectedMetrics
+				totalNumberOfMetricsCollected += len(collectedMetrics)
+
+				// create the missing metric definitions
+				if len(metricDefinitionsNeeded) > 0 {
+					log.Tracef("Need to create/update [%v] metric definitions for endpoint [%v]", len(metricDefinitionsNeeded), id)
+					if err := mcm.createMetricDefinition(theCollector, metricDefinitionsNeeded); err == nil {
+						for k, v := range metricDefinitionsNeeded {
+							metricDefinitionsDeclared[k] = v
+						}
+					}
+				}
+
+				// record keeping to update the agent's own metrics and status report
+				agentmetrics.Metrics.DataPointsCollected.Add(float64(totalNumberOfMetricsCollected))
+				status.StatusReport.SetEndpoint(id,
+					fmt.Sprintf("OK. Last collection at [%v] gathered [%v] metrics in [%v]",
+						time.Now().Format(time.RFC1123Z), totalNumberOfMetricsCollected, timer))
 			}
 		}
 	}()
@@ -202,45 +338,84 @@ func (mcm *MetricsCollectorManager) StopCollectingAll() {
 	status.StatusReport.DeleteAllEndpoints()
 }
 
-func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []collector.MetricDetails, endpoint *collector.Endpoint, additionalEnv map[string]string) {
+func (mcm *MetricsCollectorManager) createMetricDefinition(theCollector collector.MetricsCollector,
+	metricDefsNeeded map[string]collector.MonitoredMetric) (err error) {
 
-	metricDefs := make([]hmetrics.MetricDefinition, len(endpoint.Metrics))
+	// short circuit if there is nothing to do
+	if len(metricDefsNeeded) == 0 {
+		return nil
+	}
 
-	for i, metric := range endpoint.Metrics {
+	endpoint := theCollector.GetEndpoint()
+	additionalEnv := theCollector.GetAdditionalEnvironment()
+
+	// get the metric names we need details for. (eliminate possible duplicates)
+	metricNamesSet := make(map[string]bool, len(metricDefsNeeded))
+	for _, v := range metricDefsNeeded {
+		metricNamesSet[v.Name] = true
+	}
+	metricNamesArrIndex := 0
+	metricNamesArr := make([]string, len(metricNamesSet))
+	for n, _ := range metricNamesSet {
+		metricNamesArr[metricNamesArrIndex] = n
+		metricNamesArrIndex++
+	}
+
+	// ask the collector for all details on all the named metrics we need
+	log.Tracef("Collecting [%v] metric details for endpoint [%v]", len(metricNamesArr), endpoint)
+	metricDetails, e := theCollector.CollectMetricDetails(metricNamesArr)
+	if e != nil {
+		metricDetails = make([]collector.MetricDetails, 0)
+		msg := fmt.Sprintf("Failed to obtain metric details - metric definitions may be incomplete. err=%v", err)
+		log.Warning(msg)
+		status.StatusReport.SetEndpoint(theCollector.GetId(), msg)
+		// Keep going to create the defs, but we'll return this error so we'll try again later to update
+		// the defs with the full details when we can get them.
+		err = e
+	}
+
+	metricDefs := make([]hmetrics.MetricDefinition, len(metricDefsNeeded))
+	i := 0
+
+	for metricId, monitoredMetric := range metricDefsNeeded {
+
+		var metricDetail collector.MetricDetails
+
+		// find the metric details for the metric we are currently working on
+		for _, m := range metricDetails {
+			if monitoredMetric.Name == m.Name {
+				metricDetail = m
+			}
+		}
 
 		// NOTE: If the metric type was declared, we use it. Otherwise, we look at
 		// metric details to see if there is a type available and if so, use it.
 		// This is to support the fact that Prometheus indicates the type in the metric endpoint
 		// so there is no need to ask the user to define it in a configuration file.
 		// The same is true with metric description as well.
-		metricType := metric.Type
-		metricDescription := metric.Description
-		for _, metricDetail := range metricDetails {
-			if metricDetail.ID == metric.ID {
-				if metricType == "" {
-					metricType = metricDetail.MetricType
-				}
-				if metricDescription == "" {
-					metricDescription = metricDetail.Description
-				}
-				break
+		metricType := monitoredMetric.Type
+		metricDescription := monitoredMetric.Description
+		if metricType == "" {
+			metricType = metricDetail.MetricType
+			if metricType == "" {
+				metricType = hmetrics.Gauge
+				log.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", monitoredMetric.Name, endpoint, metricType)
 			}
 		}
-		if metricType == "" {
-			metricType = hmetrics.Gauge
-			log.Warningf("Metric definition [%v] type cannot be determined for endpoint [%v]. Will assume its type is [%v] ", metric.ID, endpoint.String(), metricType)
+		if metricDescription == "" {
+			metricDescription = metricDetail.Description
 		}
 
 		// Now add the fixed tag of "units".
-		units, err := collector.GetMetricUnits(metric.Units)
+		units, err := collector.GetMetricUnits(monitoredMetric.Units)
 		if err != nil {
-			log.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to [%v]. err=%v", metric.ID, endpoint.String(), units.Symbol, err)
+			log.Warningf("Units for metric definition [%v] for endpoint [%v] is invalid. Assigning unit value to [%v]. err=%v", monitoredMetric.Name, endpoint, units.Symbol, err)
 		}
 
 		// Define additional envvars with pod specific data for use in replacing ${env} tokens in tags.
 		env := map[string]string{
-			"METRIC:name":        metric.Name,
-			"METRIC:id":          metric.ID,
+			"METRIC:name":        monitoredMetric.Name,
+			"METRIC:id":          metricId,
 			"METRIC:units":       units.Symbol,
 			"METRIC:description": metricDescription,
 		}
@@ -249,21 +424,18 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 			env[key] = value
 		}
 
-		// For each metric in the endpoint, create a metric def for it.
 		// Notice: global tags override metric tags which override endpoint tags.
 		// Do NOT allow pods to use agent environment variables since agent env vars may contain
 		// sensitive data (such as passwords). Only the global agent config can define tags
 		// with env var tokens.
-		globalTags := mcm.Config.Collector.Tags.ExpandTokens(true, env)
-		endpointTags := endpoint.Tags.ExpandTokens(false, env)
-
-		// we need these to expand tokens in the IDs
-		mappingFunc := expand.MappingFunc(false, env)
-		mappingFuncWithEnv := expand.MappingFunc(true, env)
+		noOsEnv := expand.MappingFuncConfig{Env: env, UseOSEnv: false}
+		withOsEnv := expand.MappingFuncConfig{Env: env, UseOSEnv: true}
+		globalTags := mcm.Config.Collector.Tags.ExpandTokens(withOsEnv)
+		endpointTags := endpoint.Tags.ExpandTokens(noOsEnv)
 
 		// The metric tags will consist of the custom tags as well as the fixed tags.
 		// First start with the custom tags...
-		metricTags := metric.Tags.ExpandTokens(false, env)
+		metricTags := monitoredMetric.Tags.ExpandTokens(noOsEnv)
 
 		// Now add the fixed tag of "description". This is optional.
 		if metricDescription != "" {
@@ -281,15 +453,17 @@ func (mcm *MetricsCollectorManager) declareMetricDefinitions(metricDetails []col
 		allMetricTags.AppendTags(metricTags)   // metric tags which are overriden by
 		allMetricTags.AppendTags(globalTags)   // global tags
 
+		// we can now create the metric definition object
 		metricDefs[i] = hmetrics.MetricDefinition{
 			Tenant: endpoint.Tenant,
 			Type:   metricType,
-			ID:     os.Expand(mcm.Config.Collector.Metric_ID_Prefix, mappingFuncWithEnv) + os.Expand(metric.ID, mappingFunc),
+			ID:     metricId,
 			Tags:   map[string]string(allMetricTags),
 		}
+		i++
 	}
 
-	log.Tracef("Metric definitions being declared for endpoint: %v", endpoint.String())
-
+	log.Tracef("[%v] metric definitions being declared for endpoint [%v]", len(metricDefs), endpoint)
 	mcm.metricDefsChan <- metricDefs
+	return
 }
