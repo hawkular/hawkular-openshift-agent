@@ -271,3 +271,22 @@ endpoints:
 		t.Fatalf("Config map entry wasn't saved correctly")
 	}
 }
+
+func TestConfigMapNoPath(t *testing.T) {
+	yaml1 := `
+endpoints:
+- type: jolokia
+  protocol: https
+  port: 8888
+  collection_interval: 12345s
+  metrics: []
+`
+	cme1, err := UnmarshalConfigMapEntry(yaml1)
+	if err != nil {
+		t.Fatalf("Could not unmarshal ConfigMapEntry yaml. err=%v", err)
+	}
+	if _, err := cme1.Endpoints[0].GetUrl("hostname"); err != nil {
+		t.Fatalf("Could not get url. err=%v", err)
+	}
+
+}

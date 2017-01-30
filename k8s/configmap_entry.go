@@ -79,7 +79,7 @@ func (e K8SEndpoint) GetUrl(host string) (u *url.URL, err error) {
 		return nil, fmt.Errorf("Endpoint not assigned an IP address yet")
 	}
 	leadingSlash := "/"
-	if e.Path[0] == '/' {
+	if len(e.Path) > 0 && e.Path[0] == '/' {
 		leadingSlash = ""
 	}
 	u, err = url.Parse(fmt.Sprintf("%v://%v:%v%v%v", e.Protocol, host, e.Port, leadingSlash, e.Path))
