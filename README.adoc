@@ -319,6 +319,8 @@ A full Prometheus endpoint configuration can look like this:
     #password: your-pass
   collection_interval: 1m
   metrics:
+  - name: jvm_memory_pool_bytes_committed
+    id: jvm_memory_pool_bytes_committed_${pool}
   - name: go_memstats_last_gc_time_seconds
     id: gc_time_secs
   - name: go_memstats_frees_total
@@ -338,6 +340,36 @@ identity:
 ----
 * The credentials are optional. If the Prometheus endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
+
+---
+Prometheus supports the ability of https://prometheus.io/docs/practices/naming/#labels[labels] such as the below:
+----
+# HELP jvm_memory_pool_bytes_committed Limit (bytes) of a given JVM memory pool.
+# TYPE jvm_memory_pool_bytes_committed gauge
+jvm_memory_pool_bytes_committed{pool="Code Cache",} 2.7787264E7
+jvm_memory_pool_bytes_committed{pool="Metaspace",} 5.697536E7
+jvm_memory_pool_bytes_committed{pool="Compressed Class Space",} 7471104.0
+jvm_memory_pool_bytes_committed{pool="PS Eden Space",} 2.3068672E7
+jvm_memory_pool_bytes_committed{pool="PS Survivor Space",} 524288.0
+jvm_memory_pool_bytes_committed{pool="PS Old Gen",} 4.8758784E7
+----
+
+For Hawkular-Metrics to understand that each metric with a unique label is a unique metric, you can use ${label-key} replacement as per the below:
+----
+metrics:
+- name: jvm_memory_pool_bytes_committed
+  id: jvm_memory_pool_bytes_committed_${pool}
+----
+
+This would create the following metrics in Hawkular:
+----
+jvm_memory_pool_bytes_committed_Code Cache = 2.7787264E7
+jvm_memory_pool_bytes_committed_Metaspace = 5.697536E7
+jvm_memory_pool_bytes_committed_Compressed Class Space = 7471104.0
+jvm_memory_pool_bytes_committed_PS Eden Space = 2.3068672E7
+jvm_memory_pool_bytes_committed_PS Survivor Space = 524288.0
+jvm_memory_pool_bytes_committed_PS Old Gen = 4.8758784E7
+----
 
 == Jolokia Endpoints
 
