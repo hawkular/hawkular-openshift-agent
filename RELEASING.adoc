@@ -33,6 +33,10 @@ $ git push --tags
 NOTE: Once the tag has been pushed, Travis will immediately run another build but this time will tag the docker images with the same version string as the git tag name.
 In the example above, the docker images pushed to DockerHub will not be tagged with "latest" but will instead be tagged with "1.0.0.Final."
 
+== Prepare For The Next Release
+
+Now that the release is done, you will want to bump up the version with a new version so any future master ("latest") builds will be given the new future version. Preferrably you should use a version with "SNAPSHOT" in it to indicate it is not a release but instead a work in progress (e.g. `1.0.1.Final-SNAPSHOT`). So simply repeat step (1) with the snapshot version string.
+
 == Finished Product
 
 Once the above steps have been performed, the release is complete.
