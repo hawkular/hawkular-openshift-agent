@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ import (
 )
 
 type MetricDetails struct {
-	ID          string
+	Name        string
 	MetricType  hmetrics.MetricType
 	Description string
 }
@@ -41,8 +41,18 @@ type MetricsCollector interface {
 	GetAdditionalEnvironment() map[string]string
 
 	// CollectMetrics connects to the remote endpoint and collects the metrics it finds there.
+	// The returned metric headers' IDs should be set to the metric NAMEs as found in the endpoint metrics config;
+	// the collector manager will determine the actual ID to use.
+	// If a particular metric collected within a single MetricHeader has multiple datapoints that should actually
+	// be stored as separate time series data (that is, as separate metrics) then attach tags to those datapoints
+	// where each unique combination of tags represents a single time series metric. This supports, for example,
+	// Prometheus endpoints where a metric family (with a single metric name) can actually represent multiple
+	// time series metrics through tags (what Prometheus calls labels). But this support isn't limited to
+	// Prometheus endpoints. If any collector wants to represent multiple time series within a single collected
+	// metric, simply tag the datapoints with unique combinations of tags and they will be split out into
+	// multiple metric definitions and data.
 	CollectMetrics() ([]hmetrics.MetricHeader, error)
 
-	// CollectMetricDetails connects to the remote endpoint and collects details about the metrics it finds there.
-	CollectMetricDetails() ([]MetricDetails, error)
+	// CollectMetricDetails connects to the remote endpoint and collects details about the given metrics.
+	CollectMetricDetails(metricNames []string) ([]MetricDetails, error)
 }

@@ -22,8 +22,29 @@ import (
 	"testing"
 )
 
+func TestMappingNoExpand(t *testing.T) {
+	theFunc := MappingFunc(MappingFuncConfig{DoNotExpandIfNotFound: true})
+
+	var s string
+
+	s = os.Expand("AAA${nope}BBB", theFunc)
+	if s != "AAA${nope}BBB" {
+		t.Fatalf("Should not have expanded since it did not match: %v", s)
+	}
+
+	s = os.Expand("AAA $nope BBB", theFunc)
+	if s != "AAA ${nope} BBB" {
+		t.Fatalf("Should not have expanded since it did not match but should use the ${x} notation: %v", s)
+	}
+
+	s = os.Expand("${nope=something}", theFunc)
+	if s != "something" {
+		t.Fatalf("Should have used the default value because it was explicitly specified: %v", s)
+	}
+}
+
 func TestMappingFunc(t *testing.T) {
-	theFunc := MappingFunc(true, nil)
+	theFunc := MappingFunc(MappingFuncConfig{UseOSEnv: true})
 
 	envvar1 := "first envvar"
 	defer os.Unsetenv("TEST_FIRST_ENVVAR")
@@ -50,17 +71,20 @@ func TestMappingFunc(t *testing.T) {
 func TestMappingFuncAdditionalValues(t *testing.T) {
 	var s string
 
-	theFunc := MappingFunc(true, map[string]string{"not_a_env_var": "some value"})
+	theFunc := MappingFunc(MappingFuncConfig{UseOSEnv: true, Env: map[string]string{"not_a_env_var": "some value"}})
 	s = os.Expand("$not_a_env_var", theFunc)
 	if s != "some value" {
 		t.Fatalf("Bad expansion: %v", s)
 	}
 
-	theFunc = MappingFunc(true, map[string]string{
-		"one":    "1",
-		"two":    "2",
-		"three":  "3",
-		"unused": "?",
+	theFunc = MappingFunc(MappingFuncConfig{
+		UseOSEnv: true,
+		Env: map[string]string{
+			"one":    "1",
+			"two":    "2",
+			"three":  "3",
+			"unused": "?",
+		},
 	})
 	s = os.Expand("the sum of $one plus $two is ${three}", theFunc)
 	if s != "the sum of 1 plus 2 is 3" {

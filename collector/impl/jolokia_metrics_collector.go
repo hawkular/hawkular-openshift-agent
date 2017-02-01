@@ -124,7 +124,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 			metric := hmetrics.MetricHeader{
 				Type:   jc.Endpoint.Metrics[i].Type,
-				ID:     jc.Endpoint.Metrics[i].ID,
+				ID:     jc.Endpoint.Metrics[i].Name, // the caller (collector manager) will determine the real ID
 				Tenant: jc.Endpoint.Tenant,
 				Data:   data,
 			}
@@ -153,7 +153,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 }
 
 // CollectMetricDetails implements a method from MetricsCollector interface
-func (jc *JolokiaMetricsCollector) CollectMetricDetails() ([]collector.MetricDetails, error) {
+func (jc *JolokiaMetricsCollector) CollectMetricDetails(metricNames []string) ([]collector.MetricDetails, error) {
 	// TODO: can we get information like metric type and description from JMX?
 	return make([]collector.MetricDetails, 0), nil
 }
