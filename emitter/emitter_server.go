@@ -37,7 +37,14 @@ func StartEmitter(conf *config.Config) {
 	if conf.Emitter.Metrics_Enabled == "true" {
 		enabled = true
 		metrics.RegisterMetrics()
-		http.Handle("/metrics", promhttp.Handler())
+		metricsHandler := MetricsHandler{
+			credentials: security.Credentials{
+				Username: conf.Emitter.Metrics_Credentials.Username,
+				Password: conf.Emitter.Metrics_Credentials.Password,
+			},
+			prometheusHandler: promhttp.Handler(),
+		}
+		http.HandleFunc("/metrics", metricsHandler.handler)
 		log.Info("Agent emitter will emit metrics")
 	} else {
 		log.Info("Agent emitter will NOT emit metrics")
@@ -46,7 +53,7 @@ func StartEmitter(conf *config.Config) {
 	if conf.Emitter.Status_Enabled == "true" {
 		enabled = true
 		statusHandler := StatusHandler{
-			Credentials: security.Credentials{
+			credentials: security.Credentials{
 				Username: conf.Emitter.Status_Credentials.Username,
 				Password: conf.Emitter.Status_Credentials.Password,
 			},
@@ -97,18 +104,53 @@ func StartEmitter(conf *config.Config) {
 	}()
 }
 
-type StatusHandler struct {
-	Credentials security.Credentials
+type MetricsHandler struct {
+	credentials       security.Credentials
+	prometheusHandler http.Handler
 }
 
-func (s *StatusHandler) handler(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) handler(w http.ResponseWriter, r *http.Request) {
 	statusCode := http.StatusOK
 
-	if s.Credentials.Username != "" || s.Credentials.Password != "" {
+	if h.credentials.Username != "" || h.credentials.Password != "" {
 		u, p, ok := r.BasicAuth()
 		if !ok {
 			statusCode = http.StatusUnauthorized
-		} else if s.Credentials.Username != u || s.Credentials.Password != p {
+		} else if h.credentials.Username != u || h.credentials.Password != p {
+			statusCode = http.StatusForbidden
+		}
+	}
+
+	switch statusCode {
+	case http.StatusOK:
+		{
+			h.prometheusHandler.ServeHTTP(w, r)
+		}
+	case http.StatusUnauthorized:
+		{
+			w.Header().Set("WWW-Authenticate", "Basic realm=\"Hawkular OpenShift Agent\"")
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
+	default:
+		{
+			http.Error(w, http.StatusText(statusCode), statusCode)
+			log.Errorf("Cannot send metrics response to unauthorized user. %v", statusCode)
+		}
+	}
+}
+
+type StatusHandler struct {
+	credentials security.Credentials
+}
+
+func (h *StatusHandler) handler(w http.ResponseWriter, r *http.Request) {
+	statusCode := http.StatusOK
+
+	if h.credentials.Username != "" || h.credentials.Password != "" {
+		u, p, ok := r.BasicAuth()
+		if !ok {
+			statusCode = http.StatusUnauthorized
+		} else if h.credentials.Username != u || h.credentials.Password != p {
 			statusCode = http.StatusForbidden
 		}
 	} else {

@@ -611,6 +611,26 @@ emitter:
 ----
 |If true, a simple health endpoint is emitted at /health endpoint. This is useful for health probes to check the health of the agent.
 
+|EMITTER_METRICS_CREDENTIALS_USERNAME
+|
+[source,yaml]
+----
+emitter:
+  metrics_credentials:
+    username: VALUE
+----
+|If the metrics emitter is enabled, you can set this username (along with the password) to force users to authenticate themselves in order to see the metrics information.
+
+|EMITTER_METRICS_CREDENTIALS_PASSWORD
+|
+[source,yaml]
+----
+emitter:
+  metrics_credentials:
+    password: VALUE
+----
+|If the metrics emitter is enabled, you can set this password (along with the username) to force users to authenticate themselves in order to see the metrics information.
+
 |EMITTER_STATUS_LOG_SIZE
 |
 [source,yaml]
