@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/hawkular/hawkular-openshift-agent/emitter/metrics"
 )
 
 // Name is the name of the agent.
@@ -76,6 +78,9 @@ func (s *StatusReportType) SetPod(podId string, endpointIds []string) {
 	} else {
 		s.Pods[podId] = endpointIds
 	}
+
+	// keep our metric up to date to track how many pods are being monitored
+	metrics.Metrics.MonitoredPods.Set(float64(len(s.Pods)))
 }
 
 // GetEndpoint will get the status message assigned to the given endpoint ID.
@@ -95,6 +100,9 @@ func (s *StatusReportType) SetEndpoint(endpointId string, msg string) {
 	} else {
 		s.Endpoints[endpointId] = msg
 	}
+
+	// keep our metric up to date to track how many endpoints are being monitored
+	metrics.Metrics.MonitoredEndpoints.Set(float64(len(s.Endpoints)))
 }
 
 func (s *StatusReportType) DeleteAllEndpoints() {
@@ -103,6 +111,9 @@ func (s *StatusReportType) DeleteAllEndpoints() {
 	for id := range s.Endpoints {
 		delete(s.Endpoints, id)
 	}
+
+	// set our metric to show we are not monitoring any more endpoints
+	metrics.Metrics.MonitoredEndpoints.Set(float64(0))
 }
 
 // AddLogMessage pushes the given message to the rolling log.

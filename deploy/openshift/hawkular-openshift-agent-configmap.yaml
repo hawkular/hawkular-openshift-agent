@@ -40,26 +40,3 @@ data:
       port: 8080
       path: /metrics
       collection_interval: 30s
-      metrics:
-      - name: hawkular_openshift_agent_metric_data_points_collected_total
-      - name: process_cpu_seconds_total
-      - name: go_goroutines
-      - name: go_memstats_alloc_bytes
-      - name: go_memstats_gc_sys_bytes
-      - name: go_memstats_heap_alloc_bytes
-      - name: go_memstats_heap_idle_bytes
-      - name: go_memstats_heap_inuse_bytes
-      - name: go_memstats_heap_objects
-      - name: go_memstats_heap_released_bytes
-      - name: go_memstats_heap_sys_bytes
-      - name: go_memstats_last_gc_time_seconds
-      - name: go_memstats_next_gc_bytes
-      - name: go_memstats_other_sys_bytes
-      - name: go_memstats_stack_inuse_bytes
-      - name: go_memstats_stack_sys_bytes
-      - name: go_memstats_sys_bytes
-      - name: process_max_fds
-      - name: process_open_fds
-      - name: process_resident_memory_bytes
-      - name: process_start_time_seconds
-      - name: process_virtual_memory_bytes
