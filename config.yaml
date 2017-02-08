@@ -35,6 +35,8 @@ endpoints:
     collection_interval: 1m
     metrics:
     - name: hawkular_openshift_agent_metric_data_points_collected_total
+    - name: hawkular_openshift_agent_monitored_pods
+    - name: hawkular_openshift_agent_monitored_endpoints
     - name: go_goroutines
     - name: process_resident_memory_bytes
     - name: process_virtual_memory_bytes
