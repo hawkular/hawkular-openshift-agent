@@ -51,13 +51,15 @@ const (
 	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
 	ENV_K8S_TENANT        = "K8S_TENANT"
 
-	ENV_EMITTER_ADDRESS                     = "EMITTER_ADDRESS"
-	ENV_EMITTER_METRICS_ENABLED             = "EMITTER_METRICS_ENABLED"
-	ENV_EMITTER_STATUS_ENABLED              = "EMITTER_STATUS_ENABLED"
-	ENV_EMITTER_HEALTH_ENABLED              = "EMITTER_HEALTH_ENABLED"
-	ENV_EMITTER_STATUS_LOG_SIZE             = "EMITTER_STATUS_LOG_SIZE"
-	ENV_EMITTER_STATUS_CREDENTIALS_USERNAME = "EMITTER_STATUS_CREDENTIALS_USERNAME"
-	ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD = "EMITTER_STATUS_CREDENTIALS_PASSWORD"
+	ENV_EMITTER_ADDRESS                      = "EMITTER_ADDRESS"
+	ENV_EMITTER_METRICS_ENABLED              = "EMITTER_METRICS_ENABLED"
+	ENV_EMITTER_STATUS_ENABLED               = "EMITTER_STATUS_ENABLED"
+	ENV_EMITTER_HEALTH_ENABLED               = "EMITTER_HEALTH_ENABLED"
+	ENV_EMITTER_METRICS_CREDENTIALS_USERNAME = "EMITTER_METRICS_CREDENTIALS_USERNAME"
+	ENV_EMITTER_METRICS_CREDENTIALS_PASSWORD = "EMITTER_METRICS_CREDENTIALS_PASSWORD"
+	ENV_EMITTER_STATUS_LOG_SIZE              = "EMITTER_STATUS_LOG_SIZE"
+	ENV_EMITTER_STATUS_CREDENTIALS_USERNAME  = "EMITTER_STATUS_CREDENTIALS_USERNAME"
+	ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD  = "EMITTER_STATUS_CREDENTIALS_PASSWORD"
 
 	ENV_COLLECTOR_MINIMUM_COLL_INTERVAL = "COLLECTOR_MINIMUM_COLLECTION_INTERVAL"
 	ENV_COLLECTOR_DEFAULT_COLL_INTERVAL = "COLLECTOR_DEFAULT_COLLECTION_INTERVAL"
@@ -112,12 +114,13 @@ type Kubernetes struct {
 // emitting the agent's own metric data, a status report, and/or the health probe.
 // USED FOR YAML
 type Emitter struct {
-	Metrics_Enabled    string               ",omitempty"
-	Status_Enabled     string               ",omitempty"
-	Health_Enabled     string               ",omitempty"
-	Address            string               ",omitempty"
-	Status_Log_Size    int                  ",omitempty"
-	Status_Credentials security.Credentials ",omitempty"
+	Metrics_Enabled     string               ",omitempty"
+	Status_Enabled      string               ",omitempty"
+	Health_Enabled      string               ",omitempty"
+	Address             string               ",omitempty"
+	Metrics_Credentials security.Credentials ",omitempty"
+	Status_Log_Size     int                  ",omitempty"
+	Status_Credentials  security.Credentials ",omitempty"
 }
 
 // Config defines the agent's full YAML configuration.
@@ -163,6 +166,10 @@ func NewConfig() (c *Config) {
 	c.Emitter.Status_Credentials = security.Credentials{
 		Username: getDefaultString(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME, ""),
 		Password: getDefaultString(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD, ""),
+	}
+	c.Emitter.Metrics_Credentials = security.Credentials{
+		Username: getDefaultString(ENV_EMITTER_METRICS_CREDENTIALS_USERNAME, ""),
+		Password: getDefaultString(ENV_EMITTER_METRICS_CREDENTIALS_PASSWORD, ""),
 	}
 
 	return

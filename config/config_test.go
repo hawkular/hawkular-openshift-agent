@@ -35,6 +35,8 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_EMITTER_METRICS_ENABLED, os.Getenv(ENV_EMITTER_METRICS_ENABLED))
 	defer os.Setenv(ENV_EMITTER_STATUS_ENABLED, os.Getenv(ENV_EMITTER_STATUS_ENABLED))
 	defer os.Setenv(ENV_EMITTER_HEALTH_ENABLED, os.Getenv(ENV_EMITTER_HEALTH_ENABLED))
+	defer os.Setenv(ENV_EMITTER_METRICS_CREDENTIALS_USERNAME, os.Getenv(ENV_EMITTER_METRICS_CREDENTIALS_USERNAME))
+	defer os.Setenv(ENV_EMITTER_METRICS_CREDENTIALS_PASSWORD, os.Getenv(ENV_EMITTER_METRICS_CREDENTIALS_PASSWORD))
 	defer os.Setenv(ENV_EMITTER_STATUS_LOG_SIZE, os.Getenv(ENV_EMITTER_STATUS_LOG_SIZE))
 	defer os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME, os.Getenv(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME))
 	defer os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD, os.Getenv(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD))
@@ -46,6 +48,8 @@ func TestEnvVar(t *testing.T) {
 	os.Setenv(ENV_EMITTER_METRICS_ENABLED, "false")
 	os.Setenv(ENV_EMITTER_STATUS_ENABLED, "true")
 	os.Setenv(ENV_EMITTER_HEALTH_ENABLED, "false")
+	os.Setenv(ENV_EMITTER_METRICS_CREDENTIALS_USERNAME, "m-user")
+	os.Setenv(ENV_EMITTER_METRICS_CREDENTIALS_PASSWORD, "m-pass")
 	os.Setenv(ENV_EMITTER_STATUS_LOG_SIZE, "123")
 	os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_USERNAME, "user")
 	os.Setenv(ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD, "pass")
@@ -75,6 +79,12 @@ func TestEnvVar(t *testing.T) {
 	}
 	if conf.Emitter.Health_Enabled != "false" {
 		t.Error("Emitter Health Enabled is wrong")
+	}
+	if conf.Emitter.Metrics_Credentials.Username != "m-user" {
+		t.Error("Emitter Status Username is wrong")
+	}
+	if conf.Emitter.Metrics_Credentials.Password != "m-pass" {
+		t.Error("Emitter Status Password is wrong")
 	}
 	if conf.Emitter.Status_Log_Size != 123 {
 		t.Error("Emitter Status Log Size is wrong")
@@ -164,6 +174,10 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Status_Enabled:  "false",
 			Health_Enabled:  "false",
 			Address:         ":12345",
+			Metrics_Credentials: security.Credentials{
+				Username: "m-username",
+				Password: "m-password",
+			},
 			Status_Credentials: security.Credentials{
 				Username: "foo-username",
 				Password: "foo-password",
@@ -248,11 +262,17 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Emitter.Address != ":12345" {
 		t.Error("Emitter Address is wrong")
 	}
+	if conf.Emitter.Metrics_Credentials.Username != "m-username" {
+		t.Error("Emitter Metrics Credentials Username is wrong")
+	}
+	if conf.Emitter.Metrics_Credentials.Password != "m-password" {
+		t.Error("Emitter Metrics Credentials Password is wrong")
+	}
 	if conf.Emitter.Status_Credentials.Username != "foo-username" {
-		t.Error("Emitter Credentials Username is wrong")
+		t.Error("Emitter Status Credentials Username is wrong")
 	}
 	if conf.Emitter.Status_Credentials.Password != "foo-password" {
-		t.Error("Emitter Credentials Password is wrong")
+		t.Error("Emitter Status Credentials Password is wrong")
 	}
 }
 
@@ -367,16 +387,21 @@ func TestLoadSave(t *testing.T) {
 	if conf.Emitter.Address != ":12345" {
 		t.Error("Emitter Address is wrong")
 	}
+	if conf.Emitter.Metrics_Credentials.Username != "" {
+		t.Error("Emitter Metrics Credentials Username is wrong")
+	}
+	if conf.Emitter.Metrics_Credentials.Password != "" {
+		t.Error("Emitter Metrics Credentials Password is wrong")
+	}
 	if conf.Emitter.Status_Log_Size != 1234 {
 		t.Error("Emitter Status Log Size is wrong")
 	}
 	if conf.Emitter.Status_Credentials.Username != "" {
-		t.Error("Emitter Credentials Username is wrong")
+		t.Error("Emitter Status Credentials Username is wrong")
 	}
 	if conf.Emitter.Status_Credentials.Password != "" {
-		t.Error("Emitter Credentials Password is wrong")
+		t.Error("Emitter Status Credentials Password is wrong")
 	}
-
 }
 
 func TestError(t *testing.T) {
