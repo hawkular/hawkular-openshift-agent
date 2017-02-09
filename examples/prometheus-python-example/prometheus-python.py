@@ -2,6 +2,7 @@
 from prometheus_client import start_http_server, Gauge, Counter
 import random
 import time
+import sys
 
 # Create some test metrics
 TEST_SLEEP_GAUGE = Gauge('test_last_sleep_duration', 'The duration of the last sleep in seconds')
@@ -16,15 +17,22 @@ def do_random_sleep():
 
 def eat():
     TEST_METHOD_COUNTER.labels('eat').inc()
-    food = ['Apple','Banana','Hamburger','Hotdog','Lobster','Steak','Pasta']
-    drink = ['Water','Lemonade','Beer','Wine','Soda','Coffee','Tea']
+    food = ['Apple','Banana','Hamburger']
+    drink = ['Water','Lemonade','Beer']
     pick_food = random.randint(0, len(food)-1)
     pick_drink = random.randint(0, len(drink)-1)
     TEST_MEAL_COUNTER.labels(food[pick_food], drink[pick_drink]).inc()
+    #print "Hawkular OpenShift Agent Prometheus Example: Eating " + food[pick_food] + " with " + drink[pick_drink]
 
 if __name__ == '__main__':
+    print "Hawkular OpenShift Agent Prometheus Example: Started..."
+    sys.stdout.flush()
+
     # Start up the server to expose the metrics.
     start_http_server(8181)
+    print "Hawkular OpenShift Agent Prometheus Example: Listening to port 8181..."
+    sys.stdout.flush()
+
     # Go to sleep and when I get up see if I want to eat (75% chance I'm hungry)
     while True:
         do_random_sleep()
