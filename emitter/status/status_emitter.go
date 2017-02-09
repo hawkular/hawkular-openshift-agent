@@ -19,31 +19,34 @@ package status
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/hawkular/hawkular-openshift-agent/emitter/metrics"
+	"github.com/hawkular/hawkular-openshift-agent/collector"
+	"github.com/hawkular/hawkular-openshift-agent/collector/tracker"
 )
 
 // Name is the name of the agent.
 // Version is the x.y.z version string of the agent.
 // Commit_Hash is the git commit hash of the source used to build the agent.
-// Pods is keyed on the pod identifier whose value is the endpoint IDs for the pod.
+// Metrics will be filled in from data within the metrics tracker - it will contain
+// all pods, their endpoints, and how many metrics from them are being collected.
 // Endpoints is keyed on an endpoint ID whose value is the last message related to the endpoint.
+// (endpoint IDs are always unique even across pods)
 // Log is a small rolling log of important messages.
 // Do not directly access StatusReport data fields; for thread safety, use the funcs.
 // USED FOR YAML
 type StatusReportType struct {
-	Name        string
-	Version     string
-	Commit_Hash string
-	Pods        map[string][]string
-	Endpoints   map[string]string
-	Log         []string
-	lock        sync.RWMutex
+	Name           string
+	Version        string
+	Commit_Hash    string
+	Metrics        map[string]map[string]int
+	Endpoints      map[string]string
+	Log            []string
+	lock           sync.RWMutex
+	metricsTracker *tracker.MetricsTracker
 }
 
 var StatusReport StatusReportType
@@ -53,67 +56,46 @@ func InitStatusReport(name string, version string, commitHash string, logSize in
 		Name:        name,
 		Version:     version,
 		Commit_Hash: commitHash,
-		Pods:        make(map[string][]string, 0),
 		Endpoints:   make(map[string]string, 0),
 		Log:         make([]string, logSize),
 		lock:        sync.RWMutex{},
 	}
 }
 
-// GetPod will get the set of endpoints assigned to the given pod ID.
-func (s *StatusReportType) GetPod(podId string) (endpointIds []string, ok bool) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	endpointIds, ok = s.Pods[podId]
-	return
-}
-
-// SetPod will assign the given set of endpoints to the given pod ID.
-func (s *StatusReportType) SetPod(podId string, endpointIds []string) {
+// SetMetricsTracker is called when the collector manager is initialized. This
+// will let the status report know how many metrics are being collected and from where.
+func (s *StatusReportType) SetMetricsTracker(metricsTracker *tracker.MetricsTracker) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if endpointIds == nil {
-		delete(s.Pods, podId)
-		s.cleanup(false)
-	} else {
-		s.Pods[podId] = endpointIds
-	}
-
-	// keep our metric up to date to track how many pods are being monitored
-	metrics.Metrics.MonitoredPods.Set(float64(len(s.Pods)))
+	s.metricsTracker = metricsTracker
 }
 
 // GetEndpoint will get the status message assigned to the given endpoint ID.
-func (s *StatusReportType) GetEndpoint(endpointId string) (messages string, ok bool) {
+func (s *StatusReportType) GetEndpointMessage(id collector.CollectorID) (messages string, ok bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	messages, ok = s.Endpoints[endpointId]
+	messages, ok = s.Endpoints[id.EndpointID]
 	return
 }
 
 // SetEndpoint will assign the given status message to the given endpoint ID.
-func (s *StatusReportType) SetEndpoint(endpointId string, msg string) {
+func (s *StatusReportType) SetEndpointMessage(id collector.CollectorID, msg string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if msg == "" {
-		delete(s.Endpoints, endpointId)
-	} else {
-		s.Endpoints[endpointId] = msg
-	}
 
-	// keep our metric up to date to track how many endpoints are being monitored
-	metrics.Metrics.MonitoredEndpoints.Set(float64(len(s.Endpoints)))
+	if msg == "" {
+		delete(s.Endpoints, id.EndpointID)
+	} else {
+		s.Endpoints[id.EndpointID] = msg
+	}
 }
 
-func (s *StatusReportType) DeleteAllEndpoints() {
+func (s *StatusReportType) DeleteAllEndpointMessages() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	for id := range s.Endpoints {
 		delete(s.Endpoints, id)
 	}
-
-	// set our metric to show we are not monitoring any more endpoints
-	metrics.Metrics.MonitoredEndpoints.Set(float64(0))
 }
 
 // AddLogMessage pushes the given message to the rolling log.
@@ -127,7 +109,7 @@ func (s *StatusReportType) AddLogMessage(m string) {
 }
 
 func (s *StatusReportType) Marshal() (str string) {
-	s.cleanup(true)
+	s.populate()
 
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -139,28 +121,44 @@ func (s *StatusReportType) Marshal() (str string) {
 	return
 }
 
+// populate will fill in the report.
+// It will take data from the metrics tracker and fill in the status report
+// with details on how many metrics are being collected from where.
+func (s *StatusReportType) populate() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.cleanup()
+
+	if s.metricsTracker != nil {
+		allPods := s.metricsTracker.GetAllPods()
+		s.Metrics = make(map[string]map[string]int, len(allPods))
+		for pid, _ := range allPods {
+			s.Metrics[pid] = s.metricsTracker.GetAllEndpoints(pid)
+		}
+	} else {
+		s.Metrics = make(map[string]map[string]int, 0)
+	}
+}
+
 // cleanup removes obsolete endpoints.
-// If "needsLock" is false, caller MUST have obtained the write lock already.
-func (s *StatusReportType) cleanup(needsLock bool) {
-	if needsLock {
-		s.lock.Lock()
-		defer s.lock.Unlock()
+// Caller MUST hold a write lock.
+func (s *StatusReportType) cleanup() {
+	if s.metricsTracker == nil {
+		return // we aren't ready to do cleanup
 	}
 
 	// sometimes endpoints get leftover, even though they are not being monitored anymore - remove them
 	validEndpoints := make(map[string]bool, 0)
-	for _, podEndpoints := range s.Pods {
-		for _, podEndpoint := range podEndpoints {
-			validEndpoints[podEndpoint] = true
+	for pid, _ := range s.metricsTracker.GetAllPods() {
+		for eid, _ := range s.metricsTracker.GetAllEndpoints(pid) {
+			validEndpoints[eid] = true
 		}
 	}
 
 	for endpoint, _ := range s.Endpoints {
-		// if endpoint is prefixed with X|X| it is not a pod endpoint and should never be cleaned up
-		if !validEndpoints[endpoint] && !strings.HasPrefix(endpoint, "X|X|") {
+		if !validEndpoints[endpoint] {
 			delete(s.Endpoints, endpoint)
 		}
 	}
-
-	return
 }

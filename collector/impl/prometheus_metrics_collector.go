@@ -34,14 +34,14 @@ import (
 )
 
 type PrometheusMetricsCollector struct {
-	ID            string
+	ID            collector.CollectorID
 	Identity      *security.Identity
 	Endpoint      *collector.Endpoint
 	Environment   map[string]string
 	metricNameMap map[string]bool
 }
 
-func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *PrometheusMetricsCollector) {
+func NewPrometheusMetricsCollector(id collector.CollectorID, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *PrometheusMetricsCollector) {
 	mc = &PrometheusMetricsCollector{
 		ID:          id,
 		Identity:    &identity,
@@ -59,7 +59,7 @@ func NewPrometheusMetricsCollector(id string, identity security.Identity, endpoi
 }
 
 // GetId implements a method from MetricsCollector interface
-func (pc *PrometheusMetricsCollector) GetId() string {
+func (pc *PrometheusMetricsCollector) GetID() collector.CollectorID {
 	return pc.ID
 }
 

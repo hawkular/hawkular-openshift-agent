@@ -27,11 +27,24 @@ type MetricDetails struct {
 	Description string
 }
 
+// CollectorID identifies a specific endpoint collector.
+// PodID is not the k8s pod ID but rather is the pod identifier the agent builds.
+// The PodID will be an empty string if the endpoint is external and not within a k8s pod.
+// EndpointID is implemented as being unique across all pods.
+type CollectorID struct {
+	PodID      string
+	EndpointID string
+}
+
+func (c CollectorID) String() string {
+	return c.EndpointID // endpoint is always unique and has pod info encoded in it, this is all we need
+}
+
 // MetricsCollector provides the method used to collect metrics for a given endpoint.
 // All endpoint types (e.g. Prometheus, Jolokia) must have a MetricsCollector implementation.
 type MetricsCollector interface {
 	// GetId returns a string identifier for this collector.
-	GetId() string
+	GetID() CollectorID
 
 	// GetEndpoint returns information that describes the remote endpoint.
 	GetEndpoint() *Endpoint

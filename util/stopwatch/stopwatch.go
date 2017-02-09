@@ -53,6 +53,11 @@ func (s *Stopwatch) LastMarkTime() time.Duration {
 	return s.lastMarkDuration
 }
 
+// StartTime returns when the stopwatch started or was last reset.
+func (s *Stopwatch) StartTime() time.Time {
+	return s.start
+}
+
 // String returns the last marked duration as a string.
 func (s Stopwatch) String() string {
 	return s.lastMarkDuration.String()

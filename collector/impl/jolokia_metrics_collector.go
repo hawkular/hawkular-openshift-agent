@@ -33,13 +33,13 @@ import (
 )
 
 type JolokiaMetricsCollector struct {
-	ID          string
+	ID          collector.CollectorID
 	Identity    *security.Identity
 	Endpoint    *collector.Endpoint
 	Environment map[string]string
 }
 
-func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *JolokiaMetricsCollector) {
+func NewJolokiaMetricsCollector(id collector.CollectorID, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (mc *JolokiaMetricsCollector) {
 	mc = &JolokiaMetricsCollector{
 		ID:          id,
 		Identity:    &identity,
@@ -51,7 +51,7 @@ func NewJolokiaMetricsCollector(id string, identity security.Identity, endpoint 
 }
 
 // GetId implements a method from MetricsCollector interface
-func (jc *JolokiaMetricsCollector) GetId() string {
+func (jc *JolokiaMetricsCollector) GetID() collector.CollectorID {
 	return jc.ID
 }
 

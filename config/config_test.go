@@ -32,6 +32,7 @@ func TestEnvVar(t *testing.T) {
 	defer os.Setenv(ENV_K8S_POD_NAMESPACE, os.Getenv(ENV_K8S_POD_NAMESPACE))
 	defer os.Setenv(ENV_K8S_POD_NAME, os.Getenv(ENV_K8S_POD_NAME))
 	defer os.Setenv(ENV_K8S_TENANT, os.Getenv(ENV_K8S_TENANT))
+	defer os.Setenv(ENV_K8S_MAX_METRICS_PER_POD, os.Getenv(ENV_K8S_MAX_METRICS_PER_POD))
 	defer os.Setenv(ENV_EMITTER_METRICS_ENABLED, os.Getenv(ENV_EMITTER_METRICS_ENABLED))
 	defer os.Setenv(ENV_EMITTER_STATUS_ENABLED, os.Getenv(ENV_EMITTER_STATUS_ENABLED))
 	defer os.Setenv(ENV_EMITTER_HEALTH_ENABLED, os.Getenv(ENV_EMITTER_HEALTH_ENABLED))
@@ -45,6 +46,7 @@ func TestEnvVar(t *testing.T) {
 	os.Setenv(ENV_K8S_POD_NAMESPACE, "TestEnvVar pod namespace")
 	os.Setenv(ENV_K8S_POD_NAME, "TestEnvVar pod name")
 	os.Setenv(ENV_K8S_TENANT, "${POD:namespace_name}")
+	os.Setenv(ENV_K8S_MAX_METRICS_PER_POD, "321")
 	os.Setenv(ENV_EMITTER_METRICS_ENABLED, "false")
 	os.Setenv(ENV_EMITTER_STATUS_ENABLED, "true")
 	os.Setenv(ENV_EMITTER_HEALTH_ENABLED, "false")
@@ -70,6 +72,9 @@ func TestEnvVar(t *testing.T) {
 	}
 	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
 		t.Error("Tenant is wrong")
+	}
+	if conf.Kubernetes.Max_Metrics_Per_Pod != 321 {
+		t.Error("K8s Max Metrics per Pod is wrong")
 	}
 	if conf.Emitter.Metrics_Enabled != "false" {
 		t.Error("Emitter Metrics Enabled is wrong")
@@ -130,6 +135,9 @@ func TestDefaults(t *testing.T) {
 	if conf.Kubernetes.Tenant != "" {
 		t.Error("Tenant is wrong")
 	}
+	if conf.Kubernetes.Max_Metrics_Per_Pod != 50 {
+		t.Error("Max metrics per pod default is wrong")
+	}
 	if len(conf.Endpoints) != 0 {
 		t.Error("There should be no endpoints by default")
 	}
@@ -166,8 +174,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 			URL: "http://server:80",
 		},
 		Kubernetes: Kubernetes{
-			Pod_Namespace: "TestMarshalUnmarshal namespace",
-			Pod_Name:      "TestMarshalUnmarshal name",
+			Pod_Namespace:       "TestMarshalUnmarshal namespace",
+			Pod_Name:            "TestMarshalUnmarshal name",
+			Max_Metrics_Per_Pod: 123,
 		},
 		Emitter: Emitter{
 			Metrics_Enabled: "false",
@@ -234,6 +243,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Kubernetes.Pod_Name != "TestMarshalUnmarshal name" {
 		t.Error("Pod name is wrong")
 	}
+	if conf.Kubernetes.Max_Metrics_Per_Pod != 123 {
+		t.Errorf("Failed to unmarshal max metrics per pod:\n%v", conf)
+	}
 	if conf.Endpoints[0].Collection_Interval != "123s" {
 		t.Error("First endpoint is not correct")
 	}
@@ -295,9 +307,10 @@ func TestLoadSave(t *testing.T) {
 			URL: "http://TestLoadSave:80",
 		},
 		Kubernetes: Kubernetes{
-			Pod_Namespace: "TestLoadSave namespace",
-			Pod_Name:      "TestLoadSave name",
-			Tenant:        "${POD:namespace_name}",
+			Pod_Namespace:       "TestLoadSave namespace",
+			Pod_Name:            "TestLoadSave name",
+			Tenant:              "${POD:namespace_name}",
+			Max_Metrics_Per_Pod: 123,
 		},
 		Emitter: Emitter{
 			Metrics_Enabled: "false",
@@ -361,6 +374,9 @@ func TestLoadSave(t *testing.T) {
 	}
 	if conf.Kubernetes.Tenant != "${POD:namespace_name}" {
 		t.Error("Tenant is wrong")
+	}
+	if conf.Kubernetes.Max_Metrics_Per_Pod != 123 {
+		t.Errorf("Failed to unmarshal max metrics per pod:\n%v", conf)
 	}
 	if conf.Endpoints[0].Collection_Interval != "123s" {
 		t.Error("First endpoint is not correct")

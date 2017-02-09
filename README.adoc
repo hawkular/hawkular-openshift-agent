@@ -557,6 +557,15 @@ kubernetes:
 ----
 |If defined, this will be the tenant where all pod metrics are stored. If not defined, the default is the tenant specified in the Hawkular_Server section. If defined, may include ${var} tokens where `var` is either an agent environment variable of one of the valid POD tag tokens such as `POD:namespace_name`.
 
+|K8S_MAX_METRICS_PER_POD
+|
+[source,yaml]
+----
+kubernetes:
+  max_metrics_per_pod: VALUE
+----
+|Restricts the number of metrics that will be stored for each pod being monitored.
+
 |COLLECTOR_MINIMUM_COLLECTION_INTERVAL
 |
 [source,yaml]

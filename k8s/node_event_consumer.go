@@ -26,7 +26,6 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
-	"github.com/hawkular/hawkular-openshift-agent/emitter/status"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
@@ -39,7 +38,7 @@ import (
 type NodeEventConsumer struct {
 	Config                  *config.Config
 	Discovery               *Discovery
-	CollectorIds            map[string][]string // key: pod identifier; value: collector IDs
+	CollectorIds            map[string][]collector.CollectorID // key: pod identifier
 	MetricsCollectorManager *manager.MetricsCollectorManager
 }
 
@@ -78,7 +77,7 @@ func (nec *NodeEventConsumer) Start() {
 		UID:  string(k8sNode.GetUID()),
 	}
 
-	nec.CollectorIds = make(map[string][]string)
+	nec.CollectorIds = make(map[string][]collector.CollectorID)
 
 	nec.Discovery = NewDiscovery(conf, client, node)
 	nec.Discovery.start()
@@ -99,9 +98,7 @@ func (nec *NodeEventConsumer) Stop() {
 			nec.MetricsCollectorManager.StopCollecting(id)
 		}
 		delete(nec.CollectorIds, podId)
-		status.StatusReport.SetPod(podId, nil)
 	}
-
 }
 
 // consumeNodeEvents listens to the node event channel and will process
@@ -173,10 +170,14 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		}
 
 		// get an ID to be used for the collector
-		id, err := getIdForEndpoint(ne.Pod, cmeEndpoint)
+		endpointId, err := getIdForEndpoint(ne.Pod, cmeEndpoint)
 		if err != nil {
 			log.Warningf("Will not start collecting for endpoint in pod [%v] - cannot get ID. err=%v", ne.Pod.GetIdentifier(), err)
 			continue
+		}
+		id := collector.CollectorID{
+			PodID:      ne.Pod.GetIdentifier(),
+			EndpointID: endpointId,
 		}
 
 		// keep track of each pod's collector IDs in case we need to stop them later on
@@ -193,16 +194,13 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 				nec.CollectorIds[ne.Pod.GetIdentifier()] = append(ids, id)
 			}
 		} else {
-			nec.CollectorIds[ne.Pod.GetIdentifier()] = []string{id}
+			nec.CollectorIds[ne.Pod.GetIdentifier()] = []collector.CollectorID{id}
 		}
-
-		// update the status report
-		status.StatusReport.SetPod(ne.Pod.GetIdentifier(), nec.CollectorIds[ne.Pod.GetIdentifier()])
 
 		if cmeEndpoint.IsEnabled() == false {
 			m := fmt.Sprintf("Will not start collecting for endpoint [%v] in pod [%v] - it has been disabled.", url, ne.Pod.GetIdentifier())
 			log.Info(m)
-			status.StatusReport.SetEndpoint(id, m)
+			nec.MetricsCollectorManager.NotCollecting(id, m)
 			continue
 		}
 
@@ -240,7 +238,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		if err != nil {
 			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - cannot determine credentials. err=%v", ne.Pod.GetIdentifier(), err)
 			log.Warning(m)
-			status.StatusReport.SetEndpoint(id, m)
+			nec.MetricsCollectorManager.NotCollecting(id, m)
 			continue
 		}
 
@@ -261,14 +259,14 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		if err := newEndpoint.ValidateEndpoint(); err != nil {
 			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - invalid endpoint. err=%v", ne.Pod.GetIdentifier(), err)
 			log.Warning(m)
-			status.StatusReport.SetEndpoint(id, m)
+			nec.MetricsCollectorManager.NotCollecting(id, m)
 			continue
 		}
 
 		if c, err := manager.CreateMetricsCollector(id, nec.Config.Identity, *newEndpoint, additionalEnv); err != nil {
 			m := fmt.Sprintf("Will not start collecting for endpoint in pod [%v] - cannot create collector. err=%v", ne.Pod.GetIdentifier(), err)
 			log.Warning(m)
-			status.StatusReport.SetEndpoint(id, m)
+			nec.MetricsCollectorManager.NotCollecting(id, m)
 			continue
 		} else {
 			nec.MetricsCollectorManager.StartCollecting(c)
@@ -285,9 +283,6 @@ func (nec *NodeEventConsumer) stopCollecting(ne *NodeEvent) {
 		}
 		delete(nec.CollectorIds, ne.Pod.GetIdentifier())
 	}
-
-	// ensure its removed from the status report
-	status.StatusReport.SetPod(ne.Pod.GetIdentifier(), nil)
 }
 
 // determineCredentials will build a Credentials object that contains the credentials needed to
