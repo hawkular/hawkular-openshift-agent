@@ -25,6 +25,7 @@ type MetricsType struct {
 	DataPointsCollected prometheus.Counter
 	MonitoredPods       prometheus.Gauge
 	MonitoredEndpoints  prometheus.Gauge
+	MonitoredMetrics    prometheus.Gauge
 }
 
 var Metrics = MetricsType{
@@ -46,6 +47,12 @@ var Metrics = MetricsType{
 			Help: "The number of endpoints currently being monitored.",
 		},
 	),
+	MonitoredMetrics: prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "hawkular_openshift_agent_monitored_metrics",
+			Help: "The total number of metrics currently being monitored across all endpoints.",
+		},
+	),
 }
 
 func RegisterMetrics() {
@@ -53,5 +60,6 @@ func RegisterMetrics() {
 		Metrics.DataPointsCollected,
 		Metrics.MonitoredPods,
 		Metrics.MonitoredEndpoints,
+		Metrics.MonitoredMetrics,
 	)
 }

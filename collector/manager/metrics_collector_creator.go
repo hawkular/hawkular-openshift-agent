@@ -25,7 +25,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
 )
 
-func CreateMetricsCollector(id string, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (theCollector collector.MetricsCollector, err error) {
+func CreateMetricsCollector(id collector.CollectorID, identity security.Identity, endpoint collector.Endpoint, env map[string]string) (theCollector collector.MetricsCollector, err error) {
 	switch endpoint.Type {
 	case collector.ENDPOINT_TYPE_PROMETHEUS:
 		{

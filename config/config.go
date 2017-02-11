@@ -44,12 +44,13 @@ const (
 	ENV_IDENTITY_CERT_FILE        = "HAWKULAR_OPENSHIFT_AGENT_CERT_FILE"
 	ENV_IDENTITY_PRIVATE_KEY_FILE = "HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE"
 
-	ENV_K8S_MASTER_URL    = "K8S_MASTER_URL"
-	ENV_K8S_POD_NAMESPACE = "K8S_POD_NAMESPACE"
-	ENV_K8S_POD_NAME      = "K8S_POD_NAME"
-	ENV_K8S_TOKEN         = "K8S_TOKEN"
-	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
-	ENV_K8S_TENANT        = "K8S_TENANT"
+	ENV_K8S_MASTER_URL          = "K8S_MASTER_URL"
+	ENV_K8S_POD_NAMESPACE       = "K8S_POD_NAMESPACE"
+	ENV_K8S_POD_NAME            = "K8S_POD_NAME"
+	ENV_K8S_TOKEN               = "K8S_TOKEN"
+	ENV_K8S_CA_CERT_FILE        = "K8S_CA_CERT_FILE"
+	ENV_K8S_TENANT              = "K8S_TENANT"
+	ENV_K8S_MAX_METRICS_PER_POD = "K8S_MAX_METRICS_PER_POD"
 
 	ENV_EMITTER_ADDRESS                      = "EMITTER_ADDRESS"
 	ENV_EMITTER_METRICS_ENABLED              = "EMITTER_METRICS_ENABLED"
@@ -102,12 +103,13 @@ type Collector struct {
 // If Tenant is not supplied, the default is the Tenant defined in the Hawkular_Server section.
 // USED FOR YAML
 type Kubernetes struct {
-	Master_URL    string ",omitempty"
-	Token         string ",omitempty"
-	CA_Cert_File  string ",omitempty"
-	Pod_Namespace string ",omitempty"
-	Pod_Name      string ",omitempty"
-	Tenant        string ",omitempty"
+	Master_URL          string ",omitempty"
+	Token               string ",omitempty"
+	CA_Cert_File        string ",omitempty"
+	Pod_Namespace       string ",omitempty"
+	Pod_Name            string ",omitempty"
+	Tenant              string ",omitempty"
+	Max_Metrics_Per_Pod int    ",omitempty"
 }
 
 // Emitter defines the behavior of the emitter which is responsible for
@@ -157,6 +159,7 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.Token = getDefaultString(ENV_K8S_TOKEN, "")
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
 	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
+	c.Kubernetes.Max_Metrics_Per_Pod = getDefaultInt(ENV_K8S_MAX_METRICS_PER_POD, 50)
 
 	c.Emitter.Metrics_Enabled = getDefaultString(ENV_EMITTER_METRICS_ENABLED, "true")
 	c.Emitter.Status_Enabled = getDefaultString(ENV_EMITTER_STATUS_ENABLED, "false")
