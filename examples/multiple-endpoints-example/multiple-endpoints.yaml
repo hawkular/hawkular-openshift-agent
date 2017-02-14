@@ -1,0 +1,82 @@
+id: hawkular-openshift-agent-example-multiple-endpoints
+kind: Template
+apiVersion: v1
+name: hawkular-openshift-agent-example-multiple-endpoints
+metadata:
+  name: hawkular-openshift-agent-example-multiple-endpoints
+  labels:
+    hawkular-openshift-agent-example: multiple-endpoints
+parameters:
+- description: The version of the image to use
+  name: IMAGE_VERSION
+  value: latest
+objects:
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: hawkular-openshift-agent-example-multiple-endpoints
+    labels:
+      name: hawkular-openshift-agent-example-multiple-endpoints
+      hawkular-openshift-agent-example: multiple-endpoints
+  spec:
+    selector:
+      name: hawkular-openshift-agent-example-multiple-endpoints
+    replicas: 1
+    template:
+      version: v1
+      metadata:
+        labels:
+          name: hawkular-openshift-agent-example-multiple-endpoints
+          hawkular-openshift-agent-example: multiple-endpoints
+      spec:
+        containers:
+        - image: hawkular/hawkular-openshift-agent-example-multiple-endpoints:${IMAGE_VERSION}
+          name: hawkular-openshift-agent-example-multiple-endpoints-1
+          command:
+            - "/opt/example/multiple-endpoints.py"
+            - "0"
+            - "10"
+            - "8080"
+        - image: hawkular/hawkular-openshift-agent-example-multiple-endpoints:${IMAGE_VERSION}
+          name: hawkular-openshift-agent-example-multiple-endpoints-2
+          command:
+            - "/opt/example/multiple-endpoints.py"
+            - "10"
+            - "20"
+            - "8181"
+        - image: hawkular/hawkular-openshift-agent-example-multiple-endpoints:${IMAGE_VERSION}
+          name: hawkular-openshift-agent-example-multiple-endpoints-3
+          command:
+            - "/opt/example/multiple-endpoints.py"
+            - "20"
+            - "30"
+            - "8282"
+        volumes:
+        - name: hawkular-openshift-agent
+          configMap:
+            name: hawkular-openshift-agent-example-multiple-endpoints
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: hawkular-openshift-agent-example-multiple-endpoints
+    labels:
+      name: hawkular-openshift-agent-example-multiple-endpoints
+      hawkular-openshift-agent-example: multiple-endpoints
+  data:
+    hawkular-openshift-agent: |
+      endpoints:
+      - type: prometheus
+        protocol: "http"
+        port: 8080
+        path: /metrics
+        collection_interval: 10s
+      - type: prometheus
+        protocol: "http"
+        port: 8181
+        path: /metrics
+        collection_interval: 20s
+      - type: prometheus
+        protocol: "http"
+        port: 8282
+        path: /metrics
+        collection_interval: 30s
