@@ -20,18 +20,19 @@ package storage
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"reflect"
+	"strings"
+	"time"
 
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
 
 	"github.com/hawkular/hawkular-openshift-agent/config"
-	"github.com/hawkular/hawkular-openshift-agent/log"
-	"github.com/hawkular/hawkular-openshift-agent/k8s"
-	"time"
-	"strings"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
-	"os"
+	"github.com/hawkular/hawkular-openshift-agent/k8s"
+	"github.com/hawkular/hawkular-openshift-agent/log"
 )
 
 type MetricsStorageManager struct {
@@ -44,8 +45,8 @@ type MetricsStorageManager struct {
 
 func NewMetricsStorageManager(conf *config.Config) (ms *MetricsStorageManager, err error) {
 
-	hawkularServer,err := processHawkularMetricsConfig(conf)
-	if (err != nil) {
+	hawkularServer, err := processHawkularMetricsConfig(conf)
+	if err != nil {
 		return nil, err
 	}
 
@@ -172,43 +173,46 @@ func (ms *MetricsStorageManager) consumeMetrics() {
 }
 
 func processHawkularMetricsConfig(conf *config.Config) (config.Hawkular_Server, error) {
-	client, clientErr := k8s.GetKubernetesClient(conf);
-	if (clientErr != nil) {
+	if !k8s.IsConfiguredForKubernetes(conf) {
+		return conf.Hawkular_Server, nil
+	}
+
+	client, clientErr := k8s.GetKubernetesClient(conf)
+	if clientErr != nil {
 		log.Errorf("Error trying to get Kubernetes client: %v", clientErr)
 		return conf.Hawkular_Server, clientErr
 	}
 
-	waitForSecret := func(namespace, secretName, key string) []byte {
+	waitForSecret := func(namespace, secretName, key string) ([]byte, error) {
 
-		timeout := time.Now().Add(5*time.Minute)
+		timeout := time.Now().Add(5 * time.Minute)
 
 		messaged := false
 		var lastError error
 		for {
-			if (time.Now().After(timeout)) {
-				log.Errorf("Could not fetch the required secrets after 5 minutes. This may mean the secrets have not yet been created yet or the agent does not have the required permission to access the secret.");
-				os.Exit(1)
+			if time.Now().After(timeout) {
+				return []byte{}, fmt.Errorf("Could not fetch the required secrets after 5 minutes. This may mean the secrets have not yet been created yet or the agent does not have the required permission to access the secret.")
 			}
 
 			secret, err := client.Secrets(namespace).Get(secretName)
 			if err != nil {
-				if (lastError != err) {
-					log.Errorf("Error trying to get Secret named %v from namespace %v: %v", secretName, namespace, err)
+				if lastError != err {
+					log.Errorf("Error trying to get Secret named [%v] from namespace [%v]: err=%v", secretName, namespace, err)
 					lastError = err
 				}
 			} else {
 				value, found := secret.Data[key]
 				if !found {
-					if (lastError != err) {
-						log.Errorf("Secret %v does not contain key %v in namespace %v", secretName, key, namespace)
+					if lastError != err {
+						log.Errorf("Secret [%v] does not contain key [%v] in namespace [%v]", secretName, key, namespace)
 						lastError = err
 					}
 				} else {
-					return value;
+					return value, nil
 				}
 			}
 
-			if (!messaged) {
+			if !messaged {
 				log.Errorf("Could not get the requested secret. This may mean the secret has not yet been created yet or the agent does not have the required permission to access the secret. Will attempt again every 5 seconds for the next 5 minutes")
 			}
 			messaged = true
@@ -216,16 +220,20 @@ func processHawkularMetricsConfig(conf *config.Config) (config.Hawkular_Server, 
 		}
 	}
 
-	// function that will extract a credential string based on its value.
-	// If the string is prefixed with "secret:" it is assumed to be a key/value from a k8s secret.
-	// If the string is not prefixed, it is used as-is.
-	f := func(v string, file bool) string {
+	// Function that will extract a credential string based on the given value.
+	// If the given value string is prefixed with "secret:" it is assumed to be a
+	// key/value from a k8s secret. The value string can have an optional namespace
+	// such as "secret:my-project/my-secret/username". If the string is not prefixed, it is used as-is.
+	// The file parameter, if true, will tell this function to write the credential value
+	// to a file and return the filename; otherwise, the credential value is returned directly.
+	// The file parameter, when true, is strictly for the CA cert file.
+	f := func(v string, file bool) (string, error) {
 		if strings.HasPrefix(v, "secret:") {
 			v = strings.TrimLeft(v, "secret:")
 			splits := strings.SplitN(v, "/", -1)
 			if len(splits) != 2 && len(splits) != 3 {
-				log.Errorf("Secret format is in valid for Hawkular Metrics: [%v]", v)
-				return ""
+				log.Errorf("Hawkular Metrics secret specifier is invalid: [%v]", v)
+				return "", fmt.Errorf("Invalid Hawkular Metrics secret specifier: [%v]", v)
 			}
 
 			var namespace string
@@ -240,35 +248,60 @@ func processHawkularMetricsConfig(conf *config.Config) (config.Hawkular_Server, 
 				secretName = splits[1]
 				secretKey = splits[2]
 			}
-			bytes := waitForSecret(namespace, secretName, secretKey)
+			bytes, err := waitForSecret(namespace, secretName, secretKey)
+			if err != nil {
+				return "", err
+			}
 
-			if (!file) {
-				return strings.TrimSpace(string(bytes))
+			if !file {
+				return strings.TrimSpace(string(bytes)), nil
 			} else {
 				dirName := os.TempDir() + string(os.PathSeparator) + secretName
 				os.MkdirAll(dirName, 0744)
 				fileName := dirName + string(os.PathSeparator) + secretKey
 				fileErr := ioutil.WriteFile(fileName, bytes, 0644)
 				if fileErr != nil {
-					log.Errorf("Could not write the hawkular metric ca to file: %v", fileErr)
+					log.Errorf("Could not write the Hawkular Metrics CA to file: err=%v", fileErr)
+					return "", fmt.Errorf("Could not write the Hawkular Metrics CA to file: err=%v", fileErr)
 				}
-				return fileName
+				return fileName, nil
 			}
 		} else {
-			return v
+			return v, nil
 		}
 	}
 
+	var url, caCertFile, username, password, token, tenant string
+	var err error
+
+	if url, err = f(conf.Hawkular_Server.URL, false); err != nil {
+		return conf.Hawkular_Server, err
+	}
+	if caCertFile, err = f(conf.Hawkular_Server.CA_Cert_File, true); err != nil {
+		return conf.Hawkular_Server, err
+	}
+	if username, err = f(conf.Hawkular_Server.Credentials.Username, false); err != nil {
+		return conf.Hawkular_Server, err
+	}
+	if password, err = f(conf.Hawkular_Server.Credentials.Password, false); err != nil {
+		return conf.Hawkular_Server, err
+	}
+	if token, err = f(conf.Hawkular_Server.Credentials.Token, false); err != nil {
+		return conf.Hawkular_Server, err
+	}
+	if tenant, err = f(conf.Hawkular_Server.Tenant, false); err != nil {
+		return conf.Hawkular_Server, err
+	}
 
 	hawkularCredentials := config.Hawkular_Server{
-		URL: f(conf.Hawkular_Server.URL, false),
-		CA_Cert_File: f(conf.Hawkular_Server.CA_Cert_File, true),
-		Credentials: security.Credentials {
-			Password: f(conf.Hawkular_Server.Credentials.Password, false),
-			Username: f(conf.Hawkular_Server.Credentials.Username, false),
-			Token: f(conf.Hawkular_Server.Credentials.Token, false),
+		URL:          url,
+		CA_Cert_File: caCertFile,
+		Credentials: security.Credentials{
+			Username: username,
+			Password: password,
+			Token:    token,
 		},
-		Tenant: f(conf.Hawkular_Server.Tenant, false),
+		Tenant: tenant,
 	}
 
 	return hawkularCredentials, nil
