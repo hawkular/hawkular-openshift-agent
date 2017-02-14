@@ -27,6 +27,11 @@ import (
 
 const userAgent string = "Hawkular/Hawkular-OpenShift-Agent"
 
+// IsConfiguredForKubernetes returns true if the agent is to be configured for connection to Kubernetes.
+func IsConfiguredForKubernetes(conf *config.Config) bool {
+	return conf.Kubernetes.Pod_Namespace != ""
+}
+
 func GetKubernetesClient(conf *config.Config) (coreClient *v1.CoreClient, err error) {
 
 	var restConfig *rest.Config

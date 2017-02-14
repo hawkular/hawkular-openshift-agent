@@ -55,7 +55,7 @@ func NewNodeEventConsumer(conf *config.Config, mcm *manager.MetricsCollectorMana
 func (nec *NodeEventConsumer) Start() {
 	conf := nec.Config
 
-	if conf.Kubernetes.Pod_Namespace == "" {
+	if !IsConfiguredForKubernetes(conf) {
 		log.Debug("Not configured to monitor within a Kubernetes environment")
 		return
 	}
