@@ -51,6 +51,7 @@ after_success:
   - docker push hawkular/hawkular-openshift-agent
   - docker push hawkular/hawkular-openshift-agent-example-prometheus-python
   - docker push hawkular/hawkular-openshift-agent-example-jolokia-wildfly
+  - docker push hawkular/hawkular-openshift-agent-example-multiple-endpoints
 
 # Build only the master branch (for "latest" release) and version tags (e.g. "1.2.3" or "1.1.2.RC2" or "2.1.5.Final")
 # Add branch names below if we want to push docker images built off of those branches.

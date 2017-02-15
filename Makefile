@@ -53,6 +53,8 @@ docker-examples:
 	@DOCKER_VERSION=${DOCKER_VERSION} cd examples/prometheus-python-example && make build
 	@echo Building Docker Image of Example: Jolokia-WildFly
 	@DOCKER_VERSION=${DOCKER_VERSION} cd examples/jolokia-wildfly-example && make build
+	@echo Building Docker Image of Example: Multiple-Endpoints
+	@DOCKER_VERSION=${DOCKER_VERSION} cd examples/multiple-endpoints-example && make build
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift
