@@ -94,7 +94,7 @@ func main() {
 	// prepare the storage manager and start storing metrics as they come in
 	storageManager, err := storage.NewMetricsStorageManager(Configuration)
 	if err != nil {
-		glog.Fatal("Cannot create storage manager. err=%v", err)
+		glog.Fatalf("Cannot create storage manager. err=%v", err)
 	}
 	storageManager.StartStoringMetrics()
 
