@@ -73,6 +73,23 @@ func (m *MonitoredMetric) String() string {
 	return fmt.Sprintf("Metric: id=[%v], name=[%v], type=[%v], units=[%v], tags=[%v]", m.ID, m.Name, m.Type, m.Units, m.Tags)
 }
 
+func (m *MonitoredMetric) Clone() MonitoredMetric {
+	cloneObj := MonitoredMetric{
+		ID:          m.ID,
+		Name:        m.Name,
+		Type:        m.Type,
+		Units:       m.Units,
+		Description: m.Description,
+	}
+
+	if len(m.Tags) > 0 {
+		cloneObj.Tags = tags.Tags{}
+		cloneObj.Tags.AppendTags(m.Tags)
+	}
+
+	return cloneObj
+}
+
 // IsEnabled returns true if this endpoint has been enabled; false otherwise.
 func (e *Endpoint) IsEnabled() bool {
 	if e.Enabled == "" || e.Enabled == "true" {

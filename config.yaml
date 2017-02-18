@@ -13,15 +13,7 @@ emitter:
 collector:
   minimum_collection_interval: 10s
   tags:
-    namespace_id: ${POD:namespace_uid}
-    namespace_name: ${POD:namespace_name}
-    node_name: ${POD:node_name}
-    pod_id: ${POD:uid}
-    pod_name: ${POD:name}
-    pod_namespace: ${POD:namespace_name}
-    hostname: ${POD:hostname}
-    subdomain: ${POD:subdomain}
-    labels: ${POD:labels}
+    agent-host: ${HOSTNAME}
 kubernetes:
   master_url: https://10.2.2.2:8443
   #ca_cert_file: /path/to/ca.crt
@@ -29,14 +21,17 @@ kubernetes:
   #pod_name: hawkular-metrics-ns2ij
   #pod_namespace: openshift-infra
 endpoints:
+  # the agent endpoint
+  - type: prometheus
+    enabled: true
+    url: http://127.0.0.1:8081/metrics
+    collection_interval: 10s
+    tags:
+      endpoint-name: hawkular-openshift-agent
+  # prometheus-python-example
   - type: prometheus
     enabled: false
-    url: http://127.0.0.1:8081/metrics
-    collection_interval: 1m
-    metrics:
-    - name: hawkular_openshift_agent_metric_data_points_collected_total
-    - name: hawkular_openshift_agent_monitored_pods
-    - name: hawkular_openshift_agent_monitored_endpoints
-    - name: go_goroutines
-    - name: process_resident_memory_bytes
-    - name: process_virtual_memory_bytes
+    url: http://127.0.0.1:8181/metrics
+    collection_interval: 10s
+    tags:
+      endpoint-name: prometheus-python-example
