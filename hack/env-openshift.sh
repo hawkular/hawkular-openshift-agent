@@ -14,6 +14,11 @@ OPENSHIFT_GOPATH=${HOME}/source/go/openshift
 # NOTE: Do not use any IP address within the loopback range of 127.0.0.x.
 OPENSHIFT_IP_ADDRESS=$(ip -f inet addr | grep 'state UP' -A1 | tail -n1 | awk '{print $2}' | cut -f1 -d'/')
 
+# If you want to run the last release of OpenShift, leave this commented out.
+# If you want to run with a specific version, uncomment this and enter the version you want.
+# You can run the latest build by using "latest" as the version string.
+#OPENSHIFT_VERSION_ARG="--version=latest"
+
 #-----------------------------------------------------------------------------
 # Variables below have values derived from the user-defined variables above.
 # These are not meant for users to change.

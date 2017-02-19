@@ -23,7 +23,7 @@ if [ "$1" = "up" ];then
   echo Turned off firewalld
 
   echo Will start the OpenShift cluster at ${OPENSHIFT_IP_ADDRESS}
-  ${OPENSHIFT_EXE_OC} cluster up --metrics --public-hostname=${OPENSHIFT_IP_ADDRESS}
+  ${OPENSHIFT_EXE_OC} cluster up --metrics ${OPENSHIFT_VERSION_ARG} --public-hostname=${OPENSHIFT_IP_ADDRESS}
 
   echo 'Do you want the admin user to be assigned the cluster-admin role?'
   echo 'NOTE: This could expose your machine to root access!'
