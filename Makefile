@@ -21,6 +21,7 @@ DOCKER_VERSION ?= dev
 DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
 
 VERBOSE_MODE ?= 4
+AGENT_NAMESPACE ?= default
 
 GO_BUILD_ENVVARS = \
 	GOOS=linux \
@@ -58,19 +59,19 @@ docker-examples:
 
 openshift-deploy: openshift-undeploy
 	@echo Deploying Components to OpenShift
-	oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n default
-	oc process -f deploy/openshift/hawkular-openshift-agent.yaml -v IMAGE_VERSION=${DOCKER_VERSION} | oc create -n default -f -
-	oc create -f deploy/openshift/hawkular-openshift-agent-route.yaml -n default
-	oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:default:hawkular-openshift-agent
+	oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n ${AGENT_NAMESPACE}
+	oc process -f deploy/openshift/hawkular-openshift-agent.yaml -v IMAGE_VERSION=${DOCKER_VERSION} | oc create -n ${AGENT_NAMESPACE} -f -
+	oc create -f deploy/openshift/hawkular-openshift-agent-route.yaml -n ${AGENT_NAMESPACE}
+	oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:${AGENT_NAMESPACE}:hawkular-openshift-agent
 
 openshift-undeploy:
 	@echo Undeploying the Agent from OpenShift
-	oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n default
+	oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n ${AGENT_NAMESPACE}
 	oc delete clusterroles hawkular-openshift-agent
 
 openshift-status:
 	@echo Obtaining Status from the Agent
-	@curl -k -H "Authorization: Basic $(shell echo -n `oc get secret hawkular-openshift-agent-status -n default --template='{{.data.username}}' | base64 --decode`:`oc get secret hawkular-openshift-agent-status -n default --template='{{.data.password}}' | base64 --decode` | base64)" http://hawkular-openshift-agent-default.$(shell oc version | grep 'Server ' | awk '{print $$2;}' | egrep -o '([0-9]{1,3}[.]){3}[0-9]{1,3}').xip.io/status
+	@curl -k -H "Authorization: Basic $(shell echo -n `oc get secret hawkular-openshift-agent-status -n ${AGENT_NAMESPACE} --template='{{.data.username}}' | base64 --decode`:`oc get secret hawkular-openshift-agent-status -n ${AGENT_NAMESPACE} --template='{{.data.password}}' | base64 --decode` | base64)" http://hawkular-openshift-agent-${AGENT_NAMESPACE}.$(shell oc version | grep 'Server ' | awk '{print $$2;}' | egrep -o '([0-9]{1,3}[.]){3}[0-9]{1,3}').xip.io/status
 
 install:
 	@echo Installing...
