@@ -35,6 +35,10 @@ func CreateMetricsCollector(id collector.CollectorID, identity security.Identity
 		{
 			theCollector = impl.NewJolokiaMetricsCollector(id, identity, endpoint, env)
 		}
+	case collector.ENDPOINT_TYPE_JSON:
+		{
+			theCollector = impl.NewJSONMetricsCollector(id, identity, endpoint, env)
+		}
 	default:
 		{
 			err = fmt.Errorf("Unknown endpoint type [%v]", endpoint.Type)

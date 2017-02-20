@@ -161,6 +161,7 @@ func (ms *MetricsStorageManager) consumeMetrics() {
 
 		if err != nil {
 			log.Warningf("Failed to store metrics. err=%v", err)
+			log.Tracef("These metrics failed to be stored: %v", metrics)
 		} else {
 			log.Debugf("Stored datapoints for [%v] metrics", len(metrics))
 			if log.IsTrace() {
