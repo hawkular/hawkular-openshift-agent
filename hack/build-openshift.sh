@@ -84,8 +84,8 @@ if [ "$?" = "0" ]; then
   echo You can stop it via: cluster-openshift.sh down
   echo You can get version and status information via: cluster-openshift.sh status
 
-  grep 'OPTIONS=.*--insecure-registry' /etc/sysconfig/docker > /dev/null 2>&1
+  systemctl show --property=ExecStart docker | grep insecure-registry > /dev/null 2>&1
   if [ "$?" != "0" ]; then
-     echo 'WARNING: If you are running Docker as a service via systemd then you must add the --insecure-registry argument with an appropriate value to its options in /etc/sysconfig/docker (usually "--insecure-registry 172.30.0.0/16") and restart the Docker service. Otherwise, make sure that argument is passed to your running Docker daemon. See the OpenShift Origin documentation for more details: https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc'
+     echo 'WARNING: If you are running Docker as a service via systemd then you must add the --insecure-registry argument with an appropriate value to its options (usually "--insecure-registry 172.30.0.0/16") and restart the Docker service. Otherwise, make sure that argument is passed to your running Docker daemon. See the OpenShift Origin documentation for more details: https://github.com/openshift/origin/blob/master/CONTRIBUTING.adoc'
   fi
 fi

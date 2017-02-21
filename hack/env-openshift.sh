@@ -6,8 +6,9 @@
 # Defines variables used by the scripts to build, start, and stop OpenShift.
 ##############################################################################
 
-# This is the GOPATH where you want the OpenShift Origin project to go
+# This is the GOPATH where you want the OpenShift Origin and Origin-Metrics projects to go
 OPENSHIFT_GOPATH=${HOME}/source/go/openshift
+OPENSHIFTMETRICS_GOPATH=${HOME}/source/go/openshift-metrics
 
 # This is the IP address where OpenShift will bind its master.
 # This should be a valid IP address for the machine where OpenShift is installed.
@@ -17,15 +18,21 @@ OPENSHIFT_IP_ADDRESS=$(ip -f inet addr | grep 'state UP' -A1 | tail -n1 | awk '{
 # If you want to run the last release of OpenShift, leave this commented out.
 # If you want to run with a specific version, uncomment this and enter the version you want.
 # You can run the latest build by using "latest" as the version string.
-#OPENSHIFT_VERSION_ARG="--version=latest"
+#OPENSHIFT_VERSION="latest"
 
 #-----------------------------------------------------------------------------
 # Variables below have values derived from the user-defined variables above.
 # These are not meant for users to change.
 #-----------------------------------------------------------------------------
 
-# This is where the OpenShift Origin github source code will live when building from source.
+if [ "${OPENSHIFT_VERSION}" != "" ]; then
+  OPENSHIFT_VERSION_ARG="--version=${OPENSHIFT_VERSION}"
+  OPENSHIFT_IMAGE_VERSION_ARG="-p IMAGE_VERSION=${OPENSHIFT_VERSION}"
+fi
+
+# This is where the OpenShift Origin and Origin-Metrics github source code will live when building from source.
 OPENSHIFT_GITHUB_SOURCE_DIR=${OPENSHIFT_GOPATH}/src/github.com/openshift/origin
+OPENSHIFTMETRICS_GITHUB_SOURCE_DIR=${OPENSHIFTMETRICS_GOPATH}/src/github.com/openshift/origin-metrics
 
 # This is where the OpenShift Origin binaries will be after the source is built
 OPENSHIFT_BINARY_DIR=${OPENSHIFT_GITHUB_SOURCE_DIR}/_output/local/bin/`go env GOHOSTOS`/`go env GOARCH`

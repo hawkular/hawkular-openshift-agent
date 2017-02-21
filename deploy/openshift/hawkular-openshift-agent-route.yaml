@@ -1,25 +1,38 @@
+id: hawkular-openshift-agent
+kind: Template
 apiVersion: v1
-kind: Service
+name: Hawkular OpenShift Agent Template
 metadata:
   name: hawkular-openshift-agent
-  labels:
-    metrics-infra: agent
-spec:
-  ports:
-    - protocol: TCP
-      port: 8080
-  selector:
+  metrics-infra: agent
+parameters:
+- description: The hostname where the route can be accessed.
+  name: HAWKULAR_OPENSHIFT_AGENT_HOSTNAME
+  value:
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
     name: hawkular-openshift-agent
----
-apiVersion: v1
-kind: Route
-metadata:
-  name: hawkular-openshift-agent
-  labels:
-    metrics-infra: agent
-spec:
-  path: /status
-  to:
-    kind: Service
+    labels:
+      metrics-infra: agent
+  parameters:
+  spec:
+    ports:
+      - protocol: TCP
+        port: 8080
+    selector:
+      name: hawkular-openshift-agent
+- apiVersion: v1
+  kind: Route
+  metadata:
     name: hawkular-openshift-agent
-    weight: 100
+    labels:
+      metrics-infra: agent
+  spec:
+    host: ${HAWKULAR_OPENSHIFT_AGENT_HOSTNAME}
+    path: /status
+    to:
+      kind: Service
+      name: hawkular-openshift-agent
+      weight: 100
