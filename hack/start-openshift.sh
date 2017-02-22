@@ -28,7 +28,7 @@ if [ "$1" = "up" ];then
   sudo systemctl stop firewalld
 
   echo Will start OpenShift server at ${OPENSHIFT_IP_ADDRESS}
-  ${OPENSHIFT_EXE_OPENSHIFT} start --listen=https://${OPENSHIFT_IP_ADDRESS}:8443 > /tmp/openshift-console.log 2>&1 &
+  ${OPENSHIFT_EXE_OPENSHIFT} start --master=${OPENSHIFT_IP_ADDRESS} --hostname=${OPENSHIFT_IP_ADDRESS} --listen=https://${OPENSHIFT_IP_ADDRESS}:8443 > /tmp/openshift-console.log 2>&1 &
 
   # Wait for it to get to a point where we can connect to it
   echo -n Waiting for OpenShift to start
