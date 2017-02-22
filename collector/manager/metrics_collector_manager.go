@@ -256,19 +256,32 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 					if strings.Contains(collectedMetrics[i].ID, "${") {
 						splitMetrics := make([]hmetrics.MetricHeader, len(collectedMetric.Data))
 						for j, datapt := range collectedMetric.Data {
+							datapointTags := datapt.Tags
+							// comment the below line if we want to tag the datapoints, too
+							datapt.Tags = map[string]string{}
 							splitMetrics[j] = hmetrics.MetricHeader{
 								Tenant: collectedMetric.Tenant,
 								Type:   collectedMetric.Type,
 								Data:   []hmetrics.Datapoint{datapt},
 								ID: os.Expand(collectedMetrics[i].ID, expand.MappingFunc(expand.MappingFuncConfig{
 									UseOSEnv: false,
-									Env:      datapt.Tags,
+									Env:      datapointTags,
 								})),
 							}
 
 							// if we need to create the metric definition, remember it
 							if _, ok := metricDefinitionsDeclared[splitMetrics[j].ID]; !ok {
-								metricDefinitionsNeeded[splitMetrics[j].ID] = monitoredMetric
+								// monitoredMetric needs to have the data tags because they will be used as tags on the metric def
+								monitoredMetricCopy := monitoredMetric.Clone()
+								if len(datapointTags) > 0 {
+									if monitoredMetricCopy.Tags == nil {
+										monitoredMetricCopy.Tags = tags.Tags{}
+									}
+									for k, v := range datapointTags {
+										monitoredMetricCopy.Tags["@@@"+k] = v // @@@ denotes it is a tag from the datapoint
+									}
+								}
+								metricDefinitionsNeeded[splitMetrics[j].ID] = monitoredMetricCopy
 							}
 						}
 
@@ -461,6 +474,18 @@ func (mcm *MetricsCollectorManager) createMetricDefinition(theCollector collecto
 			}
 		}
 
+		// Some of the tags in the given monitoredMetric were those given to us directly by the endpoint in the datapoint.
+		// We need to extract them out and use only those when building the default description.
+		datapointTags := tags.Tags{}
+		for k, v := range monitoredMetric.Tags {
+			if strings.HasPrefix(k, "@@@") {
+				actualTagName := strings.TrimPrefix(k, "@@@")
+				datapointTags[actualTagName] = v
+				delete(monitoredMetric.Tags, k)
+				monitoredMetric.Tags[actualTagName] = v // put it back with the actual name so it goes on our metric def later
+			}
+		}
+
 		// NOTE: If the metric type was declared, we use it. Otherwise, we look at
 		// metric details to see if there is a type available and if so, use it.
 		// This is to support the fact that Prometheus indicates the type in the metric endpoint
@@ -476,7 +501,28 @@ func (mcm *MetricsCollectorManager) createMetricDefinition(theCollector collecto
 			}
 		}
 		if metricDescription == "" {
-			metricDescription = metricDetail.Description
+			var descriptionBuffer bytes.Buffer
+			descriptionBuffer.WriteString(metricDetail.Description)
+
+			// If the metric datapoint had tags on it, let the default description include the tags to make the description unique.
+			// Put the tag names in an array and sort the array - we want the names to be in order.
+			if len(datapointTags) > 0 {
+				keys := make([]string, len(datapointTags))
+				keyIndex := 0
+				for k, _ := range datapointTags {
+					keys[keyIndex] = k
+					keyIndex++
+				}
+				sort.Strings(keys)
+				separator := " {"
+				for _, k := range keys {
+					descriptionBuffer.WriteString(fmt.Sprintf("%v%v=%v", separator, k, monitoredMetric.Tags[k]))
+					separator = ","
+				}
+				descriptionBuffer.WriteString("}")
+			}
+
+			metricDescription = descriptionBuffer.String()
 		}
 
 		// Now add the fixed tag of "units".
@@ -491,6 +537,10 @@ func (mcm *MetricsCollectorManager) createMetricDefinition(theCollector collecto
 			"METRIC:id":          metricId,
 			"METRIC:units":       units.Symbol,
 			"METRIC:description": metricDescription,
+		}
+
+		for k, v := range monitoredMetric.Tags {
+			env[fmt.Sprintf("METRIC:tag[%v]", k)] = v
 		}
 
 		for key, value := range additionalEnv {
