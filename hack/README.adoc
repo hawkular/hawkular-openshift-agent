@@ -8,7 +8,8 @@ These files are used to build, start, and stop your own OpenShift environment fr
 
 |`env-openshift.sh`|Defines the OpenShift environment. Edit this so the variables are set to the appropriate values.
 |`build-openshift.sh`|Downloads the OpenShift Origin source code and builds it.
-|`cluster-openshift.sh`|Starts and stops your OpenShift Origin environment. Pass "up"/"down" to start/stop OpenShift.
+|`cluster-openshift.sh`|Starts and stops your OpenShift Origin environment via "oc cluster up". Pass "up"/"down" to start/stop OpenShift.
+|`start-openshift.sh`|Starts and stops your OpenShift Origin environment via "openshift". Pass "up"/"down" to start/stop OpenShift.
 |===
 
 To build your own OpenShift Origin:
@@ -17,11 +18,19 @@ To build your own OpenShift Origin:
 
 2. Run `build-openshift.sh` which will update the OpenShift Origin code to the latest version (cloning the git repository if it has not yet been downloaded to your filesystem) and then run the build.
 
-At this point, you have your own copy of OpenShift Origin built. You can start and stop it using the `cluster-openshift.sh` script:
+3. Run `build-openshiftmetrics.sh` which will update the OpenShift Origin-Metrics code to the latest version (cloning the git repository if it has not yet been downloaded to your filesystem) and then run the build.
+
+At this point, you have your own copy of OpenShift Origin and Origin-Metrics built. You can start and stop it using the `cluster-openshift.sh` script (which uses the "oc cluster" command):
 
 * You can start it via: `cluster-openshift.sh up`
 * You can stop it via: `cluster-openshift.sh down`
 * You can get version and status information via: `cluster-openshift.sh status`
+
+Or, alternatively, you can start and stop it using the `start-openshift.sh` script (which uses the "openshift" executable to start and will manually deploy Origin-Metrics and all its requirements).
+
+* You can start it via: `start-openshift.sh up`
+* You can stop it via: `start-openshift.sh down`
+* You can get version and status information via: `start-openshift.sh status`
 
 == Deploy the Agent
 
