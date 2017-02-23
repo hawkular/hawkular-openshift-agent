@@ -18,9 +18,15 @@ cd ${OPENSHIFT_BINARY_DIR}
 
 if [ "$1" = "up" ];then
 
-  # The OpenShift docs say to disable firewalld for now. Just in case it is running, stop it now
-  sudo systemctl stop firewalld
-  echo Turned off firewalld
+  # The OpenShift docs say to disable firewalld for now. Just in case it is running, stop it now.
+  # If firewalld was running and is shutdown, it changes the iptable rules and screws up docker,
+  # so we must restart docker in order for it to rebuild its iptable rules.
+  sudo systemctl status firewalld > /dev/null 2>&1
+  if [ "$?" == "0" ]; then
+    echo Turning off firewalld as per OpenShift recommendation and then restarting docker to rebuild iptable rules
+    sudo systemctl stop firewalld
+    sudo systemctl restart docker.service
+  fi
 
   echo Will start the OpenShift cluster at ${OPENSHIFT_IP_ADDRESS}
   ${OPENSHIFT_EXE_OC} cluster up --metrics ${OPENSHIFT_VERSION_ARG} --public-hostname=${OPENSHIFT_IP_ADDRESS}

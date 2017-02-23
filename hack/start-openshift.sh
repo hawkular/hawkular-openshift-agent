@@ -23,9 +23,15 @@ OPENSHIFT_EXE_OC="${OPENSHIFT_EXE_OC} ${_SKIP_VERIFY_ARG} --config=${_KUBECONFIG
 
 if [ "$1" = "up" ];then
 
-  # The OpenShift docs say to disable firewalld for now. Just in case it is running, stop it now
-  echo Turning off firewalld
-  sudo systemctl stop firewalld
+  # The OpenShift docs say to disable firewalld for now. Just in case it is running, stop it now.
+  # If firewalld was running and is shutdown, it changes the iptable rules and screws up docker,
+  # so we must restart docker in order for it to rebuild its iptable rules.
+  sudo systemctl status firewalld > /dev/null 2>&1
+  if [ "$?" == "0" ]; then
+    echo Turning off firewalld as per OpenShift recommendation and then restarting docker to rebuild iptable rules
+    sudo systemctl stop firewalld
+    sudo systemctl restart docker.service
+  fi
 
   echo Will start OpenShift server at ${OPENSHIFT_IP_ADDRESS}
   ${OPENSHIFT_EXE_OPENSHIFT} start --master=${OPENSHIFT_IP_ADDRESS} --hostname=${OPENSHIFT_IP_ADDRESS} --listen=https://${OPENSHIFT_IP_ADDRESS}:8443 > /tmp/openshift-console.log 2>&1 &
