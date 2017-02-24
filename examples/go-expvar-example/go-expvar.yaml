@@ -1,0 +1,83 @@
+id: hawkular-openshift-agent-example-go-expvar
+kind: Template
+apiVersion: v1
+name: hawkular-openshift-agent-example-go-expvar
+metadata:
+  name: hawkular-openshift-agent-example-go-expvar
+  labels:
+    hawkular-openshift-agent-example: go-expvar
+parameters:
+- description: The version of the image to use
+  name: IMAGE_VERSION
+  value: latest
+- description: The hostname where the route can be accessed.
+  name: HAWKULAR_OPENSHIFT_AGENT_EXAMPLE_GO_EXPVAR_HOSTNAME
+  value:
+objects:
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: hawkular-openshift-agent-example-go-expvar
+    labels:
+      name: hawkular-openshift-agent-example-go-expvar
+      hawkular-openshift-agent-example: go-expvar
+  spec:
+    selector:
+      name: hawkular-openshift-agent-example-go-expvar
+    replicas: 1
+    template:
+      version: v1
+      metadata:
+        labels:
+          name: hawkular-openshift-agent-example-go-expvar
+          hawkular-openshift-agent-example: go-expvar
+      spec:
+        containers:
+        - image: hawkular/hawkular-openshift-agent-example-go-expvar:${IMAGE_VERSION}
+          name: hawkular-openshift-agent-example-go-expvar
+        volumes:
+        - name: hawkular-openshift-agent
+          configMap:
+            name: hawkular-openshift-agent-example-go-expvar
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: hawkular-openshift-agent-example-go-expvar
+    labels:
+      name: hawkular-openshift-agent-example-go-expvar
+      hawkular-openshift-agent-example: go-expvar
+  spec:
+    ports:
+      - protocol: TCP
+        port: 8181
+    selector:
+      name: hawkular-openshift-agent-example-go-expvar
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: hawkular-openshift-agent
+    labels:
+      name: hawkular-openshift-agent-example-go-expvar
+      hawkular-openshift-agent-example: go-expvar
+  spec:
+    host: ${HAWKULAR_OPENSHIFT_AGENT_EXAMPLE_GO_EXPVAR_HOSTNAME}
+    path: /debug/vars
+    to:
+      kind: Service
+      name: hawkular-openshift-agent-example-go-expvar
+      weight: 100
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: hawkular-openshift-agent-example-go-expvar
+    labels:
+      name: hawkular-openshift-agent-example-go-expvar
+      hawkular-openshift-agent-example: go-expvar
+  data:
+    hawkular-openshift-agent: |
+      endpoints:
+      - type: expvar
+        protocol: "http"
+        port: 8181
+        path: /debug/vars
+        collection_interval: 30s

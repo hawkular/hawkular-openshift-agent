@@ -133,9 +133,9 @@ To deploy the agent, you will need to follow the following commands:
 
 [source,shell]
 ----
-oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n openshift-infra
-oc process -f deploy/openshift/hawkular-openshift-agent.yaml | oc create -n openshift-infra -f -
-oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:openshift-infra:hawkular-openshift-agent
+oc create -f deploy/openshift/hawkular-openshift-agent-configmap.yaml -n default
+oc process -f deploy/openshift/hawkular-openshift-agent.yaml | oc create -n default -f -
+oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:default:hawkular-openshift-agent
 ----
 
 ==== Undeploying the Agent
@@ -144,7 +144,7 @@ If you want to remove the agent from your OpenShift environment, you can do so b
 
 [source,shell]
 ----
-oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n openshift-infra
+oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n default
 oc delete clusterroles hawkular-openshift-agent # this is only needed until this bug is fixed: https://github.com/openshift/origin/issues/12450
 ----
 
@@ -316,7 +316,7 @@ A full Prometheus endpoint configuration can look like this:
   credentials:
     token: your-bearer-token-here
     #username: your-user
-    #password: your-pass
+    #password: secret:my-openshift-secret-name/your-pass
   collection_interval: 1m
   metrics:
   - name: go_memstats_last_gc_time_seconds
@@ -329,14 +329,14 @@ Some things to note about configuring your Prometheus endpoints:
 * Prometheus endpoints can serve metric data in either text or binary form. The agent automatically supports both - there is no special configuration needed. The agent will detect what form the data is in when the endpoint returns it and parses the data accordingly.
 * If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a config map), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
 * The agent supports either http or https endpoints. If the Prometheus endpoint is over the https protocol, you must configure
-the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Indentity section of the agent's configuration file:
+the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Identity section of the agent's configuration file:
 [source,yaml]
 ----
 identity:
   cert_file: /path/to/file.crt
   private_key_file: /path/to/file.key
 ----
-* The credentials are optional. If the Prometheus endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
+* The credentials are optional. If the Prometheus endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password. To avoid putting this information in plaintext you can specify an OpenShift secret name that the agent will use to obtain the credentials (e.g. a password value can be "secret:my-secret/password" which tells the agent to look up the password in the "password" entry found within the OpenShift secret named "my-secret").
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
 
 Prometheus supports the ability to https://prometheus.io/docs/practices/naming/#labels[label] metrics such as the below:
@@ -392,7 +392,7 @@ A full Jolokia endpoint configuration can look like this:
   credentials:
     token: your-bearer-token-here
     #username: your-user
-    #password: your-pass
+    #password: secret:my-openshift-secret-name/your-pass
   collection_interval: 60s
   metrics:
   - name: java.lang:type=Threading#ThreadCount
@@ -407,18 +407,115 @@ Some things to note about configuring your Jolokia endpoints:
 
 * If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a config map), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
 * The agent supports either http or https endpoints. If the Jolokia endpoint is over the https protocol, you must configure
-the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Indentity section of the agent's configuration file:
+the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Identity section of the agent's configuration file:
 [source,yaml]
 ----
 identity:
   cert_file: /path/to/file.crt
   private_key_file: /path/to/file.key
 ----
-* The credentials are optional. If the Jolokia endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password.
+* The credentials are optional. If the Jolokia endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password. To avoid putting this information in plaintext you can specify an OpenShift secret name that the agent will use to obtain the credentials (e.g. a password value can be "secret:my-secret/password" which tells the agent to look up the password in the "password" entry found within the OpenShift secret named "my-secret").
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default.
 * You must specify a metric's "type" as either "counter" or "gauge".
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
 * A metric "name" follows a strict format. First is the full MBean name (e.g. `java.lang:type=Threading`) followed by a hash (#) followed by the attribute that contains the metric data (e.g. `ThreadCount`). If the attribute is a composite attribute, then you must append a second hash followed by the composite attribute's subpath name which contains the actual metric value. For example, `java.lang:type=Memory#HeapMemoryUsage#used` will collect the `used` value of the composite attribute `HeapMemoryUsage` from the MBean `java.lang:type=Memory`.
+
+== Generic JSON Endpoints
+
+Hawkular OpenShift Agent has the ability to read any endpoint that exposes metrics in JSON format. So long as the endpoint serves a valid JSON document, the agent can scrape the metrics from that JSON data. One common use-case for this is GoLang's `expvar` feature. A GoLang program can expose its metric data over HTTP in JSON format via expvar (see the link:https://golang.org/pkg/expvar/[GoLang expvar documentation] for more details) - the agent can read this GoLang expvar endpoint to obtain that metric data. A full JSON endpoint configuration can look like this:
+
+[source,yaml]
+----
+- type: json
+  # If this is an endpoint within an OpenShift pod:
+  protocol: https
+  port: 8080
+  path: /debug/vars
+  # If this is an endpoint running outside of OpenShift:
+  #url: "https://yourcorp.com:8080/debug/vars"
+  credentials:
+    token: your-bearer-token-here
+    #username: your-user
+    #password: secret:my-openshift-secret-name/password
+  collection_interval: 60s
+  metrics:
+  - name: loop-counter
+    type: counter
+    description: The number of times the loop was executed.
+----
+
+Some things to note about configuring your JSON endpoints:
+
+* If this is an endpoint running in an OpenShift pod (and thus this endpoint configuration is found in a config map), you do not specify a full URL; instead you specify the protocol, port, and path and the pod's IP will be used for the hostname. URLs are only specified for those endpoints running outside of OpenShift.
+* The agent supports either http or https endpoints. If the JSON endpoint is over the https protocol, you must configure
+the agent with a certificate and private key. This is done by either starting the agent with the two environment variables `HAWKULAR_OPENSHIFT_AGENT_CERT_FILE` and `HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE` or via the Identity section of the agent's configuration file:
+[source,yaml]
+----
+identity:
+  cert_file: /path/to/file.crt
+  private_key_file: /path/to/file.key
+----
+* The credentials are optional. If the JSON endpoint does require authorization, you can specify the credentials as either a bearer token or a basic username/password. To avoid putting this information in plaintext you can specify an OpenShift secret name that the agent will use to obtain the credentials (e.g. a password value can be "secret:my-secret/password" which tells the agent to look up the password in the "password" entry found within the OpenShift secret named "my-secret").
+* If no metrics are specified, all valid metrics in the JSON data will be collected.
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default with labels appended to it (see more below).
+* You must specify a metric's "type" as either "counter" or "gauge".
+* A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
+* A metric "name" is the name of the top-level JSON element.
+
+The JSON data can include sub-elements under the named top-level elements. In this case, the sub-element names will be used as tags and appended to the metric name enclosed in curly braces. The agent can support maps nested at any level. An example is the best way to illustrate this. Suppose the JSON metric data representing a web application's average response times looks like this:
+
+[source,json]
+----
+{
+   "response.times":
+   {
+      "GET":
+      {
+         "/index.html":9.7,
+         "/store/browse.jsp?product=123":1.3
+      },
+      "POST":
+      {
+         "/admin/query-db":2.1,
+         "/store/buy.jsp#cart":4.0
+      }
+   }
+}
+----
+
+The metric names are always found at the top-level of the JSON data. So in this example, the metric being collected has the base metric name "response.times". 
+
+But notice this data has a map sub-element under the top element indicating this "metric" is really a collection of related metrics (for those familiar with Prometheus, we can call this the "metric family name"). This map has two entries with key names "GET" and "POST". Under each of these are more maps, each keyed with a web application request path (e.g. "/index.html" or "/admin/query-db") whose values are the actual numeric metric data - the average response time for each requested endpoint.
+
+The Hawkular OpenShift Agent will be able to collect and store this family of metrics named "response.times". It reads the child map entries and considers each map key a label value which will be appended to the metric name to build the metric ID and will be used as a tag on the metric when storing in Hawkular Metrics. The agent recursively decends the JSON tree building new labels until it reaches the numeric metric data.
+
+For this example, the agent will end up storing in Hawkular Metrics the following four individual metrics:
+
+[cols="1,1,2a"]
+|===
+|Metric ID|Metric Value|Tags
+
+|response.times{label1=GET,label2=/index.html"}
+|9.7
+|* label1=GET1
+ * label2=/index.html
+
+|response.times{label1=GET,label2=/store/browse.jsp?product=123"}
+|1.3
+|* label1=GET
+ * label2=/store/browse.jsp?product=123
+
+|response.times{label1=POST,label2=/admin/query-db"}
+|2.1
+|* label1=POST
+ * label2=/admin/query-db
+
+|response.times{label1=POST,label2=/store/buy.jsp#cart"}
+|4.0
+|* label1=POST
+ * label2=/store/buy.jsp#cart
+
+|===
 
 == Environment Variables
 
@@ -463,7 +560,7 @@ hawkular_server:
   credentials:
     username: VALUE
 ----
-|Username used when connecting to Hawkular Metrics
+|Username used when connecting to Hawkular Metrics. Can use OpenShift secrets via the "secret:" prefix.
 
 |HAWKULAR_SERVER_PASSWORD
 |
@@ -473,7 +570,7 @@ hawkular_server:
   credentials:
     password: VALUE
 ----
-|Password used when connecting to Hawkular Metrics
+|Password used when connecting to Hawkular Metrics. Can use OpenShift secrets via the "secret:" prefix.
 
 |HAWKULAR_SERVER_TOKEN
 |
@@ -483,7 +580,7 @@ hawkular_server:
   credentials:
     token: VALUE
 ----
-|Bearer token used when connecting to Hawkular Metrics. If specified, username and password are ignored.
+|Bearer token used when connecting to Hawkular Metrics. If specified, username and password are ignored. Can use OpenShift secrets via the "secret:" prefix.
 
 |HAWKULAR_OPENSHIFT_AGENT_CERT_FILE
 |

@@ -35,3 +35,10 @@ endpoints:
     collection_interval: 10s
     tags:
       endpoint-name: prometheus-python-example
+  # go-expvar-example
+  - type: json
+    enabled: false
+    url: http://127.0.0.1:8181/debug/vars
+    collection_interval: 10s
+    tags:
+      endpoint-name: go-expvar-example
