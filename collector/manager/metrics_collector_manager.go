@@ -502,7 +502,11 @@ func (mcm *MetricsCollectorManager) createMetricDefinition(theCollector collecto
 		}
 		if metricDescription == "" {
 			var descriptionBuffer bytes.Buffer
-			descriptionBuffer.WriteString(metricDetail.Description)
+			if metricDetail.Description != "" {
+				descriptionBuffer.WriteString(metricDetail.Description)
+			} else {
+				descriptionBuffer.WriteString(monitoredMetric.Name)
+			}
 
 			// If the metric datapoint had tags on it, let the default description include the tags to make the description unique.
 			// Put the tag names in an array and sort the array - we want the names to be in order.
