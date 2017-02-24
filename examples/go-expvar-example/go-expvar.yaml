@@ -76,7 +76,7 @@ objects:
   data:
     hawkular-openshift-agent: |
       endpoints:
-      - type: expvar
+      - type: json
         protocol: "http"
         port: 8181
         path: /debug/vars
