@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -33,6 +34,11 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/json"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/math"
+)
+
+const (
+	LABEL_PREFIX      = "label"      // prefix to the tags that will be used to distinguish metrics within a metric family
+	ARRAY_STAT_PREFIX = "array_stat" // prefix to the tags for each array statistic metric
 )
 
 type JSONMetricsCollector struct {
@@ -100,12 +106,38 @@ func (mc *JSONMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHeade
 		return
 	}
 
-	// Listen to a channel that will receive all the metrics so we can store them in our metrics array
+	// Listen to a channel that will receive all the metrics so we can store them in our metrics array.
+	// We only ever want to collect one metric per "id+tags" combination. If we see multiple metrics
+	// with the same "id+tags" combination, we'll collect the first one of them but ignore all the
+	// rest (metricExistenceMap is used to make sure we eliminate these duplicate metrics).
+	// We also ignore metrics that have no datapoints (should never happen but we check anyway).
 	metrics = make([]hmetrics.MetricHeader, 0)
+	metricExistenceMap := make(map[string]bool, 0)
 	metricsChan := make(chan hmetrics.MetricHeader)
 	go func() {
 		for m := range metricsChan {
-			metrics = append(metrics, m)
+			if len(m.Data) > 0 {
+				// build the unique key for this metric to compare with what is in existence map
+				buf := bytes.NewBufferString(m.ID)
+				if len(m.Data[0].Tags) > 0 {
+					tagKeys := make([]string, len(m.Data[0].Tags))
+					for k, _ := range m.Data[0].Tags {
+						tagKeys = append(tagKeys, k)
+					}
+					sort.Strings(tagKeys)
+					for _, k := range tagKeys {
+						buf.WriteString(k)
+						buf.WriteString(m.Data[0].Tags[k])
+					}
+				}
+				uniqueKey := buf.String()
+
+				// if we have not yet seen this metric, put it in our metrics array; otherwise skip it
+				if _, ok := metricExistenceMap[uniqueKey]; !ok {
+					metrics = append(metrics, m)
+					metricExistenceMap[uniqueKey] = true
+				}
+			}
 		}
 	}()
 
@@ -150,7 +182,7 @@ func (mc *JSONMetricsCollector) processJSON(context processingContext, jsonName 
 	url := mc.Endpoint.URL
 	metricId := context.buildMetricId(jsonName)
 	if context.currentMetricId != "" {
-		context.currentMetricTags = append(context.currentMetricTags, tags.Tags{fmt.Sprintf("label%v", len(context.currentMetricTags)+1): jsonName})
+		context.currentMetricTags = append(context.currentMetricTags, tags.Tags{fmt.Sprintf("%v%v", LABEL_PREFIX, len(context.currentMetricTags)+1): jsonName})
 	}
 
 	metricType := hmetrics.Gauge
@@ -224,7 +256,7 @@ func (mc *JSONMetricsCollector) processJSON(context processingContext, jsonName 
 				// terminal json element - this is a flat array of numeric values
 				// We don't know anything about the data, but we'll assume calculating
 				// some statistics (min, max, avg, stddev) would be useful.
-				tagName := "array_stat"
+				tagName := ARRAY_STAT_PREFIX
 
 				minMetric := hmetrics.MetricHeader{
 					ID:     metricId,
