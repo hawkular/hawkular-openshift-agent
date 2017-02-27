@@ -10,6 +10,7 @@ data:
   config.yaml: |
     kubernetes:
       tenant: ${POD:namespace_name}
+      pod_label_tags_prefix: labels.
     hawkular_server:
       url: https://hawkular-metrics.openshift-infra.svc.cluster.local       
       credentials:

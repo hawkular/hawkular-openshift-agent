@@ -663,6 +663,15 @@ kubernetes:
 ----
 |Restricts the number of metrics that will be stored for each pod being monitored.
 
+|K8S_POD_LABEL_TAGS_PREFIX
+|
+[source,yaml]
+----
+kubernetes:
+  pod_label_tags_prefix: VALUE
+----
+| Pods might have one or more labels (name/value pairs). You can tag each metric with these pod labels if "pod_label_tags_prefix" is not an empty string. If it is an empty string or not specified, these tags will not be created. When not an empty string, for each label on a pod a tag will be placed on each pod metric with this string prefixing the pod label name. For example, if the prefix string is `labels.` and a pod has a label `something=foo` then that pod's metrics will have a tag named `labels.something` with value of `foo`. If you wish to create these tags with no prefix (that is, you want the tag names to be exactly the same as the label names) set the prefix value to `\_empty_`.
+
 |COLLECTOR_MINIMUM_COLLECTION_INTERVAL
 |
 [source,yaml]
@@ -875,3 +884,17 @@ tags:
   my-pod-name: ${POD:name}
   some-env-tag: var is ${SOME_ENV_VAR}
 ----
+
+=== Pod Label Tags
+
+There is a setting in the Kubernetes section of the agent global configuration called `pod_label_tags_prefix` that also enables the creation of metric tags. When specified and not an empty string, this enables pod label tags to be created. This means every metric from every pod will get one tag per pod label with the name of the tag that of the pod label prefixed with the string defined in this `pod_label_tags_prefix` setting. If you wish to create these tags with no prefix (that is, you want the tag names to be exactly the same as the label names) set the prefix value to `\_empty_`.
+
+For example, if the agent global configuration has this:
+
+[source,yaml]
+----
+kubernetes:
+  pod_label_tags_prefix: labels.
+----
+
+and a pod has a label `something=foo` then that pod's metrics will have a tag named `labels.something` with a value of `foo`. If the prefix string was set to `\_empty_`, the tag will be named the same as the label name which in this example is `something`.

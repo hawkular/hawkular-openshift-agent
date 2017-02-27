@@ -44,13 +44,14 @@ const (
 	ENV_IDENTITY_CERT_FILE        = "HAWKULAR_OPENSHIFT_AGENT_CERT_FILE"
 	ENV_IDENTITY_PRIVATE_KEY_FILE = "HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE"
 
-	ENV_K8S_MASTER_URL          = "K8S_MASTER_URL"
-	ENV_K8S_POD_NAMESPACE       = "K8S_POD_NAMESPACE"
-	ENV_K8S_POD_NAME            = "K8S_POD_NAME"
-	ENV_K8S_TOKEN               = "K8S_TOKEN"
-	ENV_K8S_CA_CERT_FILE        = "K8S_CA_CERT_FILE"
-	ENV_K8S_TENANT              = "K8S_TENANT"
-	ENV_K8S_MAX_METRICS_PER_POD = "K8S_MAX_METRICS_PER_POD"
+	ENV_K8S_MASTER_URL            = "K8S_MASTER_URL"
+	ENV_K8S_POD_NAMESPACE         = "K8S_POD_NAMESPACE"
+	ENV_K8S_POD_NAME              = "K8S_POD_NAME"
+	ENV_K8S_TOKEN                 = "K8S_TOKEN"
+	ENV_K8S_CA_CERT_FILE          = "K8S_CA_CERT_FILE"
+	ENV_K8S_TENANT                = "K8S_TENANT"
+	ENV_K8S_MAX_METRICS_PER_POD   = "K8S_MAX_METRICS_PER_POD"
+	ENV_K8S_POD_LABEL_TAGS_PREFIX = "K8S_POD_LABEL_TAGS_PREFIX"
 
 	ENV_EMITTER_ADDRESS                      = "EMITTER_ADDRESS"
 	ENV_EMITTER_METRICS_ENABLED              = "EMITTER_METRICS_ENABLED"
@@ -91,25 +92,39 @@ type Collector struct {
 }
 
 // Kubernetes provides all the details necessary to communicate with the Kubernetes system.
+//
 // Master_Url should be an empty string if the agent is deployed in OpenShift.
+//
 // Pod_Namespace and Pod_Name should identify the pod where the agent is running (if it is
 // running in OpenShift) or should identify any pod in the node to be monitored by the agent
 // (if the agent is not running in OpenShift). Pod_Namespace should be empty if you do not wish
 // for the agent to monitor anything in OpenShift.
+//
 // If Tenant is supplied, all metrics collected from all pods will have this tenant.
 // You can specify ${x} tokens in the value for Tenant, such as ${some_env} or one of the POD
 // tokens such as ${POD:namespace_name} which means all metrics will be stored under a tenant
 // that is the same name of the pod namespace where the metric was collected.
 // If Tenant is not supplied, the default is the Tenant defined in the Hawkular_Server section.
+//
+// Kubernetes pods might have one or more labels (name/value pairs). You can tag each metric
+// with these pod labels if "Pod_Label_Tags_Prefix" is not an empty string. If it is an empty
+// string or not specified, these tags will not be created. When not an empty string, for each
+// label on a pod a tag will be placed on each pod metric with this string prefixing the
+// pod label name. For example, if the prefix string is "labels." and a pod has a
+// label "something=foo" then that pod's metrics will have a tag named "labels.something"
+// with value of "foo". If you wish to create these tags with no prefix (that is, you want the
+// tag names to be exactly the same as the label names) set the prefix value to "_empty_".
+//
 // USED FOR YAML
 type Kubernetes struct {
-	Master_URL          string ",omitempty"
-	Token               string ",omitempty"
-	CA_Cert_File        string ",omitempty"
-	Pod_Namespace       string ",omitempty"
-	Pod_Name            string ",omitempty"
-	Tenant              string ",omitempty"
-	Max_Metrics_Per_Pod int    ",omitempty"
+	Master_URL            string ",omitempty"
+	Token                 string ",omitempty"
+	CA_Cert_File          string ",omitempty"
+	Pod_Namespace         string ",omitempty"
+	Pod_Name              string ",omitempty"
+	Tenant                string ",omitempty"
+	Max_Metrics_Per_Pod   int    ",omitempty"
+	Pod_Label_Tags_Prefix string ",omitempty"
 }
 
 // Emitter defines the behavior of the emitter which is responsible for
@@ -160,6 +175,7 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
 	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
 	c.Kubernetes.Max_Metrics_Per_Pod = getDefaultInt(ENV_K8S_MAX_METRICS_PER_POD, 50)
+	c.Kubernetes.Pod_Label_Tags_Prefix = getDefaultString(ENV_K8S_POD_LABEL_TAGS_PREFIX, "")
 
 	c.Emitter.Metrics_Enabled = getDefaultString(ENV_EMITTER_METRICS_ENABLED, "true")
 	c.Emitter.Status_Enabled = getDefaultString(ENV_EMITTER_STATUS_ENABLED, "false")
