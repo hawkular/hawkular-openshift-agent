@@ -231,10 +231,10 @@ data:
       port: 8080
       path: /metrics
       metrics:
-        name: the_metric_to_collect
+      - name: the_metric_to_collect
 ----
 
-Notice the name given to this config map - "my-web-pod-config". This is the name of the config map, and it is this name that should appear as a value to the "hawkular-openshift-agent" volume found on the "web-pod" pod. It identifies this config map to Hawkular OpenShift Agent as the one that should be used by that pod. Notice also that the name of the config map entry is fixed and must always be "hawkular-openshift-agent". Next, notice the config map entry here. This defines what are to be monitored. Here you see there is a single endpoint for this pod that will expose Prometheus metrics over http and port 8080 at /metrics. The IP address used will be that of the pod itself and thus need not be specified.
+Notice the name given to this config map - "my-web-pod-config". This is the name of the config map, and it is this name that should appear as a value to the "hawkular-openshift-agent" volume found on the "web-pod" pod. It identifies this config map to Hawkular OpenShift Agent as the one that should be used by that pod. Notice also that the name of the config map entry is fixed and must always be "hawkular-openshift-agent". Next, notice the config map entry here. This defines what are to be monitored. Here you see there is a single endpoint for this pod that will expose Prometheus metrics over http and port 8080 at /metrics. The IP address used will be that of the pod itself and thus need not be specified. Note, too, that you can specify which metrics should be collected. Metric names (such as the example above "the_metric_to_collect") tells the agent that the metric with that given name should be collected and any others are to be ignored (not collected). Metric names can include pod token expressions such as `${POD:namespace_name}` - see below for the list of valid pod token expressions.
 
 To create this config map, save that YAML to a file and use "oc":
 
