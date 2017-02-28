@@ -246,10 +246,10 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		// if all pod labels should be used as tags on all metrics, create those tags from the pod labels.
 		endpointTags := tags.Tags{}
 		endpointTags.AppendTags(cmeEndpoint.Tags)
-		if nec.Config.Kubernetes.Pod_Label_Tags_Prefix != "" {
+		if nec.Config.Collector.Pod_Label_Tags_Prefix != "" {
 			// each label will be prefixed with the configured prefix string unless that prefix
 			// was "_empty_" in which case the user is telling us to use the label name as-is with no prefix.
-			prefix := nec.Config.Kubernetes.Pod_Label_Tags_Prefix
+			prefix := nec.Config.Collector.Pod_Label_Tags_Prefix
 			if prefix == "_empty_" {
 				prefix = ""
 			}

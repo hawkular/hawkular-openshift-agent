@@ -111,6 +111,9 @@ func TestDefaults(t *testing.T) {
 	if conf.Collector.Default_Collection_Interval != "5m" {
 		t.Error("Default collection interval default is wrong")
 	}
+	if conf.Collector.Pod_Label_Tags_Prefix != "" {
+		t.Error("Pod label tags prefix default is wrong")
+	}
 	if conf.Hawkular_Server.URL != "http://127.0.0.1:8080" {
 		t.Error("Hawkular Server URL is wrong")
 	}
@@ -137,9 +140,6 @@ func TestDefaults(t *testing.T) {
 	}
 	if conf.Kubernetes.Max_Metrics_Per_Pod != 50 {
 		t.Error("Max metrics per pod default is wrong")
-	}
-	if conf.Kubernetes.Pod_Label_Tags_Prefix != "" {
-		t.Error("Pod label tags prefix default is wrong")
 	}
 	if len(conf.Endpoints) != 0 {
 		t.Error("There should be no endpoints by default")
@@ -172,15 +172,15 @@ func TestMarshalUnmarshal(t *testing.T) {
 		Collector: Collector{
 			Minimum_Collection_Interval: "12345s",
 			Default_Collection_Interval: "98765s",
+			Pod_Label_Tags_Prefix:       "labels.",
 		},
 		Hawkular_Server: Hawkular_Server{
 			URL: "http://server:80",
 		},
 		Kubernetes: Kubernetes{
-			Pod_Namespace:         "TestMarshalUnmarshal namespace",
-			Pod_Name:              "TestMarshalUnmarshal name",
-			Max_Metrics_Per_Pod:   123,
-			Pod_Label_Tags_Prefix: "labels.",
+			Pod_Namespace:       "TestMarshalUnmarshal namespace",
+			Pod_Name:            "TestMarshalUnmarshal name",
+			Max_Metrics_Per_Pod: 123,
 		},
 		Emitter: Emitter{
 			Metrics_Enabled: "false",
@@ -235,6 +235,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 	if conf.Collector.Default_Collection_Interval != "98765s" {
 		t.Errorf("Failed to unmarshal default collection interval:\n%v", conf)
 	}
+	if conf.Collector.Pod_Label_Tags_Prefix != "labels." {
+		t.Error("Pod Label Tags Prefix is wrong")
+	}
 	if conf.Collector.Metric_ID_Prefix != "" {
 		t.Errorf("Failed to unmarshal empty metric ID prefix:\n%v", conf)
 	}
@@ -249,9 +252,6 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}
 	if conf.Kubernetes.Max_Metrics_Per_Pod != 123 {
 		t.Errorf("Failed to unmarshal max metrics per pod:\n%v", conf)
-	}
-	if conf.Kubernetes.Pod_Label_Tags_Prefix != "labels." {
-		t.Error("Pod Label Tags Prefix is wrong")
 	}
 	if conf.Endpoints[0].Collection_Interval != "123s" {
 		t.Error("First endpoint is not correct")
