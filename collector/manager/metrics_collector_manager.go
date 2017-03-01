@@ -160,6 +160,11 @@ func (mcm *MetricsCollectorManager) StartCollecting(theCollector collector.Metri
 			UseOSEnv: true,
 		})
 
+		// metric names may have ${x} tokens in them - we need to expand them now before we do anything with metrics
+		for i, mm := range theCollector.GetEndpoint().Metrics {
+			theCollector.GetEndpoint().Metrics[i].Name = os.Expand(mm.Name, mappingFunc)
+		}
+
 		// cache that tracks what metric definitions we already created - key is full metric ID (prefixed and expanded)
 		metricDefinitionsDeclared := make(map[string]collector.MonitoredMetric, 0)
 
