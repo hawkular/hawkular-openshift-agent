@@ -23,6 +23,7 @@ import (
 
 type MetricsType struct {
 	DataPointsCollected prometheus.Counter
+	DataPointsStored    prometheus.Counter
 	MonitoredPods       prometheus.Gauge
 	MonitoredEndpoints  prometheus.Gauge
 	MonitoredMetrics    prometheus.Gauge
@@ -33,6 +34,12 @@ var Metrics = MetricsType{
 		prometheus.CounterOpts{
 			Name: "hawkular_openshift_agent_metric_data_points_collected_total",
 			Help: "The total number of individual metric data points collected from all endpoints.",
+		},
+	),
+	DataPointsStored: prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "hawkular_openshift_agent_metric_data_points_stored_total",
+			Help: "The total number of individual metric data points stored in Hawkular Metrics.",
 		},
 	),
 	MonitoredPods: prometheus.NewGauge(
@@ -58,6 +65,7 @@ var Metrics = MetricsType{
 func RegisterMetrics() {
 	prometheus.MustRegister(
 		Metrics.DataPointsCollected,
+		Metrics.DataPointsStored,
 		Metrics.MonitoredPods,
 		Metrics.MonitoredEndpoints,
 		Metrics.MonitoredMetrics,

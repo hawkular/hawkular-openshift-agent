@@ -31,6 +31,7 @@ import (
 
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	agentmetrics "github.com/hawkular/hawkular-openshift-agent/emitter/metrics"
 	"github.com/hawkular/hawkular-openshift-agent/k8s"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 )
@@ -164,10 +165,9 @@ func (ms *MetricsStorageManager) consumeMetrics() {
 			log.Tracef("These metrics failed to be stored: %v", metrics)
 		} else {
 			log.Debugf("Stored datapoints for [%v] metrics", len(metrics))
-			if log.IsTrace() {
-				for _, m := range metrics {
-					log.Tracef("Stored [%v] [%v] datapoints for metric named [%v]: %v", len(m.Data), m.Type, m.ID, m.Data)
-				}
+			for _, m := range metrics {
+				agentmetrics.Metrics.DataPointsStored.Add(float64(len(m.Data)))
+				log.Tracef("Stored [%v] [%v] datapoints for metric named [%v]: %v", len(m.Data), m.Type, m.ID, m.Data)
 			}
 		}
 	}
