@@ -521,13 +521,12 @@ For this example, the agent will end up storing in Hawkular Metrics the followin
 
 Many of the agent's configuration settings can optionally be set via environment variables. If one of the environment variables below are set, they serve as the default value for its associated YAML configuration setting. The following are currently supported:
 
-[cols="1a,1,1a"]
+[cols="1a,1a"]
 |===
-|Environment Variable Name|Description|YAML Setting
+|Environment Variable Name|Description and YAML Setting
 
 |`HAWKULAR_SERVER_URL`
 |This is the Hawkuar Metrics server where all metric data will be stored
-|
 [source,yaml]
 ----
 hawkular_server:
@@ -536,7 +535,6 @@ hawkular_server:
 
 |`HAWKULAR_SERVER_TENANT`
 |The default tenant ID to be used if external endpoints do not define their own. Note that OpenShift endpoints always have a tenant which is the same as its pod namespace and thus this setting is not used in that case.
-|
 [source,yaml]
 ----
 hawkular_server:
@@ -545,7 +543,6 @@ hawkular_server:
 
 |`HAWKULAR_SERVER_CA_CERT_FILE`
 |File that contains the certificate that is required to connect to Hawkular Metrics
-|
 [source,yaml]
 ----
 hawkular_server:
@@ -554,7 +551,6 @@ hawkular_server:
 
 |`HAWKULAR_SERVER_USERNAME`
 |Username used when connecting to Hawkular Metrics. Can use OpenShift secrets via the "secret:" prefix.
-|
 [source,yaml]
 ----
 hawkular_server:
@@ -564,7 +560,6 @@ hawkular_server:
 
 |`HAWKULAR_SERVER_PASSWORD`
 |Password used when connecting to Hawkular Metrics. Can use OpenShift secrets via the "secret:" prefix.
-|
 [source,yaml]
 ----
 hawkular_server:
@@ -574,7 +569,6 @@ hawkular_server:
 
 |`HAWKULAR_SERVER_TOKEN`
 |Bearer token used when connecting to Hawkular Metrics. If specified, username and password are ignored. Can use OpenShift secrets via the "secret:" prefix.
-|
 [source,yaml]
 ----
 hawkular_server:
@@ -584,7 +578,6 @@ hawkular_server:
 
 |`HAWKULAR_OPENSHIFT_AGENT_CERT_FILE`
 |File that contains the certificate that identifies this agent.
-|
 [source,yaml]
 ----
 identity:
@@ -593,7 +586,6 @@ identity:
 
 |`HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE`
 |File that contains the private key that identifies this agent.
-|
 [source,yaml]
 ----
 identity:
@@ -602,7 +594,6 @@ identity:
 
 |`K8S_MASTER_URL`
 |The location of the OpenShift master. If left blank, it is assumed this agent is running within OpenShift and thus does not need a URL to connect to the master.
-|
 [source,yaml]
 ----
 kubernetes:
@@ -611,7 +602,6 @@ kubernetes:
 
 |`K8S_POD_NAMESPACE`
 |The namespace of the pod where this agent is running. If this is left blank, it is assumed this agent is not running within OpenShift.
-|
 [source,yaml]
 ----
 kubernetes:
@@ -620,7 +610,6 @@ kubernetes:
 
 |`K8S_POD_NAME`
 |The name of the pod where this agent is running. Only required if the agent is running within OpenShift.
-|
 [source,yaml]
 ----
 kubernetes:
@@ -629,7 +618,6 @@ kubernetes:
 
 |`K8S_TOKEN`
 |The bearer token required to connect to the OpenShift master.
-|
 [source,yaml]
 ----
 kubernetes:
@@ -638,7 +626,6 @@ kubernetes:
 
 |`K8S_CA_CERT_FILE`
 |File that contains the certificate required to connect to the OpenShift master.
-|
 [source,yaml]
 ----
 kubernetes:
@@ -647,7 +634,6 @@ kubernetes:
 
 |`K8S_TENANT`
 |If defined, this will be the tenant where all pod metrics are stored. If not defined, the default is the tenant specified in the Hawkular_Server section. If defined, may include ${var} tokens where `var` is either an agent environment variable of one of the valid POD tag tokens such as `POD:namespace_name`.
-|
 [source,yaml]
 ----
 kubernetes:
@@ -656,7 +642,6 @@ kubernetes:
 
 |`COLLECTOR_MAX_METRICS_PER_POD`
 |Restricts the number of metrics that will be stored for each pod being monitored.
-|
 [source,yaml]
 ----
 collector:
@@ -665,7 +650,6 @@ collector:
 
 |`COLLECTOR_MINIMUM_COLLECTION_INTERVAL`
 |Limits the fastest that any endpoint can have its metrics collected. If an endpoint defines its collection interval smaller than this value, that endpoint's collection interval will be set to this minimum value. Specified as a number followed by units such as "30s" for thirty seconds or "2m" for two minutes.
-|
 [source,yaml]
 ----
 collector:
@@ -674,7 +658,6 @@ collector:
 
 |`COLLECTOR_DEFAULT_COLLECTION_INTERVAL`
 |The default collection interval for those endpoints that do not explicitly define its own collection interval. Specified as a number followed by units such as "30s" for thirty seconds or "2m" for two minutes.
-|
 [source,yaml]
 ----
 collector:
@@ -683,7 +666,6 @@ collector:
 
 |`COLLECTOR_POD_LABEL_TAGS_PREFIX`
 | Pods might have one or more labels (name/value pairs). You can tag each metric with these pod labels if "pod_label_tags_prefix" is not an empty string. If it is an empty string or not specified, these tags will not be created. When not an empty string, for each label on a pod a tag will be placed on each pod metric with this string prefixing the pod label name. For example, if the prefix string is `labels.` and a pod has a label `something=foo` then that pod's metrics will have a tag named `labels.something` with value of `foo`. If you wish to create these tags with no prefix (that is, you want the tag names to be exactly the same as the label names) set the prefix value to `\_empty_`.
-|
 [source,yaml]
 ----
 collector:
@@ -692,7 +674,6 @@ collector:
 
 |`EMITTER_ADDRESS`
 |If the emitter endpoint is to be enabled, this is the bind address and port. If address is not specified, it will be an IP of the host machine. If not specified at all, this will be either ":8080" if the agent's identity is not declared and ":8443" if the agent's identity is declared. Note that if the agent's identity is declared, the endpoint will be exposed over https, otherwise http is used. If neither metrics, status, or health emitters are enabled, this setting is not used and no http(s) endpoint is created by the agent.
-|
 [source,yaml]
 ----
 emitter:
@@ -701,7 +682,6 @@ emitter:
 
 |`EMITTER_METRICS_ENABLED`
 |If true, the agent's own metrics are emitted at the /metrics endpoint.
-|
 [source,yaml]
 ----
 emitter:
@@ -710,7 +690,6 @@ emitter:
 
 |`EMITTER_STATUS_ENABLED`
 |If enabled the status is emitted at the /status endpoint. This is useful to admins and developers to see internal details about the agent. Use the status credentials settings to secure this endpoint via basic authentication.
-|
 [source,yaml]
 ----
 emitter:
@@ -719,7 +698,6 @@ emitter:
 
 |`EMITTER_HEALTH_ENABLED`
 |If true, a simple health endpoint is emitted at /health endpoint. This is useful for health probes to check the health of the agent.
-|
 [source,yaml]
 ----
 emitter:
@@ -728,7 +706,6 @@ emitter:
 
 |`EMITTER_METRICS_CREDENTIALS_USERNAME`
 |If the metrics emitter is enabled, you can set this username (along with the password) to force users to authenticate themselves in order to see the metrics information.
-|
 [source,yaml]
 ----
 emitter:
@@ -738,7 +715,6 @@ emitter:
 
 |`EMITTER_METRICS_CREDENTIALS_PASSWORD`
 |If the metrics emitter is enabled, you can set this password (along with the username) to force users to authenticate themselves in order to see the metrics information.
-|
 [source,yaml]
 ----
 emitter:
@@ -748,7 +724,6 @@ emitter:
 
 |`EMITTER_STATUS_LOG_SIZE`
 |The status endpoint emits important log messages. Set this value to limit the size of the log.
-|
 [source,yaml]
 ----
 emitter:
@@ -757,7 +732,6 @@ emitter:
 
 |`EMITTER_STATUS_CREDENTIALS_USERNAME`
 |If the status emitter is enabled, you can set this username (along with the password) to force users to authenticate themselves in order to see the status information.
-|
 [source,yaml]
 ----
 emitter:
@@ -767,7 +741,6 @@ emitter:
 
 |`EMITTER_STATUS_CREDENTIALS_PASSWORD`
 |If the status emitter is enabled, you can set this password (along with the username) to force users to authenticate themselves in order to see the status information.
-|
 [source,yaml]
 ----
 emitter:
