@@ -44,13 +44,12 @@ const (
 	ENV_IDENTITY_CERT_FILE        = "HAWKULAR_OPENSHIFT_AGENT_CERT_FILE"
 	ENV_IDENTITY_PRIVATE_KEY_FILE = "HAWKULAR_OPENSHIFT_AGENT_PRIVATE_KEY_FILE"
 
-	ENV_K8S_MASTER_URL          = "K8S_MASTER_URL"
-	ENV_K8S_POD_NAMESPACE       = "K8S_POD_NAMESPACE"
-	ENV_K8S_POD_NAME            = "K8S_POD_NAME"
-	ENV_K8S_TOKEN               = "K8S_TOKEN"
-	ENV_K8S_CA_CERT_FILE        = "K8S_CA_CERT_FILE"
-	ENV_K8S_TENANT              = "K8S_TENANT"
-	ENV_K8S_MAX_METRICS_PER_POD = "K8S_MAX_METRICS_PER_POD"
+	ENV_K8S_MASTER_URL    = "K8S_MASTER_URL"
+	ENV_K8S_POD_NAMESPACE = "K8S_POD_NAMESPACE"
+	ENV_K8S_POD_NAME      = "K8S_POD_NAME"
+	ENV_K8S_TOKEN         = "K8S_TOKEN"
+	ENV_K8S_CA_CERT_FILE  = "K8S_CA_CERT_FILE"
+	ENV_K8S_TENANT        = "K8S_TENANT"
 
 	ENV_EMITTER_ADDRESS                      = "EMITTER_ADDRESS"
 	ENV_EMITTER_METRICS_ENABLED              = "EMITTER_METRICS_ENABLED"
@@ -62,6 +61,7 @@ const (
 	ENV_EMITTER_STATUS_CREDENTIALS_USERNAME  = "EMITTER_STATUS_CREDENTIALS_USERNAME"
 	ENV_EMITTER_STATUS_CREDENTIALS_PASSWORD  = "EMITTER_STATUS_CREDENTIALS_PASSWORD"
 
+	ENV_COLLECTOR_MAX_METRICS_PER_POD   = "COLLECTOR_MAX_METRICS_PER_POD"
 	ENV_COLLECTOR_MINIMUM_COLL_INTERVAL = "COLLECTOR_MINIMUM_COLLECTION_INTERVAL"
 	ENV_COLLECTOR_DEFAULT_COLL_INTERVAL = "COLLECTOR_DEFAULT_COLLECTION_INTERVAL"
 	ENV_COLLECTOR_POD_LABEL_TAGS_PREFIX = "COLLECTOR_POD_LABEL_TAGS_PREFIX"
@@ -97,6 +97,7 @@ type Hawkular_Server struct {
 //
 // USED FOR YAML
 type Collector struct {
+	Max_Metrics_Per_Pod         int ",omitempty"
 	Minimum_Collection_Interval string
 	Default_Collection_Interval string
 	Tags                        tags.Tags ",omitempty"
@@ -121,13 +122,12 @@ type Collector struct {
 //
 // USED FOR YAML
 type Kubernetes struct {
-	Master_URL          string ",omitempty"
-	Token               string ",omitempty"
-	CA_Cert_File        string ",omitempty"
-	Pod_Namespace       string ",omitempty"
-	Pod_Name            string ",omitempty"
-	Tenant              string ",omitempty"
-	Max_Metrics_Per_Pod int    ",omitempty"
+	Master_URL    string ",omitempty"
+	Token         string ",omitempty"
+	CA_Cert_File  string ",omitempty"
+	Pod_Namespace string ",omitempty"
+	Pod_Name      string ",omitempty"
+	Tenant        string ",omitempty"
 }
 
 // Emitter defines the behavior of the emitter which is responsible for
@@ -168,6 +168,7 @@ func NewConfig() (c *Config) {
 	c.Hawkular_Server.Credentials.Token = strings.TrimSpace(getDefaultString(ENV_HS_TOKEN, ""))
 	c.Hawkular_Server.CA_Cert_File = getDefaultString(ENV_HS_CA_CERT_FILE, "")
 
+	c.Collector.Max_Metrics_Per_Pod = getDefaultInt(ENV_COLLECTOR_MAX_METRICS_PER_POD, 50)
 	c.Collector.Minimum_Collection_Interval = getDefaultString(ENV_COLLECTOR_MINIMUM_COLL_INTERVAL, "10s")
 	c.Collector.Default_Collection_Interval = getDefaultString(ENV_COLLECTOR_DEFAULT_COLL_INTERVAL, "5m")
 	c.Collector.Pod_Label_Tags_Prefix = getDefaultString(ENV_COLLECTOR_POD_LABEL_TAGS_PREFIX, "")
@@ -178,7 +179,6 @@ func NewConfig() (c *Config) {
 	c.Kubernetes.Token = getDefaultString(ENV_K8S_TOKEN, "")
 	c.Kubernetes.CA_Cert_File = getDefaultString(ENV_K8S_CA_CERT_FILE, "")
 	c.Kubernetes.Tenant = getDefaultString(ENV_K8S_TENANT, "")
-	c.Kubernetes.Max_Metrics_Per_Pod = getDefaultInt(ENV_K8S_MAX_METRICS_PER_POD, 50)
 
 	c.Emitter.Metrics_Enabled = getDefaultString(ENV_EMITTER_METRICS_ENABLED, "true")
 	c.Emitter.Status_Enabled = getDefaultString(ENV_EMITTER_STATUS_ENABLED, "false")

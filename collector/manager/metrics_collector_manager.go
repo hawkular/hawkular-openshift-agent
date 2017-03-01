@@ -54,7 +54,7 @@ func NewMetricsCollectorManager(conf *config.Config, metricsChan chan []hmetrics
 		TickersLock:    &sync.Mutex{},
 		Tickers:        make(map[collector.CollectorID]*time.Ticker),
 		Config:         conf,
-		metricsTracker: tracker.NewMetricsTracker(conf.Kubernetes.Max_Metrics_Per_Pod),
+		metricsTracker: tracker.NewMetricsTracker(conf.Collector.Max_Metrics_Per_Pod),
 		metricsChan:    metricsChan,
 		metricDefsChan: metricDefsChan,
 	}
@@ -63,7 +63,7 @@ func NewMetricsCollectorManager(conf *config.Config, metricsChan chan []hmetrics
 	status.StatusReport.SetMetricsTracker(&mcm.metricsTracker)
 
 	log.Tracef("New metrics collector manager has been created. config=%v", conf)
-	log.Infof("Pods will be limited to a maximum of [%v] metrics", conf.Kubernetes.Max_Metrics_Per_Pod)
+	log.Infof("Pods will be limited to a maximum of [%v] metrics", conf.Collector.Max_Metrics_Per_Pod)
 	log.Infof("Endpoints will be limited to a minimum collection interval of [%v]", conf.Collector.Minimum_Collection_Interval)
 
 	return mcm

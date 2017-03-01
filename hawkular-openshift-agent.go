@@ -194,7 +194,7 @@ func validateConfig() error {
 		}
 	}
 
-	if Configuration.Kubernetes.Max_Metrics_Per_Pod <= 0 {
+	if Configuration.Collector.Max_Metrics_Per_Pod <= 0 {
 		return fmt.Errorf("Max Metrics Per Pod must be greater than 0")
 	}
 

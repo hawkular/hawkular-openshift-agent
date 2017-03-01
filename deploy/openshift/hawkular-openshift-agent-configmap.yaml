@@ -19,6 +19,7 @@ data:
     emitter:
       status_enabled: true
     collector:
+      max_metrics_per_pod: 50
       minimum_collection_interval: 10s
       default_collection_interval: 30s
       metric_id_prefix: pod/${POD:uid}/custom/
