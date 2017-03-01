@@ -64,6 +64,7 @@ const (
 
 	ENV_COLLECTOR_MINIMUM_COLL_INTERVAL = "COLLECTOR_MINIMUM_COLLECTION_INTERVAL"
 	ENV_COLLECTOR_DEFAULT_COLL_INTERVAL = "COLLECTOR_DEFAULT_COLLECTION_INTERVAL"
+	ENV_COLLECTOR_POD_LABEL_TAGS_PREFIX = "COLLECTOR_POD_LABEL_TAGS_PREFIX"
 )
 
 // Hawkular_Server defines where the Hawkular Server is. This is where metrics are stored.
@@ -79,28 +80,45 @@ type Hawkular_Server struct {
 }
 
 // Collector provides information about collecting metrics from monitored endpoints.
+//
 // Tags specified here will be attached to all metrics this agent collects and stores.
+//
 // ID_Prefix is a string (with potential ${env} tokens) that is prepended to all IDs of
 // all metrics collected by the agent.
+//
+// Pods might have one or more labels (name/value pairs). You can tag each metric
+// with these pod labels if "Pod_Label_Tags_Prefix" is not an empty string. If it is an empty
+// string or not specified, these tags will not be created. When not an empty string, for each
+// label on a pod a tag will be placed on each pod metric with this string prefixing the
+// pod label name. For example, if the prefix string is "labels." and a pod has a
+// label "something=foo" then that pod's metrics will have a tag named "labels.something"
+// with value of "foo". If you wish to create these tags with no prefix (that is, you want the
+// tag names to be exactly the same as the label names) set the prefix value to "_empty_".
+//
 // USED FOR YAML
 type Collector struct {
 	Minimum_Collection_Interval string
 	Default_Collection_Interval string
 	Tags                        tags.Tags ",omitempty"
+	Pod_Label_Tags_Prefix       string    ",omitempty"
 	Metric_ID_Prefix            string
 }
 
 // Kubernetes provides all the details necessary to communicate with the Kubernetes system.
+//
 // Master_Url should be an empty string if the agent is deployed in OpenShift.
+//
 // Pod_Namespace and Pod_Name should identify the pod where the agent is running (if it is
 // running in OpenShift) or should identify any pod in the node to be monitored by the agent
 // (if the agent is not running in OpenShift). Pod_Namespace should be empty if you do not wish
 // for the agent to monitor anything in OpenShift.
+//
 // If Tenant is supplied, all metrics collected from all pods will have this tenant.
 // You can specify ${x} tokens in the value for Tenant, such as ${some_env} or one of the POD
 // tokens such as ${POD:namespace_name} which means all metrics will be stored under a tenant
 // that is the same name of the pod namespace where the metric was collected.
 // If Tenant is not supplied, the default is the Tenant defined in the Hawkular_Server section.
+//
 // USED FOR YAML
 type Kubernetes struct {
 	Master_URL          string ",omitempty"
@@ -152,6 +170,7 @@ func NewConfig() (c *Config) {
 
 	c.Collector.Minimum_Collection_Interval = getDefaultString(ENV_COLLECTOR_MINIMUM_COLL_INTERVAL, "10s")
 	c.Collector.Default_Collection_Interval = getDefaultString(ENV_COLLECTOR_DEFAULT_COLL_INTERVAL, "5m")
+	c.Collector.Pod_Label_Tags_Prefix = getDefaultString(ENV_COLLECTOR_POD_LABEL_TAGS_PREFIX, "")
 
 	c.Kubernetes.Master_URL = getDefaultString(ENV_K8S_MASTER_URL, "")
 	c.Kubernetes.Pod_Namespace = getDefaultString(ENV_K8S_POD_NAMESPACE, "")

@@ -111,6 +111,9 @@ func TestDefaults(t *testing.T) {
 	if conf.Collector.Default_Collection_Interval != "5m" {
 		t.Error("Default collection interval default is wrong")
 	}
+	if conf.Collector.Pod_Label_Tags_Prefix != "" {
+		t.Error("Pod label tags prefix default is wrong")
+	}
 	if conf.Hawkular_Server.URL != "http://127.0.0.1:8080" {
 		t.Error("Hawkular Server URL is wrong")
 	}
@@ -169,6 +172,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 		Collector: Collector{
 			Minimum_Collection_Interval: "12345s",
 			Default_Collection_Interval: "98765s",
+			Pod_Label_Tags_Prefix:       "labels.",
 		},
 		Hawkular_Server: Hawkular_Server{
 			URL: "http://server:80",
@@ -230,6 +234,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}
 	if conf.Collector.Default_Collection_Interval != "98765s" {
 		t.Errorf("Failed to unmarshal default collection interval:\n%v", conf)
+	}
+	if conf.Collector.Pod_Label_Tags_Prefix != "labels." {
+		t.Error("Pod Label Tags Prefix is wrong")
 	}
 	if conf.Collector.Metric_ID_Prefix != "" {
 		t.Errorf("Failed to unmarshal empty metric ID prefix:\n%v", conf)

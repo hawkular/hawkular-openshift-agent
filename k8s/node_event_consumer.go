@@ -26,6 +26,7 @@ import (
 	"github.com/hawkular/hawkular-openshift-agent/collector/manager"
 	"github.com/hawkular/hawkular-openshift-agent/config"
 	"github.com/hawkular/hawkular-openshift-agent/config/security"
+	"github.com/hawkular/hawkular-openshift-agent/config/tags"
 	"github.com/hawkular/hawkular-openshift-agent/log"
 	"github.com/hawkular/hawkular-openshift-agent/util/expand"
 )
@@ -242,6 +243,21 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			continue
 		}
 
+		// if all pod labels should be used as tags on all metrics, create those tags from the pod labels.
+		endpointTags := tags.Tags{}
+		endpointTags.AppendTags(cmeEndpoint.Tags)
+		if nec.Config.Collector.Pod_Label_Tags_Prefix != "" {
+			// each label will be prefixed with the configured prefix string unless that prefix
+			// was "_empty_" in which case the user is telling us to use the label name as-is with no prefix.
+			prefix := nec.Config.Collector.Pod_Label_Tags_Prefix
+			if prefix == "_empty_" {
+				prefix = ""
+			}
+			for n, v := range ne.Pod.Labels {
+				endpointTags[fmt.Sprintf("%v%v", prefix, n)] = v
+			}
+		}
+
 		// We need to convert the k8s endpoint to the generic endpoint struct.
 		newEndpoint := &collector.Endpoint{
 			URL:                 url.String(),
@@ -252,7 +268,7 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 			Credentials:         endpointCredentials,
 			Collection_Interval: cmeEndpoint.Collection_Interval,
 			Metrics:             cmeEndpoint.Metrics,
-			Tags:                cmeEndpoint.Tags,
+			Tags:                endpointTags,
 		}
 
 		// make sure the endpoint is configured correctly
