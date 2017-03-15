@@ -116,21 +116,26 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 	for i, resp := range responses.Responses {
 		if resp.IsSuccess() {
-			data := make([]hmetrics.Datapoint, 1)
-			data[0] = hmetrics.Datapoint{
-				Timestamp: now,
-				Value:     resp.GetValueAsFloat(),
+			if respValue, ok := resp.Value.(float64); ok {
+				data := make([]hmetrics.Datapoint, 1)
+				data[0] = hmetrics.Datapoint{
+					Timestamp: now,
+					Value:     respValue,
+				}
+
+				metric := hmetrics.MetricHeader{
+					Type:   jc.Endpoint.Metrics[i].Type,
+					ID:     jc.Endpoint.Metrics[i].Name, // the caller (collector manager) will determine the real ID
+					Tenant: jc.Endpoint.Tenant,
+					Data:   data,
+				}
+
+				metrics = append(metrics, metric)
+			} else {
+				log.Debugf("Received non-float value [%v] for metric [%v] from Jolokia endpoint [%v].",
+					resp.Value, jc.Endpoint.Metrics[i].Name, url)
+
 			}
-
-			metric := hmetrics.MetricHeader{
-				Type:   jc.Endpoint.Metrics[i].Type,
-				ID:     jc.Endpoint.Metrics[i].Name, // the caller (collector manager) will determine the real ID
-				Tenant: jc.Endpoint.Tenant,
-				Data:   data,
-			}
-
-			metrics = append(metrics, metric)
-
 		} else {
 			log.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
 				jc.Endpoint.Metrics[i].Name, url, err)
