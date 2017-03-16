@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION ?= 1.3.1.Final
+VERSION ?= 1.3.2.Final-SNAPSHOT
 COMMIT_HASH ?= $(shell git rev-parse HEAD)
 
 DOCKER_NAME = hawkular/hawkular-openshift-agent
