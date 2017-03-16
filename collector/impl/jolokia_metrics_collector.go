@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"strconv"
 	"time"
 
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
@@ -116,7 +117,7 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 	for i, resp := range responses.Responses {
 		if resp.IsSuccess() {
-			if respValue, ok := resp.Value.(float64); ok {
+			if respValue, err := jc.getValueAsFloat(resp.Value); err == nil {
 				data := make([]hmetrics.Datapoint, 1)
 				data[0] = hmetrics.Datapoint{
 					Timestamp: now,
@@ -132,9 +133,11 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 				metrics = append(metrics, metric)
 			} else {
-				log.Debugf("Received non-float value [%v] for metric [%v] from Jolokia endpoint [%v].",
-					resp.Value, jc.Endpoint.Metrics[i].Name, url)
-
+				// if the value was nil, it just means there was no metric data yet so no need to warn about that
+				if resp.Value != nil {
+					log.Warningf("Cannot process value of metric [%v] from Jolokia endpoint [%v]. err=%v",
+						jc.Endpoint.Metrics[i].Name, url, err)
+				}
 			}
 		} else {
 			log.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
@@ -161,4 +164,30 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 func (jc *JolokiaMetricsCollector) CollectMetricDetails(metricNames []string) ([]collector.MetricDetails, error) {
 	// TODO: can we get information like metric type and description from JMX?
 	return make([]collector.MetricDetails, 0), nil
+}
+
+func (jc *JolokiaMetricsCollector) getValueAsFloat(value interface{}) (float64, error) {
+	var theFloat float64
+	var err error
+
+	switch value.(type) {
+	case float64:
+		theFloat = value.(float64)
+	case float32:
+		theFloat = float64(value.(float32))
+	case string:
+		theFloat, err = strconv.ParseFloat(value.(string), 64)
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		theFloat, err = strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
+	case bool:
+		if value.(bool) {
+			theFloat = 1.0
+		} else {
+			theFloat = 0.0
+		}
+	default:
+		err = fmt.Errorf("Metric value [%v] is of an incompatible non-float type [%T] and will not be processed", value, value)
+	}
+
+	return theFloat, err
 }
