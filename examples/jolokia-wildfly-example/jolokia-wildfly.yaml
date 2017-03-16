@@ -79,7 +79,24 @@ objects:
           username: ${JOLOKIA_USER}
           password: ${JOLOKIA_PASSWORD}
         metrics:
+        # int data value
+        - name: java.lang:type=Memory#ObjectPendingFinalizationCount
+          type: gauge
+          description: Object Pending Finalization Count
+        # long data value
+        - name: java.lang:type=OperatingSystem#OpenFileDescriptorCount
+          type: gauge
+          description: Open File Descriptor Count
+        # double data value
+        - name: java.lang:type=OperatingSystem#ProcessCpuLoad
+          type: gauge
+          description: Process CPU Load
+        # composite data value
         - name: java.lang:type=Memory#HeapMemoryUsage#used
           type: gauge
           description: Heap Memory Used
           units: B
+        # boolean value
+        - name: java.lang:type=Memory#Verbose
+          type: gauge
+          description: Memory Verbose Mode
