@@ -78,6 +78,11 @@ func StartEmitter(conf *config.Config) {
 	}
 
 	secure := conf.Identity.Cert_File != "" && conf.Identity.Private_Key_File != ""
+
+	// TODO: For now, never use https. If turn off the emitter endpoints if you don't want them over http.
+	//       Delete the line below setting secure=false once we are ok with using the identity with https.
+	secure = false
+
 	addr := conf.Emitter.Address
 
 	if addr == "" {
