@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 Red Hat, Inc. and/or its affiliates
+   Copyright 2016-2017 Red Hat, Inc. and/or its affiliates
    and other contributors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,8 +62,4 @@ func (jrs *JolokiaResponses) String() string {
 
 func (jr *JolokiaResponse) IsSuccess() bool {
 	return jr.Status == 200
-}
-
-func (jr *JolokiaResponse) GetValueAsFloat() float64 {
-	return jr.Value.(float64)
 }

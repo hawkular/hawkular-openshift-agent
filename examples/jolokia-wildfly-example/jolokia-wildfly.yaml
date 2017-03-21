@@ -100,3 +100,6 @@ objects:
         - name: java.lang:type=Memory#Verbose
           type: gauge
           description: Memory Verbose Mode
+        # multiple attributes/multiple mbeans
+        - name: jboss.as:subsystem=datasources,data-source=*,statistics=jdbc#*
+          type: gauge
