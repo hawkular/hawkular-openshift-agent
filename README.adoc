@@ -428,15 +428,17 @@ Jolokia allows for querying of multiple MBeans and multiple attributes using JMX
 ```
 metrics:
 - name: my.domain:type=MyApp,component=*#Count
-  id: Count of my bean ${component}
+  id: bean.${component}.count
+  description: Count of my bean ${component}
 ```
 
-Note that in your metric ID you can use ${x} tokens where the "x" is the MBean name key that was set to the "*" wildcard in the name. You can have multiple wildcards in your metric name such as:
+Note that in your metric ID and description you can use ${x} tokens where the "x" is the MBean name key that was set to the "*" wildcard in the name. You can have multiple wildcards in your metric name such as:
 
 ```
 metrics:
 - name: my.domain:type=MyApp,component=*,subcomponent=*#Count
-  id: Count of the ${subcomponent} of bean ${component}
+  id: sub.${subcomponent}.bean.${component}.count
+  description: Count of the ${subcomponent} of bean ${component}
 ```
 
 * Collect multiple attributes from a single MBean. This will collect all attributes from the named MBean:
@@ -444,20 +446,22 @@ metrics:
 ```
 metrics:
 - name: my.domain:type=MyApp#*
-  id: My App Metric ${1}
+  id: my.app.metric.${1}
+  description: My App Metric ${1}
 ```
 
-Note that when the attribute is a wildcard, you can use the ${1} token in the ID where you want the name of the attribute in the metric ID.
+Note that when the attribute is a wildcard, you can use the ${1} token in the ID where you want the name of the attribute in the metric ID. The same with description.
 
 * Collect all data from a composite attribute from a single MBean. This will collect all data for the named composite attribute from the named MBean:
 
 ```
 metrics:
 - name: java.lang:type=Memory#HeapMemoryUsage#*
-  id: Heap Memory Usage ${2}
+  id: heap.usage.${2}
+  description: Heap Memory Usage ${2}
 ```
 
-Note that when the inner path of a composite attribute is a wildcard, you can use the ${2} token in the ID where you want the name of the inner path of the composite attribute in the metric ID.
+Note that when the inner path of a composite attribute is a wildcard, you can use the ${2} token in the ID where you want the name of the inner path of the composite attribute in the metric ID. The same with description.
 
 * Collect multiple attributes from multiple MBeans:
 
