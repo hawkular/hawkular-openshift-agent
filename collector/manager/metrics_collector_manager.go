@@ -534,6 +534,10 @@ func (mcm *MetricsCollectorManager) createMetricDefinition(theCollector collecto
 			metricDescription = descriptionBuffer.String()
 		}
 
+		// the description might have ${x} tokens - replace them with the metric tags
+		metricDescription = os.Expand(metricDescription,
+			expand.MappingFunc(expand.MappingFuncConfig{Env: monitoredMetric.Tags, UseOSEnv: false}))
+
 		// Now add the fixed tag of "units".
 		units, err := collector.GetMetricUnits(monitoredMetric.Units)
 		if err != nil {
