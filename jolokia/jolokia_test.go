@@ -30,27 +30,120 @@ import (
 func TestParseMetricName(t *testing.T) {
 	name1 := "java.lang:type=Threading#ThreadCount"
 	name2 := "java.lang:type=Memory#HeapMemoryUsage#init"
-	name3 := "java.lang:type=Memory" // BAD - not enough parts
+	name3 := "java.lang:type=Memory" // this is good - this assumes attribute is "*"
 
 	req := &JolokiaRequest{}
-	if err := ParseMetricName(name1, req); err != nil {
-		t.Fatalf("Parse failed: %v", err)
+	if _, err := ParseMetricNameForJolokiaRequest(name1, req); err != nil {
+		t.Errorf("Parse failed: %v", err)
 	}
-	if req.MBean != "java.lang:type=Threading" || req.Attribute != "ThreadCount" || req.Path != "" {
-		t.Fatalf("Failed to parse [%v]=%v", name1, req)
-	}
-
-	req = &JolokiaRequest{}
-	if err := ParseMetricName(name2, req); err != nil {
-		t.Fatalf("Parse failed: %v", err)
-	}
-	if req.MBean != "java.lang:type=Memory" || req.Attribute != "HeapMemoryUsage" || req.Path != "init" {
-		t.Fatalf("Failed to parse [%v]=%v", name2, req)
+	if !(req.MBean == "java.lang:type=Threading" && req.Attribute == "ThreadCount" && req.Path == "") {
+		t.Errorf("Failed to parse [%v]=%v", name1, req)
 	}
 
 	req = &JolokiaRequest{}
-	if err := ParseMetricName(name3, req); err == nil {
-		t.Fatalf("Parse failed: %v", err)
+	if _, err := ParseMetricNameForJolokiaRequest(name2, req); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	}
+	if !(req.MBean == "java.lang:type=Memory" && req.Attribute == "HeapMemoryUsage" && req.Path == "init") {
+		t.Errorf("Failed to parse [%v]=%v", name2, req)
+	}
+
+	req = &JolokiaRequest{}
+	if _, err := ParseMetricNameForJolokiaRequest(name3, req); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	}
+	if !(req.MBean == "java.lang:type=Memory" && req.Attribute == "" && req.Path == "") {
+		t.Errorf("Failed to parse [%v]=%v", name3, req)
+	}
+}
+
+func TestParseMetricNameQuery(t *testing.T) {
+	name1 := "java.lang:type=*#HeapMemoryUsage#init"
+	name2 := "java.lang:type=*#HeapMemoryUsage#*"
+	name3 := "java.lang:type=*#*#*"
+	name4 := "java.lang:type=Memory,*#HeapMemoryUsage#init" // BAD - key name must be specified in queries we support
+	name5 := "java.lang:type~Memory#Attrib"                 // BAD - key-value pairs must use = as separator
+
+	req := &JolokiaRequest{}
+	nameTest := name1
+	if _, err := ParseMetricNameForJolokiaRequest(nameTest, req); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	}
+	if req.MBean != "java.lang:type=*" || req.Attribute != "HeapMemoryUsage" || req.Path != "init" {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, req)
+	}
+
+	req = &JolokiaRequest{}
+	nameTest = name2
+	if _, err := ParseMetricNameForJolokiaRequest(nameTest, req); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	}
+	if !(req.MBean == "java.lang:type=*" && req.Attribute == "HeapMemoryUsage") {
+		t.Errorf("Inner path of '*' should not set the request path in [%v]=%v", nameTest, req)
+	}
+
+	req = &JolokiaRequest{}
+	nameTest = name3
+	if _, err := ParseMetricNameForJolokiaRequest(nameTest, req); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	}
+	if !(req.MBean == "java.lang:type=*" && req.Attribute == "") {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, req)
+	}
+
+	req = &JolokiaRequest{}
+	nameTest = name4
+	if _, err := ParseMetricNameForJolokiaRequest(nameTest, req); err == nil {
+		t.Errorf("ParseMetricName should have failed")
+	}
+
+	nameTest = name5
+	if _, err := ParseMetricNameForJolokiaRequest(nameTest, req); err == nil {
+		t.Errorf("ParseMetricName should have failed")
+	}
+
+	nameTest = name1
+	if parts, err := NewMetricNameParts(nameTest); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	} else if !(parts.MBean == "java.lang:type=*" && parts.Attribute == "HeapMemoryUsage" && parts.Path == "init") {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(len(parts.KeyWildcards) == 1 && parts.KeyWildcards["type"] == true && parts.IsMBeanQuery()) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(!parts.IsAllAttributes() && !parts.IsAllPaths() && parts.HasPath()) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	}
+
+	nameTest = name2
+	if parts, err := NewMetricNameParts(nameTest); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	} else if !(parts.MBean == "java.lang:type=*" && parts.Attribute == "HeapMemoryUsage") {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(len(parts.KeyWildcards) == 1 && parts.KeyWildcards["type"] == true) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(!parts.IsAllAttributes() && parts.IsAllPaths() && parts.HasPath()) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	}
+
+	nameTest = name3
+	if parts, err := NewMetricNameParts(nameTest); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	} else if !(parts.MBean == "java.lang:type=*") {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(len(parts.KeyWildcards) == 1 && parts.KeyWildcards["type"] == true) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(parts.IsAllAttributes() && parts.IsAllPaths()) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	}
+
+	nameTest = "java.lang:first=111,second=*,third=333,fourth=*#HeapMemoryUsage"
+	if parts, err := NewMetricNameParts(nameTest); err != nil {
+		t.Errorf("Parse failed: %v", err)
+	} else if !(parts.MBean == "java.lang:first=111,second=*,third=333,fourth=*") {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(len(parts.KeyWildcards) == 2 && parts.KeyWildcards["second"] == true && parts.KeyWildcards["fourth"] == true) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
+	} else if !(!parts.IsAllAttributes() && !parts.IsAllPaths() && !parts.HasPath()) {
+		t.Errorf("Failed to parse [%v]=%v", nameTest, parts)
 	}
 }
 
@@ -111,7 +204,7 @@ func TestJsonResponses(t *testing.T) {
 	}
 }
 
-func TestJolokia(t *testing.T) {
+func TestJolokiaReadSingleValue(t *testing.T) {
 
 	// setup our mock jolokia server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +237,7 @@ func TestJolokia(t *testing.T) {
 	t.Logf("MOCK RESPONSES====>%v", resp)
 
 	if len(resp.Responses) != 2 {
-		t.Fatalf("Failed to send Jolokia requests to mock server: err=%v", err)
+		t.Fatalf("Got wrong number of responses back")
 	}
 
 	if !resp.Responses[0].IsSuccess() {
@@ -155,7 +248,11 @@ func TestJolokia(t *testing.T) {
 		t.Fatalf("First response should have been failure (404). %v", resp)
 	}
 
-	if resp.Responses[0].Status != 200 || resp.Responses[0].Error != "" || resp.Responses[0].GetValueAsFloat() != 123 || resp.Responses[0].Timestamp != 123456 {
+	if resp.Responses[0].Status != 200 || resp.Responses[0].Error != "" || resp.Responses[0].Timestamp != 123456 {
+		t.Fatalf("First response had unexpected data. %v", resp)
+	}
+
+	if valFloat, err := returnValueAsFloat(resp.Responses[0].Value); err != nil || valFloat != 123 {
 		t.Fatalf("First response had unexpected data. %v", resp)
 	}
 

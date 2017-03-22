@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"strconv"
 	"time"
 
 	hmetrics "github.com/hawkular/hawkular-client-go/metrics"
@@ -95,13 +94,19 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 	}
 
 	// build up the bulk request with all the metrics we need to collect
+	allRequestedMetricNameParts := make([]jolokia.MetricNameParts, len(jc.Endpoint.Metrics))
 	requests := jolokia.NewJolokiaRequests()
-	for _, m := range jc.Endpoint.Metrics {
+
+	for i, m := range jc.Endpoint.Metrics {
 		req := &jolokia.JolokiaRequest{
 			Type: jolokia.RequestTypeRead,
 		}
-		jolokia.ParseMetricName(m.Name, req)
-		requests.AddRequest(*req)
+		if parts, err := jolokia.ParseMetricNameForJolokiaRequest(m.Name, req); err == nil {
+			requests.AddRequest(*req)
+			allRequestedMetricNameParts[i] = parts
+		} else {
+			log.Warningf("Invaild metric name [%v] - will not be collected from Jolokia endpoint [%v]. err=%v", m.Name, url, err)
+		}
 	}
 	log.Tracef("Making bulk Jolokia request from [%v]:\n%v", url, requests)
 
@@ -114,34 +119,13 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 
 	// convert the metric data we got from Jolokia into our Hawkular-Metrics data format
 	metrics = make([]hmetrics.MetricHeader, 0)
-
 	for i, resp := range responses.Responses {
 		if resp.IsSuccess() {
-			if respValue, err := jc.getValueAsFloat(resp.Value); err == nil {
-				data := make([]hmetrics.Datapoint, 1)
-				data[0] = hmetrics.Datapoint{
-					Timestamp: now,
-					Value:     respValue,
-				}
-
-				metric := hmetrics.MetricHeader{
-					Type:   jc.Endpoint.Metrics[i].Type,
-					ID:     jc.Endpoint.Metrics[i].Name, // the caller (collector manager) will determine the real ID
-					Tenant: jc.Endpoint.Tenant,
-					Data:   data,
-				}
-
-				metrics = append(metrics, metric)
-			} else {
-				// if the value was nil, it just means there was no metric data yet so no need to warn about that
-				if resp.Value != nil {
-					log.Warningf("Cannot process value of metric [%v] from Jolokia endpoint [%v]. err=%v",
-						jc.Endpoint.Metrics[i].Name, url, err)
-				}
-			}
+			respMetrics := jolokia.ProcessJolokiaResponseValueObject(url, now, jc.Endpoint.Tenant, resp.Value, jc.Endpoint.Metrics[i], allRequestedMetricNameParts[i])
+			metrics = append(metrics, respMetrics...)
 		} else {
-			log.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v",
-				jc.Endpoint.Metrics[i].Name, url, err)
+			log.Warningf("Failed to collect metric [%v] from Jolokia endpoint [%v]. err=%v/%v",
+				jc.Endpoint.Metrics[i].Name, url, resp.ErrorType, resp.Error)
 		}
 	}
 
@@ -164,30 +148,4 @@ func (jc *JolokiaMetricsCollector) CollectMetrics() (metrics []hmetrics.MetricHe
 func (jc *JolokiaMetricsCollector) CollectMetricDetails(metricNames []string) ([]collector.MetricDetails, error) {
 	// TODO: can we get information like metric type and description from JMX?
 	return make([]collector.MetricDetails, 0), nil
-}
-
-func (jc *JolokiaMetricsCollector) getValueAsFloat(value interface{}) (float64, error) {
-	var theFloat float64
-	var err error
-
-	switch value.(type) {
-	case float64:
-		theFloat = value.(float64)
-	case float32:
-		theFloat = float64(value.(float32))
-	case string:
-		theFloat, err = strconv.ParseFloat(value.(string), 64)
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		theFloat, err = strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
-	case bool:
-		if value.(bool) {
-			theFloat = 1.0
-		} else {
-			theFloat = 0.0
-		}
-	default:
-		err = fmt.Errorf("Metric value [%v] is of an incompatible non-float type [%T] and will not be processed", value, value)
-	}
-
-	return theFloat, err
 }

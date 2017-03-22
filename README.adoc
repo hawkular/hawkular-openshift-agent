@@ -419,6 +419,53 @@ identity:
 * You must specify a metric's "type" as either "counter" or "gauge".
 * A metric "id" is used when storing the metric to Hawkular Metrics. If you do not specify an "id" for a metric, its "name" will be used as the default. This metric ID will be prefixed with the "metric_id_prefix" if one is defined in the `collector` section of the agent's global configuration file.
 * A metric "name" follows a strict format. First is the full MBean name (e.g. `java.lang:type=Threading`) followed by a hash (#) followed by the attribute that contains the metric data (e.g. `ThreadCount`). If the attribute is a composite attribute, then you must append a second hash followed by the composite attribute's subpath name which contains the actual metric value. For example, `java.lang:type=Memory#HeapMemoryUsage#used` will collect the `used` value of the composite attribute `HeapMemoryUsage` from the MBean `java.lang:type=Memory`.
+* An attribute must be a numeric value convertible to a floating point number. However, if the value is such a numeric in the form of a string, the agent will parse the attribute value string and convert it to a floating point number for storage. Also, if the value is a boolean, it will be converted to a 1.0 if the boolean value is true and a 0.0 if the boolean value is false.
+
+Jolokia allows for querying of multiple MBeans and multiple attributes using JMX ObjectName patterns. The Hawkular OpenShift Agent can take advantage of this to allow for easier configuration of the metrics you want to collect from your Jolokia endpoints. Here are some of the scenarios that the agent supports.
+
+* Collect an attribute from multiple MBeans. This will collect the "Count" attribute from all MBeans that match the query in "name":
+
+```
+metrics:
+- name: my.domain:type=MyApp,component=*#Count
+  id: Count of my bean ${component}
+```
+
+Note that in your metric ID you can use ${x} tokens where the "x" is the MBean name key that was set to the "*" wildcard in the name. You can have multiple wildcards in your metric name such as:
+
+```
+metrics:
+- name: my.domain:type=MyApp,component=*,subcomponent=*#Count
+  id: Count of the ${subcomponent} of bean ${component}
+```
+
+* Collect multiple attributes from a single MBean. This will collect all attributes from the named MBean:
+
+```
+metrics:
+- name: my.domain:type=MyApp#*
+  id: My App Metric ${1}
+```
+
+Note that when the attribute is a wildcard, you can use the ${1} token in the ID where you want the name of the attribute in the metric ID.
+
+* Collect all data from a composite attribute from a single MBean. This will collect all data for the named composite attribute from the named MBean:
+
+```
+metrics:
+- name: java.lang:type=Memory#HeapMemoryUsage#*
+  id: Heap Memory Usage ${2}
+```
+
+Note that when the inner path of a composite attribute is a wildcard, you can use the ${2} token in the ID where you want the name of the inner path of the composite attribute in the metric ID.
+
+* Collect multiple attributes from multiple MBeans:
+
+```
+metrics:
+- name: my.domain:type=MyApp,component=*,subcomponent=*#*
+  id: ${1} of the ${subcomponent} of bean ${component}
+```
 
 == Generic JSON Endpoints
 
