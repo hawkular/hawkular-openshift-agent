@@ -33,6 +33,9 @@ type Pod struct {
 	Labels           map[string]string
 	Annotations      map[string]string
 	ConfigMapVolumes map[string]string
+	ClusterName      string
+	ResourceVersion  string
+	SelfLink         string
 }
 
 // Identifier returns a string smaller than String() but can still uniquely identify the pod

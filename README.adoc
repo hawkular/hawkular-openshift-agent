@@ -887,6 +887,15 @@ Tag values can be defined with token expressions in the form of `${var}` or `$va
 |POD:label[_key_]
 |A single Pod label value for the label key _key_
 
+|POD:cluster_name
+|The name of the cluster that the pod is a member of.
+
+|POD:resource_version
+|The resource version of the Pod resource.
+
+|POD:self_link
+|The link to the Pod resource itself.
+
 |METRIC:name
 |The name of the metric on which this tag is found.
 
