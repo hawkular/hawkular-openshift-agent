@@ -208,17 +208,20 @@ func (nec *NodeEventConsumer) startCollecting(ne *NodeEvent) {
 		// Define additional envvars with pod specific data for use in replacing ${env} tokens.
 		// These tokens are used in tags and in the Tenant field.
 		additionalEnv := map[string]string{
-			"POD:node_name":      ne.Pod.Node.Name,
-			"POD:node_uid":       ne.Pod.Node.UID,
-			"POD:namespace_name": ne.Pod.Namespace.Name,
-			"POD:namespace_uid":  ne.Pod.Namespace.UID,
-			"POD:name":           ne.Pod.Name,
-			"POD:ip":             ne.Pod.PodIP,
-			"POD:host_ip":        ne.Pod.HostIP,
-			"POD:uid":            ne.Pod.UID,
-			"POD:hostname":       ne.Pod.Hostname,
-			"POD:subdomain":      ne.Pod.Subdomain,
-			"POD:labels":         joinMap(ne.Pod.Labels),
+			"POD:node_name":        ne.Pod.Node.Name,
+			"POD:node_uid":         ne.Pod.Node.UID,
+			"POD:namespace_name":   ne.Pod.Namespace.Name,
+			"POD:namespace_uid":    ne.Pod.Namespace.UID,
+			"POD:name":             ne.Pod.Name,
+			"POD:ip":               ne.Pod.PodIP,
+			"POD:host_ip":          ne.Pod.HostIP,
+			"POD:uid":              ne.Pod.UID,
+			"POD:hostname":         ne.Pod.Hostname,
+			"POD:subdomain":        ne.Pod.Subdomain,
+			"POD:labels":           joinMap(ne.Pod.Labels),
+			"POD:cluster_name":     ne.Pod.ClusterName,
+			"POD:resource_version": ne.Pod.ResourceVersion,
+			"POD:self_link":        ne.Pod.SelfLink,
 		}
 
 		// support ${POD:label[<label-name>]}

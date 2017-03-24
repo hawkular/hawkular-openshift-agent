@@ -256,6 +256,9 @@ func (d *Discovery) watchPods() {
 				Labels:           podFromEvent.GetLabels(),
 				Annotations:      podFromEvent.GetAnnotations(),
 				ConfigMapVolumes: cmVols,
+				ClusterName:      podFromEvent.GetClusterName(),
+				ResourceVersion:  podFromEvent.GetResourceVersion(),
+				SelfLink:         podFromEvent.GetSelfLink(),
 			}
 
 			switch event.Type {

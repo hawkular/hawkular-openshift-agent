@@ -38,6 +38,8 @@ data:
         hostname: ${POD:hostname}
         host_ip: ${POD:host_ip}
         labels: ${POD:labels}
+        cluster_name: ${POD:cluster_name}
+        resource_version: ${POD:resource_version}
         type: pod
         collector: hawkular_openshift_agent
         custom_metric: true
