@@ -297,6 +297,7 @@ func processHawkularMetricsConfig(conf *config.Config) (config.Hawkular_Server, 
 	hawkularCredentials := config.Hawkular_Server{
 		URL:          url,
 		CA_Cert_File: caCertFile,
+		TLS:          conf.Hawkular_Server.TLS,
 		Credentials: security.Credentials{
 			Username: username,
 			Password: password,
@@ -309,7 +310,9 @@ func processHawkularMetricsConfig(conf *config.Config) (config.Hawkular_Server, 
 }
 
 func getHawkularMetricsClient(conf config.Hawkular_Server) (*hmetrics.Client, error) {
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: conf.TLS.Skip_Certificate_Validation,
+	}
 
 	if conf.CA_Cert_File != "" {
 		certs := x509.NewCertPool()
