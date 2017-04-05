@@ -11,6 +11,13 @@
 # source repository and no need to build anything. OpenShift will download
 # the example docker images from docker hub.
 #
+# If the user has not yet logged into OpenShift via "oc login" then this
+# script will log in for you (you will have to enter your credentials
+# at the prompts). By default, the example will be deployed in the
+# OpenShift user's current project. You can change the project that the
+# example is deployed to via the "oc project" command or by setting
+# the EXAMPLE_NAMESPACE environment variable when running this script.
+#
 # To customize this script, these environment variables are used:
 #
 #   DOCKER_VERSION:
@@ -20,18 +27,18 @@
 #   EXAMPLE_NAMESPACE:
 #      The namespace (aka OpenShift project) where the example
 #      is to be deployed.
-#      If not specified, the default value is "default".
+#      If not specified, the default is the OpenShift user default.
 #
 # Examples:
 #
 # 1. To deploy the latest version of the jolokia-wildfly-example:
 #
-#   deploy-examples.sh jolokia-wildfly-example
+#   deploy-example.sh jolokia-wildfly-example
 #
 # 2. To deploy version "1.4.0.Final" of the multiple-endpoints-example
-#     into the myproject project:
+#    into the myproject project:
 #
-#   DOCKER_VERSION=1.4.0.Final EXAMPLE_NAMESPACE=myproject deploy-examples.sh multiple-endpoints-example
+#   DOCKER_VERSION=1.4.0.Final EXAMPLE_NAMESPACE=myproject deploy-example.sh multiple-endpoints-example
 #
 ##############################################################################
 
@@ -55,7 +62,7 @@ else
 fi
 
 DOCKER_VERSION=${DOCKER_VERSION:-latest}
-EXAMPLE_NAMESPACE=${EXAMPLE_NAMESPACE:-default}
+EXAMPLE_NAMESPACE=${EXAMPLE_NAMESPACE}
 
 _GIT_REV=${DOCKER_VERSION}
 if [ "$_GIT_REV" == "latest" ]; then
@@ -73,14 +80,22 @@ rm -f /tmp/hawkular-openshift-agent-examples/*
 wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/examples/${EXAMPLE_NAME}/Makefile || exit 1
 wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/examples/${EXAMPLE_NAME}/${EXAMPLE_YAML} || exit 1
 
-echo
-echo "LOGGING INTO OPENSHIFT..."
-echo
+# If the user is not logged in yet, log in now
 
-oc login -n ${EXAMPLE_NAMESPACE}
+oc whoami > /dev/null 2>&1
+if [ "$?" != "0" ]; then
+  echo
+  echo "LOGGING INTO OPENSHIFT..."
+  echo
+  oc login
+fi
+
+if [ "${EXAMPLE_NAMESPACE}" != "" ]; then
+  oc project ${EXAMPLE_NAMESPACE}
+fi
 
 echo
-echo "DEPLOYING EXAMPLE ${EXAMPLE_NAME} (version=${DOCKER_VERSION}) TO OPENSHIFT (namespace=${EXAMPLE_NAMESPACE})..."
+echo "DEPLOYING EXAMPLE ${EXAMPLE_NAME} (version=${DOCKER_VERSION}) TO OPENSHIFT (namespace=$(oc project -q))..."
 echo
 
 DOCKER_VERSION=${DOCKER_VERSION} make openshift-deploy
