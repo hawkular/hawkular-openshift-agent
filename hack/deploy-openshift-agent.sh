@@ -39,16 +39,22 @@
 DOCKER_VERSION=${DOCKER_VERSION:-latest}
 HAWKULAR_OPENSHIFT_AGENT_NAMESPACE=${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE:-default}
 
+_GIT_REV=${DOCKER_VERSION}
+if [ "$_GIT_REV" == "latest" ]; then
+  _GIT_REV=master
+fi
+
 echo
-echo "DOWNLOADING AGENT OPENSHIFT TEMPLATE FILES..."
+echo "DOWNLOADING AGENT OPENSHIFT TEMPLATE FILES FROM GIT HUB (${_GIT_REV})..."
 echo
 
 mkdir -p /tmp/hawkular-openshift-agent-deploy
 cd /tmp/hawkular-openshift-agent-deploy
-rm /tmp/hawkular-openshift-agent-deploy/*.yaml
+rm -f /tmp/hawkular-openshift-agent-deploy/*.yaml
 
-wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/master/deploy/openshift/hawkular-openshift-agent-configmap.yaml
-wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/master/deploy/openshift/hawkular-openshift-agent.yaml
+wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent-configmap.yaml || exit 1
+
+wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent.yaml || exit 1
 
 echo
 echo "LOGGING INTO OPENSHIFT..."
