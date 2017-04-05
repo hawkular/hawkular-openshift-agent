@@ -91,11 +91,17 @@ if [ "$?" != "0" ]; then
 fi
 
 if [ "${EXAMPLE_NAMESPACE}" != "" ]; then
+  _PREVIOUS_PROJECT=$(oc project --short)
   oc project ${EXAMPLE_NAMESPACE}
 fi
 
 echo
-echo "DEPLOYING EXAMPLE ${EXAMPLE_NAME} (version=${DOCKER_VERSION}) TO OPENSHIFT (namespace=$(oc project -q))..."
+echo "DEPLOYING EXAMPLE ${EXAMPLE_NAME} (version=${DOCKER_VERSION}) TO OPENSHIFT (namespace=$(oc project --short))..."
 echo
 
 DOCKER_VERSION=${DOCKER_VERSION} make openshift-deploy
+
+# We don't want to change the user's default project permanently - put it back the way it was
+if [ "$_PREVIOUS_PROJECT" != "" ]; then
+  oc project $_PREVIOUS_PROJECT
+fi
