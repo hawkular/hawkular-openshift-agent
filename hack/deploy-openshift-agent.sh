@@ -56,11 +56,14 @@ wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_
 
 wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent.yaml || exit 1
 
-echo
-echo "LOGGING INTO OPENSHIFT..."
-echo
-
-oc login
+# If the user is not yet logged in, log in now
+oc whoami > /dev/null 2>&1
+if [ "$?" != "0" ]; then
+  echo
+  echo "LOGGING INTO OPENSHIFT..."
+  echo
+  oc login
+fi
 
 echo
 echo "UNDEPLOYING ANY PREVIOUSLY DEPLOYED AGENT FROM OPENSHIFT..."
