@@ -45,16 +45,17 @@ if [ "$_GIT_REV" == "latest" ]; then
 fi
 
 echo
-echo "DOWNLOADING AGENT OPENSHIFT TEMPLATE FILES FROM GIT HUB (${_GIT_REV})..."
+echo "DOWNLOADING AGENT OPENSHIFT TEMPLATE FILES AND MAKEFILE FROM GIT HUB (${_GIT_REV})..."
 echo
 
 mkdir -p /tmp/hawkular-openshift-agent-deploy
 cd /tmp/hawkular-openshift-agent-deploy
-rm -f /tmp/hawkular-openshift-agent-deploy/*.yaml
+rm -rf /tmp/hawkular-openshift-agent-deploy/*
 
-wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent-configmap.yaml || exit 1
-
-wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent.yaml || exit 1
+wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/Makefile || exit 1
+wget -P deploy/openshift https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent-configmap.yaml || exit 1
+wget -P deploy/openshift https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent.yaml || exit 1
+wget -P deploy/openshift https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/${_GIT_REV}/deploy/openshift/hawkular-openshift-agent-route.yaml || exit 1
 
 # If the user is not yet logged in, log in now
 oc whoami > /dev/null 2>&1
@@ -66,16 +67,7 @@ if [ "$?" != "0" ]; then
 fi
 
 echo
-echo "UNDEPLOYING ANY PREVIOUSLY DEPLOYED AGENT FROM OPENSHIFT..."
-echo
-
-oc delete all,secrets,sa,templates,configmaps,daemonsets,clusterroles --selector=metrics-infra=agent -n ${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE}
-oc delete clusterroles hawkular-openshift-agent
-
-echo
 echo "DEPLOYING AGENT (version=${DOCKER_VERSION}) TO OPENSHIFT (namespace=${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE})..."
 echo
 
-oc create -f hawkular-openshift-agent-configmap.yaml -n ${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE}
-oc process -f hawkular-openshift-agent.yaml -v IMAGE_VERSION=${DOCKER_VERSION} | oc create -n ${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE} -f -
-oc adm policy add-cluster-role-to-user hawkular-openshift-agent system:serviceaccount:${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE}:hawkular-openshift-agent
+DOCKER_VERSION=${DOCKER_VERSION} HAWKULAR_OPENSHIFT_AGENT_NAMESPACE=${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE} make openshift-deploy
