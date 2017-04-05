@@ -24,20 +24,36 @@ The link:prometheus-python-example/prometheus-python.yaml[prometheus-python] tem
 $ oc process -f prometheus-python-example/prometheus-python.yaml | oc create -f -
 ```
 
+# Deploying the Examples
+
+If you only want to deploy pre-built example images that are published on Docker Hub, you just need to get the https://github.com/hawkular/hawkular-openshift-agent/blob/master/examples/deploy-example.sh[deploy-example.sh] script and run it. It takes a command line argument whose name is one of the examples (e.g. jolokia-wildfly-example).
+
+To easily deploy an example, you can run this one line command (this example deploys the `jolokia-wildfly-example` but you can pass in the name of any example you want; e.g. `multiple-endpoints-example`):
+
+```
+wget https://raw.githubusercontent.com/hawkular/hawkular-openshift-agent/master/examples/deploy-example.sh && sh ./deploy-example.sh jolokia-wildfly-example
+```
+
 # Building the Examples
+
 Each of the example directories contains a `Makefile` which can be used to build the examples.
 
 ## Building the Docker Image
+
 ```
 $ make
 ```
 
-## Deploying the Example
+Once built, you can deploy and undeploy the examples via the Makefile:
+
+Deploy:
+
 ```
 $ make openshift-deploy
 ```
 
-## Undeploying the Example
+Undeploy:
+
 ```
 $ make openshift-undeploy
 ```
