@@ -76,6 +76,7 @@ type Hawkular_Server struct {
 	URL          string
 	Tenant       string
 	Credentials  security.Credentials ",omitempty"
+	TLS          security.TLS         ",omitempty"
 	CA_Cert_File string               ",omitempty"
 }
 
