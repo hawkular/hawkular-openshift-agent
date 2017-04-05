@@ -10,6 +10,7 @@ These files are used to build, start, and stop your own OpenShift environment fr
 |`build-openshift.sh`|Downloads the OpenShift Origin source code and builds it.
 |`cluster-openshift.sh`|Starts and stops your OpenShift Origin environment via "oc cluster up". Pass "up"/"down" to start/stop OpenShift.
 |`start-openshift.sh`|Starts and stops your OpenShift Origin environment via "openshift". Pass "up"/"down" to start/stop OpenShift.
+|`deploy-openshift-agent.sh`|Deploys the agent without requiring you to git clone the repository or build anything.
 |===
 
 To build your own OpenShift Origin:
@@ -34,7 +35,9 @@ Or, alternatively, you can start and stop it using the `start-openshift.sh` scri
 
 == Deploy the Agent
 
-To deploy the agent, use the link:../Makefile[Makefile] located in the root directory of this project.
+If you do not want to git clone the entire repository, just download the `deploy-openshift-agent.sh` script and run it. For more details about that script you can read the comments found at the top of that script.
+
+If you git cloned the source repo, you can deploy the agent using the link:../Makefile[Makefile] located in the root directory of this project.
 
 ```
 make openshift-deploy
@@ -45,6 +48,8 @@ If you want to build your own local docker image of the agent, you can use the "
 ```
 make build docker
 ```
+
+Note that you must perform an initial "make build docker" before you can do a "make openshift-deploy" for the first time.
 
 == Deploy Some Example Containers
 
