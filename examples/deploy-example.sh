@@ -55,7 +55,7 @@ fi
 
 if [ "${1: -8}" == "-example" ]; then
   EXAMPLE_NAME="${1}"
-  EXAMPLE_YAML="${1:0:-8}.yaml"
+  EXAMPLE_YAML="$(echo ${1} | rev | cut -c 9- | rev).yaml"
 else
   EXAMPLE_NAME="${1}-example"
   EXAMPLE_YAML="${1}.yaml"
