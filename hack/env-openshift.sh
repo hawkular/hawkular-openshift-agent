@@ -10,6 +10,9 @@
 OPENSHIFT_GOPATH=${HOME}/source/go/openshift
 OPENSHIFTMETRICS_GOPATH=${HOME}/source/go/openshift-metrics
 
+# This is where OpenShift-Ansible should be git cloned
+OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR=${HOME}/source/go/openshift-ansible
+
 # This is the IP address where OpenShift will bind its master.
 # This should be a valid IP address for the machine where OpenShift is installed.
 # NOTE: Do not use any IP address within the loopback range of 127.0.0.x.
@@ -19,6 +22,7 @@ OPENSHIFT_IP_ADDRESS=$(ip -f inet addr | grep 'state UP' -A1 | tail -n1 | awk '{
 # If you want to run with a specific version, uncomment this and enter the version you want.
 # You can run the latest build by using "latest" as the version string.
 #OPENSHIFT_VERSION="latest"
+#OPENSHIFTMETRICS_VERSION="latest"
 
 #-----------------------------------------------------------------------------
 # Variables below have values derived from the user-defined variables above.
@@ -28,6 +32,10 @@ OPENSHIFT_IP_ADDRESS=$(ip -f inet addr | grep 'state UP' -A1 | tail -n1 | awk '{
 if [ "${OPENSHIFT_VERSION}" != "" ]; then
   OPENSHIFT_VERSION_ARG="--version=${OPENSHIFT_VERSION}"
   OPENSHIFT_IMAGE_VERSION_ARG="-p IMAGE_VERSION=${OPENSHIFT_VERSION}"
+fi
+
+if [ "${OPENSHIFTMETRICS_VERSION}" != "" ]; then
+  OPENSHIFTMETRICS_ANSIBLE_VERSION_ARG="-e openshift_metrics_image_version=${OPENSHIFTMETRICS_VERSION}"
 fi
 
 # This is where the OpenShift Origin and Origin-Metrics github source code will live when building from source.

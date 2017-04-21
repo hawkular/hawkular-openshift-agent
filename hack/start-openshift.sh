@@ -14,6 +14,33 @@
 
 source ./env-openshift.sh
 
+WHERE_IS_PYTHON3=`which python3`
+if [ "$?" = "0" ]; then
+  echo Python3 installed: $WHERE_IS_PYTHON3
+else
+  echo You must install Python3 as it is required for OpenShift Ansible to work.
+  exit 1
+fi
+
+WHERE_IS_ANSIBLE=`which ansible-playbook`
+if [ "$?" = "0" ]; then
+  echo Ansible installed: $WHERE_IS_ANSIBLE
+else
+  echo You must install Ansible.
+  echo You can do this by git cloning the Ansible repo and
+  echo then setting up your environment to use it. Something like:
+  echo
+  echo '$' mkdir `dirname ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}`
+  echo '$' cd `dirname ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}`
+  echo '$' git clone git://github.com/ansible/ansible.git --recursive
+  echo '$' cd ansible
+  echo '$' source ./hacking/env-setup
+  echo '$' sudo dnf install -y python-paramiko python-jinja2 python-yaml pyOpenSSL python-cryptography python-lxml
+  echo '$' sudo mkdir -p /etc/ansible
+  echo '$' sudo sh -c "'"'echo -e "[masters]\nlocalhost" >> /etc/ansible/hosts'"'"
+  exit 1
+fi
+
 echo Will use OpenShift that is located here: ${OPENSHIFT_BINARY_DIR}
 cd ${OPENSHIFT_BINARY_DIR}
 
@@ -76,19 +103,11 @@ if [ "$1" = "up" ];then
   ${OPENSHIFT_EXE_OC} adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:default:router -n default
   ${OPENSHIFT_EXE_OC} adm router router --replicas=1 --service-account=router -n default
 
-  # Deploy Origin-Metrics
+  # Deploy Origin-Metrics Using Ansible
   echo Deploying Origin-Metrics
-  cd ${OPENSHIFTMETRICS_GITHUB_SOURCE_DIR}
-
-  # Metrics Deployer
-  ${OPENSHIFT_EXE_OC} create -n openshift-infra -f metrics-deployer-setup.yaml
-  ${OPENSHIFT_EXE_OC} adm policy add-role-to-user edit system:serviceaccount:openshift-infra:metrics-deployer -n openshift-infra
-  ${OPENSHIFT_EXE_OC} secrets new metrics-deployer nothing=/dev/null -n openshift-infra
-  ${OPENSHIFT_EXE_OC} adm policy add-role-to-user view system:serviceaccount:openshift-infra:hawkular -n openshift-infra
-  ${OPENSHIFT_EXE_OC} adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:openshift-infra:heapster -n openshift-infra
-
-  # Metrics
-  ${OPENSHIFT_EXE_OC} process -f metrics.yaml ${OPENSHIFT_IMAGE_VERSION_ARG} -p HAWKULAR_METRICS_HOSTNAME=metrics-openshift-infra.${OPENSHIFT_IP_ADDRESS}.xip.io -p USE_PERSISTENT_STORAGE=false | ${OPENSHIFT_EXE_OC} create -n openshift-infra -f -
+  echo Using OpenShift-Ansible found here: ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}
+  cd ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}/playbooks
+  ansible-playbook ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}/playbooks/byo/openshift-cluster/openshift-metrics.yml -e "openshift_deployment_type=origin" -e "openshift_metrics_install_metrics=True" -e "openshift_metrics_hawkular_hostname=hawkular-metrics.example.com" -e "ansible_python_interpreter=${WHERE_IS_PYTHON3}" -e "ansible_become=true" -e "ansible_become_user=root" ${OPENSHIFTMETRICS_ANSIBLE_VERSION_ARG} --ask-become-pass
 
 elif [ "$1" = "down" ];then
 
