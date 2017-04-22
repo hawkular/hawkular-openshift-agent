@@ -43,6 +43,7 @@ fi
 
 echo Will use OpenShift that is located here: ${OPENSHIFT_BINARY_DIR}
 cd ${OPENSHIFT_BINARY_DIR}
+echo OpenShift git hash: $(git rev-parse HEAD)
 
 _KUBECONFIG="${OPENSHIFT_BINARY_DIR}/openshift.local.config/master/admin.kubeconfig"
 #_SKIP_VERIFY_ARG="--insecure-skip-tls-verify=true"
@@ -107,7 +108,8 @@ if [ "$1" = "up" ];then
   echo Deploying Origin-Metrics
   echo Using OpenShift-Ansible found here: ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}
   cd ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}/playbooks
-  ansible-playbook ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}/playbooks/byo/openshift-cluster/openshift-metrics.yml -e "openshift_deployment_type=origin" -e "openshift_metrics_install_metrics=True" -e "openshift_metrics_hawkular_hostname=hawkular-metrics.example.com" -e "ansible_python_interpreter=${WHERE_IS_PYTHON3}" -e "ansible_become=true" -e "ansible_become_user=root" ${OPENSHIFTMETRICS_ANSIBLE_VERSION_ARG} --ask-become-pass
+  echo OpenShift-Ansible git hash: $(git rev-parse HEAD)
+  ansible-playbook -vv ${OPENSHIFTANSIBLE_GITHUB_SOURCE_DIR}/playbooks/byo/openshift-cluster/openshift-metrics.yml -e "openshift_deployment_type=origin" -e "openshift_metrics_install_metrics=True" -e "openshift_metrics_hawkular_hostname=hawkular-metrics.example.com" -e "ansible_python_interpreter=${WHERE_IS_PYTHON3}" -e "ansible_become=true" -e "ansible_become_user=root" ${OPENSHIFTMETRICS_ANSIBLE_VERSION_ARG} --ask-become-pass
 
 elif [ "$1" = "down" ];then
 
