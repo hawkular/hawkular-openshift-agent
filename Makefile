@@ -22,7 +22,7 @@ DOCKER_TAG = ${DOCKER_NAME}:${DOCKER_VERSION}
 
 VERBOSE_MODE ?= 4
 HAWKULAR_OPENSHIFT_AGENT_NAMESPACE ?= default
-HAWKULAR_OPENSHIFT_AGENT_HOSTNAME ?= "hawkular-openshift-agent-${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE}.$(shell oc version | grep 'Server ' | awk '{print $$2;}' | egrep -o '([0-9]{1,3}[.]){3}[0-9]{1,3}').xip.io"
+HAWKULAR_OPENSHIFT_AGENT_HOSTNAME ?= "hawkular-openshift-agent-${HAWKULAR_OPENSHIFT_AGENT_NAMESPACE}.$(shell oc version --insecure-skip-tls-verify | grep 'Server ' | awk '{print $$2;}' | awk -F/ '{print $$3;}' | awk -F: '{print $$1;}' ).xip.io"
 
 GO_BUILD_ENVVARS = \
 	GOOS=linux \
