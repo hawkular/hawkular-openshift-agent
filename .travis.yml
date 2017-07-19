@@ -45,6 +45,7 @@ after_success:
   - export DOCKER_PASS=$(if [ "$DOCKER_PASS" == "" ]; then echo "unknown"; else echo $DOCKER_PASS ; fi)
   - echo DOCKER_VERSION=$DOCKER_VERSION
   - make build
+  - docker --version
   - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
   - make docker
   - make docker-examples
