@@ -8,7 +8,7 @@ metadata:
 parameters:
 - description: The version of the image to use
   name: IMAGE_VERSION
-  value: dev
+  value: latest
 objects:
 - apiVersion: v1
   kind: ClusterRole
